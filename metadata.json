@@ -1,0 +1,7 @@
+{
+  "name": "Copy of RealHolat - Civic Pulse",
+  "description": "A digital platform for citizens to report infrastructure issues in Uzbekistan. Features interactive maps, AI-assisted categorization, and transparent community feedback.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

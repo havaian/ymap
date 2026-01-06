@@ -1,0 +1,107 @@
+# Git
+.git
+.gitignore
+.github
+
+# Build artifacts
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Environment and configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.local
+.npmrc
+.yarnrc
+
+# Testing and coverage
+coverage
+.nyc_output
+test
+tests
+**/*.test.js
+**/*.spec.js
+jest.config.js
+
+# Documentation
+docs
+*.md
+LICENSE
+CONTRIBUTING.md
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# CI/CD
+.travis.yml
+.circleci
+.gitlab-ci.yml
+Jenkinsfile
+
+# Logs
+logs
+*.log
+
+# Temporary files
+tmp
+temp
+.tmp
+.temp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Project specific
+# Exclude frontend build directory (since we build in Docker)
+frontend/dist
+frontend/build
+frontend/.cache
+frontend/node_modules
+
+# Exclude backend build directory
+backend/dist
+backend/build
+backend/node_modules
+
+# Development configurations
+nodemon.json
+.eslintrc
+.eslintignore
+.prettierrc
+.prettierignore
+tsconfig.json
+webpack.config.js
+babel.config.js
+
+# Docker related
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Kubernetes
+k8s
+kubernetes
+*.yaml
+*.yml
+
+# Development database data
+data
+
+# Local uploads
+uploads
+media
+public/uploads
+public/media

@@ -12,10 +12,11 @@ import { BurgerMenu } from './components/BurgerMenu';
 import { LoginView } from './components/LoginView';
 import { AdminUserView } from './components/AdminUserView';
 import { AdminOrgModal } from './components/AdminOrgModal';
+import { MapPlusIcon } from './components/MapPlusIcon';
 import { Issue, Coordinates, Comment, IssueCategory, Organization, User, UserRole } from './types';
 import { MOCK_ISSUES, TASHKENT_CENTER, MOCK_ORGANIZATIONS, CATEGORY_COLORS } from './constants';
 import { 
-  Plus, Map, Menu, Navigation, Locate, Building2, Flame, 
+  Plus, Menu, Navigation, Locate, Building2, Flame, 
   ChevronDown, Car, Droplets, Zap, GraduationCap, 
   Stethoscope, Trash2, HelpCircle, Layers, ShieldCheck
 } from 'lucide-react';
@@ -336,9 +337,7 @@ const App: React.FC = () => {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition">
             <Menu className="w-5 h-5" />
           </button>
-          <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2 rounded-xl shadow-md cursor-pointer" onClick={() => setActiveView('MAP')}>
-            <Map className="w-5 h-5" />
-          </div>
+          <MapPlusIcon onClick={() => setActiveView('MAP')} />
           <div className="hidden sm:block">
             <div className="flex items-center gap-2">
                <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Real<span className="text-blue-600">Holat</span></h1>

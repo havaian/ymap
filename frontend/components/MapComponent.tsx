@@ -307,7 +307,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       >
         <TileLayer
           key={tileUrl}
-          attribution='&copy; CARTO'
+          // attribution='&copy; CARTO'
           url={tileUrl}
         />
         

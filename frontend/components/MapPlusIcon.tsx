@@ -7,15 +7,10 @@ interface MapPlusIconProps {
 
 export const MapPlusIcon: React.FC<MapPlusIconProps> = ({ onClick, className = '' }) => {
   return (
-    <div 
-      className={`bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2 rounded-xl shadow-md cursor-pointer ${className}`}
-      onClick={onClick}
-    >
-      <img 
-        src="/favicon.svg" 
+    <img 
+        src="/assets/images/icons/icon.svg" 
         alt="Map Icon" 
-        className="w-5 h-5"
-      />
-    </div>
+        className="w-8 h-8"
+    />
   );
 };

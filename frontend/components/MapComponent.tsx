@@ -261,6 +261,21 @@ function MapController({ onMapClick, setZoomLevel, userLocation, triggerLocate }
   return null;
 }
 
+function MapSizeHandler() {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Invalidate size when component mounts
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [map]);
+  
+  return null;
+}
+
 interface MapComponentProps {
   issues: Issue[];
   center: [number, number];
@@ -305,6 +320,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         zoomControl={false}
         markerZoomAnimation={true}
       >
+        <MapSizeHandler />
         <TileLayer
           key={tileUrl}
           // attribution='&copy; CARTO'

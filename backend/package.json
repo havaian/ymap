@@ -17,24 +17,24 @@
   ],
   "author": "YTech Team",
   "license": "MIT",
-  "dependencies": {
-    "express": "^4.19.2",
-    "mongoose": "^8.3.0",
-    "redis": "^4.6.13",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.1.0",
-    "express-rate-limit": "^7.2.0",
-    "dotenv": "^16.4.5",
-    "multer": "^1.4.5-lts.1",
-    "xlsx": "^0.18.5",
-    "express-async-errors": "^3.1.1"
-  },
   "devDependencies": {
     "nodemon": "^3.1.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^4.22.1",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.6",
+    "multer": "^2.0.2",
+    "redis": "^5.10.0",
+    "xlsx": "^0.18.5"
   }
 }

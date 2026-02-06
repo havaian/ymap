@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Issue, IssueCategory, Severity, Organization } from '../types';
+import { Issue, IssueCategory, Severity, Organization } from '../../types';
 import { CATEGORY_COLORS } from '../constants';
 import { 
   BarChart3, TrendingUp, Users, CheckCircle2, AlertCircle, 

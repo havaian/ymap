@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { IssueCategory, Coordinates, Organization } from '../types';
+import { IssueCategory, Coordinates, Organization } from '../../types';
 import { X, Building2, MapPin, School, Hospital, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface AdminOrgModalProps {

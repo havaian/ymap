@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Map, List, BarChart3, Info, X, LogOut, Settings, Sun, Moon, Monitor, Type, ShieldCheck, User as UserIcon, Users } from 'lucide-react';
-import { User, UserRole } from '../types';
+import { User, UserRole } from '../../types';
 
 interface BurgerMenuProps {
   isOpen: boolean;

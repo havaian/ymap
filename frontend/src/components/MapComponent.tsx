@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import 'leaflet.heat';
 import 'leaflet.markercluster';
-import { Issue, Coordinates, IssueCategory, Organization, Severity } from '../types';
+import { Issue, Coordinates, IssueCategory, Organization, Severity } from '../../types';
 import { CATEGORY_COLORS } from '../constants';
 import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, ArrowRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';

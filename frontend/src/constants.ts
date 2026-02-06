@@ -1,5 +1,5 @@
 
-import { Issue, IssueCategory, Severity, Organization, IssueSubCategory } from './types';
+import { Issue, IssueCategory, Severity, Organization, IssueSubCategory } from '../types';
 
 export const TASHKENT_CENTER: [number, number] = [41.2995, 69.2401];
 

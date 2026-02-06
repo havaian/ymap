@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Organization, Issue, Severity } from '../types';
+import { Organization, Issue, Severity } from '../../types';
 import { CATEGORY_COLORS } from '../constants';
 import { X, Building2, MapPin, CheckCircle2, Star, ChevronRight, Plus, Info } from 'lucide-react';
 

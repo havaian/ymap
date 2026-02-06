@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IssueCategory, Severity, Coordinates, Organization, IssueSubCategory } from '../types';
+import { IssueCategory, Severity, Coordinates, Organization, IssueSubCategory } from '../../types';
 import { analyzeReportWithGemini } from '../services/geminiService';
 import { useOrganizations } from '../hooks/useBackendData';
 import { Loader2, Sparkles, MapPin, X, AlertTriangle, CheckCircle2, Building2, Search, Droplets, Zap, MoreHorizontal } from 'lucide-react';

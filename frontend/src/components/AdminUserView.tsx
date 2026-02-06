@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, UserRole } from '../types';
+import { User, UserRole } from '../../types';
 import { Search, User as UserIcon, ShieldCheck, Ban, RotateCcw, MoreVertical, Mail, MapPin } from 'lucide-react';
 
 interface AdminUserViewProps {

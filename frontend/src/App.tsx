@@ -12,9 +12,9 @@ import { LoginView } from './components/LoginView';
 import { AdminUserView } from './components/AdminUserView';
 import { AdminOrgModal } from './components/AdminOrgModal';
 import { MapPlusIcon } from './components/MapPlusIcon';
-import { Issue, Coordinates, Comment, IssueCategory, Organization, User, UserRole } from './types';
+import { Issue, Coordinates, Comment, IssueCategory, Organization, User, UserRole } from '../types';
 import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
-import { useIssues, useOrganizations, useUsers } from './src/hooks/useBackendData';
+import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { authAPI } from './services/api';
 import { 
   Plus, Menu, Navigation, Locate, Building2, Flame, 

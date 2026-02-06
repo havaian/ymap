@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { IssueCategory, Severity, IssueSubCategory } from '../types';
+import { IssueCategory, Severity, IssueSubCategory } from '../../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 

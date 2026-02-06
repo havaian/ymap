@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { IssueCategory, Severity, Coordinates, Organization, IssueSubCategory } from '../types';
 import { analyzeReportWithGemini } from '../services/geminiService';
-import { MOCK_ORGANIZATIONS } from '../constants';
+import { useOrganizations } from '../hooks/useBackendData';
 import { Loader2, Sparkles, MapPin, X, AlertTriangle, CheckCircle2, Building2, Search, Droplets, Zap, MoreHorizontal } from 'lucide-react';
 
 interface IssueModalProps {
@@ -19,6 +18,9 @@ export const IssueModal: React.FC<IssueModalProps> = ({ isOpen, onClose, onSubmi
   const [selectedOrgId, setSelectedOrgId] = useState<string>(preSelectedOrg?.id || '');
   const [selectedSubCategory, setSelectedSubCategory] = useState<IssueSubCategory | undefined>(undefined);
   const [orgSearchTerm, setOrgSearchTerm] = useState('');
+  
+  // Get organizations from backend
+  const { organizations } = useOrganizations();
   
   const [analysis, setAnalysis] = useState<{
     title: string;
@@ -64,7 +66,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({ isOpen, onClose, onSubmi
 
   const handleSubmit = () => {
     if (!analysis) return;
-    const org = MOCK_ORGANIZATIONS.find(o => o.id === selectedOrgId);
+    const org = organizations.find(o => o.id === selectedOrgId);
     onSubmit({
       ...analysis,
       subCategory: selectedSubCategory,
@@ -74,7 +76,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({ isOpen, onClose, onSubmi
     });
   };
 
-  const filteredOrgs = MOCK_ORGANIZATIONS.filter(org => 
+  const filteredOrgs = organizations.filter(org => 
     (analysis?.category ? org.type === analysis.category : true) &&
     org.name.toLowerCase().includes(orgSearchTerm.toLowerCase())
   );

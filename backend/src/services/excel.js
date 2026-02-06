@@ -2,6 +2,7 @@ import xlsx from 'xlsx';
 import Organization from '../organization/model.js';
 import Infrastructure from '../infrastructure/model.js';
 import { transformExcelRowToOrganization, transformExcelRowToInfrastructure } from './transform.js';
+import { createOrganizationUser } from './org-user-generator.js';
 
 const SECTOR_TO_COLLECTION_MAP = {
     'maktab': 'organization', // Schools
@@ -20,8 +21,10 @@ export const importOrganizationsFromExcel = async (filePath) => {
 
     let organizationsImported = 0;
     let infrastructureImported = 0;
+    let usersCreated = 0;
     let skipped = 0;
     const errors = [];
+    const credentials = []; // Store generated credentials
 
     for (const row of rows) {
         try {
@@ -43,12 +46,31 @@ export const importOrganizationsFromExcel = async (filePath) => {
 
             if (collectionType === 'organization') {
                 const orgData = transformExcelRowToOrganization(row, latitude, longitude);
-                await Organization.updateOne(
+
+                const result = await Organization.findOneAndUpdate(
                     { externalId: orgData.externalId },
                     orgData,
-                    { upsert: true }
+                    { upsert: true, new: true }
                 );
+
                 organizationsImported++;
+
+                // Create user account for this organization
+                try {
+                    const userResult = await createOrganizationUser(orgData, result._id.toString());
+                    if (userResult.isNew) {
+                        usersCreated++;
+                        credentials.push({
+                            organizationId: result._id.toString(),
+                            organizationName: orgData.name,
+                            email: userResult.email,
+                            password: userResult.password
+                        });
+                    }
+                } catch (userError) {
+                    console.error(`Failed to create user for org ${orgData.name}:`, userError.message);
+                }
+
             } else if (collectionType === 'infrastructure') {
                 const infraData = transformExcelRowToInfrastructure(row, latitude, longitude);
                 await Infrastructure.updateOne(
@@ -65,13 +87,15 @@ export const importOrganizationsFromExcel = async (filePath) => {
         }
     }
 
-    console.log(`✅ Import complete: ${organizationsImported} organizations, ${infrastructureImported} infrastructure, ${skipped} skipped`);
+    console.log(`✅ Import complete: ${organizationsImported} organizations, ${infrastructureImported} infrastructure, ${usersCreated} users created, ${skipped} skipped`);
 
     return {
         total: rows.length,
         organizations: organizationsImported,
         infrastructure: infrastructureImported,
+        usersCreated,
         skipped,
-        errors: errors.slice(0, 10)
+        errors: errors.slice(0, 10),
+        credentials: credentials.slice(0, 100) // Return first 100 credentials for reference
     };
 };

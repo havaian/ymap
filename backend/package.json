@@ -1,7 +1,7 @@
 {
-  "name": "realholat-backend",
+  "name": "ymap-backend",
   "version": "1.0.0",
-  "description": "RealHolat Backend API - Government Infrastructure Monitoring Platform",
+  "description": "Y.Map Backend API - Government Infrastructure Monitoring Platform",
   "main": "src/index.js",
   "type": "module",
   "scripts": {

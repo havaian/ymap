@@ -7,6 +7,7 @@ import { config, validateEnv } from './config/env.js';
 import { connectDB } from './config/database.js';
 import { connectRedis } from './config/redis.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { ensureAdminExists } from './services/admin-setup.js';
 
 import authRoutes from './auth/routes.js';
 import issueRoutes from './issue/routes.js';
@@ -70,6 +71,9 @@ const startServer = async () => {
         // Connect to databases
         await connectDB();
         await connectRedis();
+
+        // Ensure admin user exists
+        await ensureAdminExists();
 
         app.listen(config.port, '0.0.0.0', () => {
             console.log('');

@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { Issue, Coordinates, IssueCategory, Organization, Severity } from '../types';
-import { CATEGORY_COLORS, MOCK_ORGANIZATIONS } from '../constants';
+import { CATEGORY_COLORS } from '../constants';
 import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, ArrowRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -278,6 +277,7 @@ function MapSizeHandler() {
 
 interface MapComponentProps {
   issues: Issue[];
+  organizations: Organization[];
   center: [number, number];
   onIssueClick: (issue: Issue) => void;
   onMapClick: (coords: Coordinates) => void;
@@ -291,7 +291,7 @@ interface MapComponentProps {
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
-  issues, center, onIssueClick, onMapClick, onOrgClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
+  issues, organizations, center, onIssueClick, onMapClick, onOrgClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
 
@@ -336,7 +336,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           hidden={showHeatmap}
         />
 
-        {canShowOrgs && MOCK_ORGANIZATIONS.map((org) => (
+        {canShowOrgs && organizations.map((org) => (
             <Marker
               key={org.id}
               position={[org.lat, org.lng]}

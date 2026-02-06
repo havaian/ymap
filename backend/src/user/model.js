@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema({
     blocked: {
         type: Boolean,
         default: false
+    },
+    organizationId: {
+        type: String
+    },
+    organizationName: {
+        type: String
     }
 }, {
     timestamps: true,

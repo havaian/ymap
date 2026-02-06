@@ -1,13 +1,7 @@
-
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
 import { Map, ShieldCheck, User as UserIcon, LogIn, Loader2, Info } from 'lucide-react';
-
-const MOCK_USERS = [
-  { id: '1', name: 'Администратор Хокимията', email: 'admin@realholat.uz', password: 'admin', role: UserRole.ADMIN, district: 'Ташкент (Гор. центр)' },
-  { id: '2', name: 'Тимур Алимов', email: 'timur@gmail.com', password: 'user1', role: UserRole.CITIZEN, district: 'Чиланзарский район' },
-  { id: '3', name: 'Нигора Саидова', email: 'nigora@mail.ru', password: 'user2', role: UserRole.CITIZEN, district: 'Юнусабадский район' },
-];
+import { authAPI } from '../services/api';
 
 interface LoginViewProps {
   onLogin: (user: User) => void;
@@ -19,26 +13,26 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    setTimeout(() => {
-      const user = MOCK_USERS.find(u => u.email === email && u.password === password);
-      if (user) {
-        onLogin({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          district: user.district
-        });
-      } else {
-        setError('Неверный email или пароль. Попробуйте admin / admin');
-      }
+    try {
+      const response = await authAPI.login({ email, password });
+      const { user, token } = response.data.data;
+      
+      // Store token
+      localStorage.setItem('token', token);
+      
+      // Call parent login handler
+      onLogin(user);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Неверный email или пароль');
+      console.error('Login error:', err);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -95,7 +89,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+              className="w-full bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -113,8 +107,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">Тестовые аккаунты:</p>
-                <p className="text-[10px] text-slate-400">admin@realholat.uz / admin (Админ)</p>
-                <p className="text-[10px] text-slate-400">timur@gmail.com / user1 (Гражданин)</p>
+                <p className="text-[10px] text-slate-400">admin@map.ytech.space</p>
+                <p className="text-[10px] text-slate-400">org_*@map.ytech.space</p>
               </div>
             </div>
           </div>

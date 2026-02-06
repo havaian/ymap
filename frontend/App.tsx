@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MapComponent } from './components/MapComponent';
 import { DetailSidebar } from './components/DetailSidebar';
@@ -14,19 +13,14 @@ import { AdminUserView } from './components/AdminUserView';
 import { AdminOrgModal } from './components/AdminOrgModal';
 import { MapPlusIcon } from './components/MapPlusIcon';
 import { Issue, Coordinates, Comment, IssueCategory, Organization, User, UserRole } from './types';
-import { MOCK_ISSUES, TASHKENT_CENTER, MOCK_ORGANIZATIONS, CATEGORY_COLORS } from './constants';
+import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
+import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
+import { authAPI } from './services/api';
 import { 
   Plus, Menu, Navigation, Locate, Building2, Flame, 
   ChevronDown, Car, Droplets, Zap, GraduationCap, 
   Stethoscope, Trash2, HelpCircle, Layers, ShieldCheck
 } from 'lucide-react';
-
-const MOCK_SYSTEM_USERS: User[] = [
-  { id: '1', name: 'Администратор Хокимията', email: 'admin@realholat.uz', role: UserRole.ADMIN, district: 'Ташкент (Гор. центр)' },
-  { id: '2', name: 'Тимур Алимов', email: 'timur@gmail.com', role: UserRole.CITIZEN, district: 'Чиланзарский район', blocked: false },
-  { id: '3', name: 'Нигора Саидова', email: 'nigora@mail.ru', role: UserRole.CITIZEN, district: 'Юнусабадский район', blocked: false },
-  { id: '4', name: 'Бобур Рахимов', email: 'bobur@test.uz', role: UserRole.CITIZEN, district: 'Сергели', blocked: true },
-];
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -34,9 +28,27 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
   
-  const [issues, setIssues] = useState<Issue[]>(MOCK_ISSUES);
-  const [organizations, setOrganizations] = useState<Organization[]>(MOCK_ORGANIZATIONS);
-  const [users, setUsers] = useState<User[]>(MOCK_SYSTEM_USERS);
+  // Use backend hooks instead of mock data
+  const { 
+    issues, 
+    loading: issuesLoading, 
+    addIssue, 
+    updateIssueStatus, 
+    deleteIssue, 
+    upvoteIssue, 
+    addComment: addCommentToIssue 
+  } = useIssues();
+  
+  const { 
+    organizations, 
+    loading: orgsLoading 
+  } = useOrganizations();
+  
+  const { 
+    users, 
+    loading: usersLoading, 
+    toggleBlockUser 
+  } = useUsers();
   
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [viewingOrg, setViewingOrg] = useState<Organization | null>(null);
@@ -106,7 +118,8 @@ const App: React.FC = () => {
     root.style.fontSize = sizes[fontSize];
   }, [fontSize]);
 
-  const handleLogin = (user: User) => {
+  const handleLogin = async (user: User) => {
+    // This is handled by LoginView component with backend
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
     addToast(`Добро пожаловать, ${user.name}!`);
@@ -115,6 +128,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
     setIsMenuOpen(false);
     addToast("Вы вышли из системы");
   };
@@ -178,38 +192,46 @@ const App: React.FC = () => {
     if (activeView !== 'MAP') setActiveView('MAP');
   };
 
-  const handleUpdateStatus = (issueId: string, status: 'Open' | 'In Progress' | 'Resolved') => {
-    setIssues(issues.map(i => i.id === issueId ? { ...i, status } : i));
-    if (selectedIssue?.id === issueId) {
-      setSelectedIssue(prev => prev ? { ...prev, status } : null);
-    }
-    addToast(`Статус изменен на: ${status}`);
-  };
-
-  const handleDeleteIssue = (issueId: string) => {
-    setIssues(issues.filter(i => i.id !== issueId));
-    setSelectedIssue(null);
-    addToast("Обращение удалено модератором");
-  };
-
-  const handleToggleBlock = (userId: string) => {
-    setUsers(users.map(u => {
-      if (u.id === userId) {
-        const newState = !u.blocked;
-        addToast(newState ? "Пользователь заблокирован" : "Доступ восстановлен", newState ? "error" : "success");
-        return { ...u, blocked: newState };
+  const handleUpdateStatus = async (issueId: string, status: 'Open' | 'In Progress' | 'Resolved') => {
+    const result = await updateIssueStatus(issueId, status);
+    if (result.success) {
+      if (selectedIssue?.id === issueId) {
+        setSelectedIssue(prev => prev ? { ...prev, status } : null);
       }
-      return u;
-    }));
+      addToast(`Статус изменен на: ${status}`);
+    } else {
+      addToast(result.error || 'Ошибка изменения статуса', 'error');
+    }
+  };
+
+  const handleDeleteIssue = async (issueId: string) => {
+    const result = await deleteIssue(issueId);
+    if (result.success) {
+      setSelectedIssue(null);
+      addToast("Обращение удалено модератором");
+    } else {
+      addToast(result.error || 'Ошибка удаления', 'error');
+    }
+  };
+
+  const handleToggleBlock = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    
+    const result = await toggleBlockUser(userId, user.blocked || false);
+    if (result.success) {
+      addToast(
+        !user.blocked ? "Пользователь заблокирован" : "Доступ восстановлен", 
+        !user.blocked ? "error" : "success"
+      );
+    } else {
+      addToast(result.error || 'Ошибка блокировки', 'error');
+    }
   };
 
   const handleAddOrg = (orgData: Omit<Organization, 'id'>) => {
-    const newOrg: Organization = {
-      id: `org-custom-${Date.now()}`,
-      ...orgData
-    };
-    setOrganizations([...organizations, newOrg]);
-    addToast("Новое учреждение добавлено на карту!");
+    // TODO: Add API call when backend supports it
+    addToast("Функция добавления организаций скоро будет доступна!");
   };
 
   const handleReportAtOrg = (org: Organization) => {
@@ -244,9 +266,8 @@ const App: React.FC = () => {
     setTriggerLocate(prev => prev + 1);
   };
 
-  const handleAddIssue = (data: any) => {
-    const newIssue: Issue = {
-      id: Date.now().toString(),
+  const handleAddIssue = async (data: any) => {
+    const issueData = {
       lat: selectedLocation?.lat || TASHKENT_CENTER[0],
       lng: selectedLocation?.lng || TASHKENT_CENTER[1],
       title: data.title,
@@ -256,38 +277,47 @@ const App: React.FC = () => {
       severity: data.severity,
       aiSummary: data.summary,
       organizationId: data.organizationId,
-      organizationName: data.organizationName,
-      status: 'Open',
-      votes: 1,
-      comments: [],
-      createdAt: Date.now()
+      organizationName: data.organizationName
     };
-    setIssues([newIssue, ...issues]);
-    setIsModalOpen(false);
-    setSelectedLocation(null);
-    setSelectedOrg(null);
-    setSelectedIssue(newIssue);
-    addToast("Отчет успешно отправлен!");
-  };
 
-  const handleAddComment = (issueId: string, text: string) => {
-    const authorName = currentUser?.name || 'Гражданин';
-    const newComment: Comment = {
-      id: Date.now().toString(), author: authorName, text, timestamp: Date.now()
-    };
-    setIssues(issues.map(i => i.id === issueId ? { ...i, comments: [newComment, ...i.comments] } : i));
-    if (selectedIssue?.id === issueId) {
-        setSelectedIssue(prev => prev ? { ...prev, comments: [newComment, ...prev.comments] } : null);
+    const result = await addIssue(issueData);
+    
+    if (result.success) {
+      setIsModalOpen(false);
+      setSelectedLocation(null);
+      setSelectedOrg(null);
+      setSelectedIssue(result.issue);
+      addToast("Отчет успешно отправлен!");
+    } else {
+      addToast(result.error || 'Ошибка создания обращения', 'error');
     }
-    addToast("Комментарий добавлен.");
   };
 
-  const handleUpvote = (issueId: string) => {
-     setIssues(issues.map(i => i.id === issueId ? { ...i, votes: i.votes + 1 } : i));
-     if (selectedIssue?.id === issueId) {
-         setSelectedIssue(prev => prev ? { ...prev, votes: prev.votes + 1 } : null);
-     }
-     addToast("Вы поддержали это обращение!");
+  const handleAddComment = async (issueId: string, text: string) => {
+    const result = await addCommentToIssue(issueId, text);
+    if (result.success) {
+      if (selectedIssue?.id === issueId && result.comment) {
+        setSelectedIssue(prev => prev ? { ...prev, comments: [result.comment, ...prev.comments] } : null);
+      }
+      addToast("Комментарий добавлен.");
+    } else {
+      addToast(result.error || 'Ошибка добавления комментария', 'error');
+    }
+  };
+
+  const handleUpvote = async (issueId: string) => {
+    const result = await upvoteIssue(issueId);
+    if (result.success) {
+      if (selectedIssue?.id === issueId) {
+        const updatedIssue = issues.find(i => i.id === issueId);
+        if (updatedIssue) {
+          setSelectedIssue(updatedIssue);
+        }
+      }
+      addToast("Вы поддержали это обращение!");
+    } else {
+      addToast(result.error || 'Ошибка голосования', 'error');
+    }
   };
 
   const getCategoryIcon = (category: IssueCategory | 'ALL') => {
@@ -302,6 +332,18 @@ const App: React.FC = () => {
       default: return <HelpCircle size={18} />;
     }
   };
+
+  // Show loading state
+  if (issuesLoading || orgsLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400 font-bold">Загрузка данных...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -401,7 +443,8 @@ const App: React.FC = () => {
               )}
             </div>
             <MapComponent 
-                issues={mapIssues} 
+                issues={mapIssues}
+                organizations={organizations}
                 center={TASHKENT_CENTER} 
                 onIssueClick={handleSelectIssue}
                 onMapClick={handleMapClick}
@@ -441,7 +484,7 @@ const App: React.FC = () => {
         ) : activeView === 'USERS' ? (
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
         ) : (
-          <StatisticsView issues={issues} />
+          <StatisticsView issues={issues} organizations={organizations} />
         )}
       </main>
 

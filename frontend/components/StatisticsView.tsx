@@ -1,7 +1,6 @@
-
 import React, { useMemo } from 'react';
-import { Issue, IssueCategory, Severity } from '../types';
-import { CATEGORY_COLORS, MOCK_ORGANIZATIONS } from '../constants';
+import { Issue, IssueCategory, Severity, Organization } from '../types';
+import { CATEGORY_COLORS } from '../constants';
 import { 
   BarChart3, TrendingUp, Users, CheckCircle2, AlertCircle, 
   PieChart, Building2, Map as MapIcon, Calendar, ArrowUpRight 
@@ -9,9 +8,10 @@ import {
 
 interface StatisticsViewProps {
   issues: Issue[];
+  organizations: Organization[];
 }
 
-export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues }) => {
+export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organizations }) => {
   const stats = useMemo(() => {
     const total = issues.length;
     const resolved = issues.filter(i => i.status === 'Resolved').length;
@@ -50,7 +50,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues }) => {
 
       // Org type stats
       if (i.organizationId) {
-        const org = MOCK_ORGANIZATIONS.find(o => o.id === i.organizationId);
+        const org = organizations.find(o => o.id === i.organizationId);
         if (org?.type === IssueCategory.EDUCATION) byOrgType['Образование']++;
         else if (org?.type === IssueCategory.HEALTH) byOrgType['Здравоохранение']++;
       } else {
@@ -70,7 +70,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues }) => {
       totalVotes,
       efficiency: Math.round((resolved / total) * 100)
     };
-  }, [issues]);
+  }, [issues, organizations]);
 
   const maxCategoryCount = Math.max(...stats.byCategory.map(c => c[1]));
   const maxDistrictCount = Math.max(...stats.byDistrict.map(d => d[1]));

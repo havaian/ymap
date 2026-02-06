@@ -1,0 +1,15 @@
+import express from 'express';
+import { getIssues, getIssue, createIssue, updateIssue, deleteIssue, voteIssue } from './controller.js';
+import { authMiddleware } from '../middleware/auth.js';
+import { adminOnly } from '../middleware/adminOnly.js';
+
+const router = express.Router();
+
+router.get('/', getIssues);
+router.get('/:id', getIssue);
+router.post('/', authMiddleware, createIssue);
+router.patch('/:id', authMiddleware, adminOnly, updateIssue);
+router.delete('/:id', authMiddleware, adminOnly, deleteIssue);
+router.post('/:id/vote', authMiddleware, voteIssue);
+
+export default router;

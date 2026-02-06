@@ -9,15 +9,58 @@ services:
       target: production
       args:
         GEMINI_API_KEY: ${GEMINI_API_KEY}
-    container_name: ${PROJECT_NAME:-atabai}-frontend-prod
+    container_name: ${PROJECT_NAME:-real-holat-2025}-frontend
     restart: unless-stopped
     volumes:
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "${FRONTEND_EXPOSE:-127.0.0.1:80}:${FRONTEND_PROD_PORT}"
+    depends_on:
+      - backend
     networks:
-      - atabai-network
+      - real-holat-2025-network
+
+  # Backend API Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-real-holat-2025}-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - BACKEND_PORT=${BACKEND_PORT:-4000}
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - UPLOADS_DIR=/app/uploads
+    volumes:
+      - ${UPLOADS_DIR:-./uploads}:/app/uploads
+    ports:
+      - "${BACKEND_EXPOSE:-127.0.0.1:4000}:${BACKEND_PORT:-4000}"
+    depends_on:
+      - redis
+    networks:
+      - real-holat-2025-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME:-real-holat-2025}-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - real-holat-2025-network
+
+volumes:
+  redis-data:
 
 networks:
-  atabai-network:
+  real-holat-2025-network:
     driver: bridge

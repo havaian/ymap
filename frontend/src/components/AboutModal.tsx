@@ -25,7 +25,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                <Map size={24} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Real<span className="text-blue-600">Holat</span></h2>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Y.<span className="text-blue-600">Map</span></h2>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Digital Civic Infrastructure Ecosystem</p>
             </div>
           </div>
@@ -43,7 +43,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                 Наша Миссия
               </h3>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                <strong className="text-slate-800 dark:text-white">RealHolat (Реальная Ситуация)</strong> — это цифровая платформа следующего поколения для улучшения социальной инфраструктуры Узбекистана. Мы верим, что современные технологии могут сделать взаимодействие гражданина и государства мгновенным, прозрачным и эффективным. 
+                <strong className="text-slate-800 dark:text-white">Y.Map</strong> — это цифровая платформа следующего поколения для улучшения социальной инфраструктуры Узбекистана. Мы верим, что современные технологии могут сделать взаимодействие гражданина и государства мгновенным, прозрачным и эффективным. 
                 Наша цель — создать среду, где каждый отчет превращается в конкретное действие.
               </p>
             </section>

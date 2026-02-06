@@ -382,7 +382,7 @@ const App: React.FC = () => {
           <MapPlusIcon onClick={() => setActiveView('MAP')} />
           <div className="hidden sm:block">
             <div className="flex items-center gap-2">
-               <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Real<span className="text-blue-600">Holat</span></h1>
+               <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Y.<span className="text-blue-600">Map</span></h1>
                {currentUser.role === UserRole.ADMIN && (
                  <span className="bg-red-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md flex items-center gap-1">
                    <ShieldCheck size={8} /> Admin

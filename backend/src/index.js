@@ -78,7 +78,7 @@ const startServer = async () => {
         app.listen(config.port, '0.0.0.0', () => {
             console.log('');
             console.log('🚀 ========================================');
-            console.log(`🚀 RealHolat Backend API`);
+            console.log(`🚀 Y.Map Backend API`);
             console.log(`🚀 Server running on port ${config.port}`);
             console.log(`🚀 Environment: ${config.nodeEnv}`);
             console.log('🚀 ========================================');

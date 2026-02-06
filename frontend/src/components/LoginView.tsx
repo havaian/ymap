@@ -44,7 +44,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl mb-4 shadow-xl">
             <Map size={32} />
           </div>
-          <h2 className="text-3xl font-black tracking-tight mb-2">RealHolat</h2>
+          <h2 className="text-3xl font-black tracking-tight mb-2">Y.Map</h2>
           <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Цифровая инфраструктура</p>
         </div>
 

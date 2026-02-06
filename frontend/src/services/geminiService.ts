@@ -17,7 +17,7 @@ export const analyzeReportWithGemini = async (userDescription: string): Promise<
     const model = "gemini-3-flash-preview";
     
     const prompt = `
-      You are an AI assistant for a civic infrastructure app in Uzbekistan called 'RealHolat'.
+      You are an AI assistant for a civic infrastructure app in Uzbekistan called 'Y.Map'.
       Analyze the following user report description about a city problem.
       
       User Report: "${userDescription}"

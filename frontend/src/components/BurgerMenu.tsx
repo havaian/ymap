@@ -43,7 +43,7 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
               <div className="bg-blue-600 p-2 rounded-lg text-white shadow-md shadow-blue-500/20">
                 <Map className="w-5 h-5" />
               </div>
-              <span className="font-black text-xl tracking-tight text-slate-800 dark:text-white">RealHolat</span>
+              <span className="font-black text-xl tracking-tight text-slate-800 dark:text-white">Y.Map</span>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition text-slate-500 dark:text-slate-400">
               <X size={20} />

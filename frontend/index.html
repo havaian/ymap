@@ -179,10 +179,13 @@
         z-index: 200 !important;
       }
       
-      .leaflet-tile-container {
-        position: absolute !important;
-        width: 100% !important;
-        height: 100% !important;
+      /* Only show the first tile container */
+      .leaflet-tile-pane > .leaflet-layer:not(:first-child) {
+        display: none !important;
+      }
+      
+      .leaflet-tile {
+        opacity: 1 !important;
       }
     </style>
   <script type="importmap">

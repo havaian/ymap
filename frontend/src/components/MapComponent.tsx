@@ -264,6 +264,18 @@ function MapSizeHandler() {
   const map = useMap();
   
   useEffect(() => {
+    // Remove any duplicate tile layers that might exist
+    let tileLayerCount = 0;
+    map.eachLayer((layer) => {
+      if (layer instanceof L.TileLayer) {
+        tileLayerCount++;
+        // If we find more than one tile layer, remove it
+        if (tileLayerCount > 1) {
+          map.removeLayer(layer);
+        }
+      }
+    });
+
     // Invalidate size when component mounts
     const timer = setTimeout(() => {
       map.invalidateSize();
@@ -278,39 +290,40 @@ function MapSizeHandler() {
 function TileLayerManager({ tileUrl }: { tileUrl: string }) {
   const map = useMap();
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    // Remove existing tile layer if it exists
-    if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
-      tileLayerRef.current = null;
-    }
+    // Remove ALL existing tile layers first (in case of duplicates)
+    map.eachLayer((layer) => {
+      if (layer instanceof L.TileLayer) {
+        map.removeLayer(layer);
+      }
+    });
 
-    // Create new tile layer
+    // Create and add new tile layer
     const newTileLayer = L.tileLayer(tileUrl, {
       attribution: '',
       subdomains: 'abcd',
       maxZoom: 19,
       minZoom: 3,
       tileSize: 256,
-      zoomOffset: 0,
       detectRetina: true,
       updateWhenIdle: false,
       updateWhenZooming: false,
       keepBuffer: 4,
-      crossOrigin: true,
-      className: 'leaflet-tile-container'
+      crossOrigin: true
     });
 
     newTileLayer.addTo(map);
     tileLayerRef.current = newTileLayer;
+    isInitialized.current = true;
 
-    // Cleanup function
+    // Cleanup on unmount or URL change
     return () => {
-      if (tileLayerRef.current) {
+      if (tileLayerRef.current && map.hasLayer(tileLayerRef.current)) {
         map.removeLayer(tileLayerRef.current);
-        tileLayerRef.current = null;
       }
+      tileLayerRef.current = null;
     };
   }, [map, tileUrl]);
 

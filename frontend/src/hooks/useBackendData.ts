@@ -3,9 +3,9 @@ import { issuesAPI, organizationsAPI, adminAPI } from '../services/api';
 import { Issue, Organization, User } from '../types';
 
 export const useIssues = () => {
-    const [issues, setIssues] = useState < Issue[] > ([]);
+    const [issues, setIssues] = useState<Issue[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState < string | null > (null);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchIssues = async () => {
         try {

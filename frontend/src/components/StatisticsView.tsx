@@ -250,7 +250,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organiza
         {/* Footer info */}
         <div className="text-center py-4">
            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-[0.4em]">
-              Y.Map Open Data Project • 2026 • By Y.Tech
+              Y.Map • 2026 • By Y.Tech
            </p>
         </div>
 

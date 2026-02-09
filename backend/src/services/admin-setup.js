@@ -3,7 +3,7 @@ import { hashPassword } from '../utils/bcrypt.js';
 
 export const ensureAdminExists = async () => {
     try {
-        const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@map.ytech.space';
+        const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
         const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
 
         if (!adminPassword) {
@@ -30,8 +30,8 @@ export const ensureAdminExists = async () => {
         });
 
         console.log('✅ Admin user created successfully');
-        console.log(`   Email: ${adminEmail}`);
-        console.log(`   Password: ${adminPassword}`);
+        console.log(`   Email: ${adminEmail ? '👌' : '🙅‍♂️'}`);
+        console.log(`   Password: ${adminPassword ? '👌' : '🙅‍♂️'}`);
     } catch (error) {
         console.error('❌ Failed to create admin user:', error);
     }

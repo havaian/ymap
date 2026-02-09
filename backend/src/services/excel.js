@@ -1,23 +1,43 @@
+// ============================================
+// FIX 3: backend/src/services/excel.js
+// ============================================
+// REPLACE THE ENTIRE FILE with this code:
+
 import xlsx from 'xlsx';
 import Organization from '../organization/model.js';
 import Infrastructure from '../infrastructure/model.js';
 import { transformExcelRowToOrganization, transformExcelRowToInfrastructure } from './transform.js';
 import { createOrganizationUser } from './org-user-generator.js';
 
+// Updated mapping for Uzbek sector names
 const SECTOR_TO_COLLECTION_MAP = {
-    'maktab': 'organization', // Schools
-    'ssv': 'organization',    // Hospitals
-    'road': 'infrastructure', // Roads
-    'suv': 'infrastructure'   // Water
+    "ta'lim": 'organization',  // Schools/Education (was 'maktab')
+    "sog'liq": 'organization', // Hospitals/Healthcare (was 'ssv')
+    "yo'l": 'infrastructure',  // Roads (was 'road')
+    'suv': 'infrastructure'    // Water & Sewage (unchanged)
 };
 
 export const importOrganizationsFromExcel = async (filePath) => {
+    // Read Excel file, skipping first row (disclaimer header)
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const rows = xlsx.utils.sheet_to_json(worksheet);
+    const rows = xlsx.utils.sheet_to_json(worksheet, {
+        header: 1,      // Get raw array
+        defval: null    // Use null for empty cells
+    });
 
-    console.log(`📊 Importing ${rows.length} objects from Excel...`);
+    // Skip first row (disclaimer) and second row becomes headers
+    const headers = rows[1];
+    const dataRows = rows.slice(2).map(row => {
+        const obj = {};
+        headers.forEach((header, index) => {
+            obj[header] = row[index];
+        });
+        return obj;
+    });
+
+    console.log(`📊 Importing ${dataRows.length} objects from Excel...`);
 
     let organizationsImported = 0;
     let infrastructureImported = 0;
@@ -26,17 +46,19 @@ export const importOrganizationsFromExcel = async (filePath) => {
     const errors = [];
     const credentials = []; // Store generated credentials
 
-    for (const row of rows) {
+    for (const row of dataRows) {
         try {
-            const latitude = parseFloat(row.latitude || row.lat || row.Latitude);
-            const longitude = parseFloat(row.longitude || row.lng || row.lon || row.Longitude);
+            // Use 'lat' and 'lon' columns (not 'latitude' and 'longitude')
+            const latitude = parseFloat(row.lat || row.latitude || row.Latitude);
+            const longitude = parseFloat(row.lon || row.lng || row.longitude || row.Longitude);
 
             if (isNaN(latitude) || isNaN(longitude)) {
                 skipped++;
                 continue;
             }
 
-            const sector = (row.sector || row.Sector || '').toLowerCase();
+            // Get sector and normalize to lowercase
+            const sector = (row.sector || row.Sector || '').toLowerCase().trim();
             const collectionType = SECTOR_TO_COLLECTION_MAP[sector];
 
             if (!collectionType) {
@@ -90,7 +112,7 @@ export const importOrganizationsFromExcel = async (filePath) => {
     console.log(`✅ Import complete: ${organizationsImported} organizations, ${infrastructureImported} infrastructure, ${usersCreated} users created, ${skipped} skipped`);
 
     return {
-        total: rows.length,
+        total: dataRows.length,
         organizations: organizationsImported,
         infrastructure: infrastructureImported,
         usersCreated,

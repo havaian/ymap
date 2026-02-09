@@ -153,6 +153,7 @@ const App: React.FC = () => {
   }, []);
 
   const mapIssues = useMemo(() => {
+    if (!issues || !Array.isArray(issues)) return [];
     let filtered = issues.filter(issue => issue.status !== 'Resolved');
     if (selectedIssue && selectedIssue.status === 'Resolved') {
       if (!filtered.find(f => f.id === selectedIssue.id)) {

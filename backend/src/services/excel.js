@@ -1,33 +1,25 @@
-// ============================================
-// FIX 3: backend/src/services/excel.js
-// ============================================
-// REPLACE THE ENTIRE FILE with this code:
-
 import xlsx from 'xlsx';
 import Organization from '../organization/model.js';
 import Infrastructure from '../infrastructure/model.js';
 import { transformExcelRowToOrganization, transformExcelRowToInfrastructure } from './transform.js';
 import { createOrganizationUser } from './org-user-generator.js';
 
-// Updated mapping for Uzbek sector names
 const SECTOR_TO_COLLECTION_MAP = {
-    "ta'lim": 'organization',  // Schools/Education (was 'maktab')
-    "sog'liq": 'organization', // Hospitals/Healthcare (was 'ssv')
-    "yo'l": 'infrastructure',  // Roads (was 'road')
-    'suv': 'infrastructure'    // Water & Sewage (unchanged)
+    "ta'lim": 'organization',
+    "sog'liq": 'organization',
+    "yo'l": 'infrastructure',
+    'suv': 'infrastructure'
 };
 
 export const importOrganizationsFromExcel = async (filePath) => {
-    // Read Excel file, skipping first row (disclaimer header)
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const rows = xlsx.utils.sheet_to_json(worksheet, {
-        header: 1,      // Get raw array
-        defval: null    // Use null for empty cells
+        header: 1,
+        defval: null
     });
 
-    // Skip first row (disclaimer) and second row becomes headers
     const headers = rows[1];
     const dataRows = rows.slice(2).map(row => {
         const obj = {};
@@ -38,31 +30,47 @@ export const importOrganizationsFromExcel = async (filePath) => {
     });
 
     console.log(`📊 Importing ${dataRows.length} objects from Excel...`);
+    console.log(`📋 Headers: ${headers.join(', ')}`);
 
     let organizationsImported = 0;
     let infrastructureImported = 0;
     let usersCreated = 0;
     let skipped = 0;
     const errors = [];
-    const credentials = []; // Store generated credentials
+    const credentials = [];
+
+    let processedCount = 0;
+    const totalRows = dataRows.length;
 
     for (const row of dataRows) {
+        processedCount++;
+
+        // Progress logging every 1000 rows
+        if (processedCount % 1000 === 0) {
+            console.log(`⏳ Progress: ${processedCount}/${totalRows} (${Math.round(processedCount / totalRows * 100)}%)`);
+            console.log(`   ✅ Orgs: ${organizationsImported}, Infrastructure: ${infrastructureImported}, Skipped: ${skipped}`);
+        }
+
         try {
-            // Use 'lat' and 'lon' columns (not 'latitude' and 'longitude')
             const latitude = parseFloat(row.lat || row.latitude || row.Latitude);
             const longitude = parseFloat(row.lon || row.lng || row.longitude || row.Longitude);
 
             if (isNaN(latitude) || isNaN(longitude)) {
                 skipped++;
+                if (skipped <= 5) {
+                    console.log(`⚠️  Row ${processedCount}: Missing coordinates (lat: ${row.lat}, lon: ${row.lon})`);
+                }
                 continue;
             }
 
-            // Get sector and normalize to lowercase
             const sector = (row.sector || row.Sector || '').toLowerCase().trim();
             const collectionType = SECTOR_TO_COLLECTION_MAP[sector];
 
             if (!collectionType) {
                 skipped++;
+                if (skipped <= 5) {
+                    console.log(`⚠️  Row ${processedCount}: Unknown sector '${sector}'`);
+                }
                 continue;
             }
 
@@ -77,7 +85,6 @@ export const importOrganizationsFromExcel = async (filePath) => {
 
                 organizationsImported++;
 
-                // Create user account for this organization
                 try {
                     const userResult = await createOrganizationUser(orgData, result._id.toString());
                     if (userResult.isNew) {
@@ -90,7 +97,7 @@ export const importOrganizationsFromExcel = async (filePath) => {
                         });
                     }
                 } catch (userError) {
-                    console.error(`Failed to create user for org ${orgData.name}:`, userError.message);
+                    console.error(`❌ User creation failed for org ${orgData.name}:`, userError.message);
                 }
 
             } else if (collectionType === 'infrastructure') {
@@ -104,12 +111,28 @@ export const importOrganizationsFromExcel = async (filePath) => {
             }
 
         } catch (error) {
-            errors.push({ row, error: error.message });
+            errors.push({ row: processedCount, error: error.message, stack: error.stack });
             skipped++;
+
+            // Log first 10 errors in detail
+            if (errors.length <= 10) {
+                console.error(`❌ ERROR at row ${processedCount}:`, error.message);
+                console.error(`   Data sample:`, {
+                    name: row.name,
+                    sector: row.sector,
+                    lat: row.lat,
+                    lon: row.lon
+                });
+            }
         }
     }
 
     console.log(`✅ Import complete: ${organizationsImported} organizations, ${infrastructureImported} infrastructure, ${usersCreated} users created, ${skipped} skipped`);
+
+    if (errors.length > 0) {
+        console.error(`⚠️  Total errors: ${errors.length}`);
+        console.error(`First 5 errors:`, errors.slice(0, 5));
+    }
 
     return {
         total: dataRows.length,
@@ -118,6 +141,6 @@ export const importOrganizationsFromExcel = async (filePath) => {
         usersCreated,
         skipped,
         errors: errors.slice(0, 10),
-        credentials: credentials.slice(0, 100) // Return first 100 credentials for reference
+        credentials: credentials.slice(0, 100)
     };
 };

@@ -10,6 +10,7 @@ import { StatisticsView } from './components/StatisticsView';
 import { BurgerMenu } from './components/BurgerMenu';
 import { LoginView } from './components/LoginView';
 import { AdminUserView } from './components/AdminUserView';
+import { AdminDataView } from './components/AdminDataView';
 import { AdminOrgModal } from './components/AdminOrgModal';
 import { MapPlusIcon } from './components/MapPlusIcon';
 import { Issue, Coordinates, Comment, IssueCategory, Organization, User, UserRole } from '../types';
@@ -63,7 +64,7 @@ const App: React.FC = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'MAP' | 'LIST' | 'STATISTICS' | 'USERS'>('MAP');
+  const [activeView, setActiveView] = useState<'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA'>('MAP');
   
   const [activeFilter, setActiveFilter] = useState<IssueCategory | 'ALL'>('ALL');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -153,7 +154,9 @@ const App: React.FC = () => {
   }, []);
 
   const mapIssues = useMemo(() => {
+    // Safety guard: ensure issues is a valid array before filtering
     if (!issues || !Array.isArray(issues)) return [];
+    
     let filtered = issues.filter(issue => issue.status !== 'Resolved');
     if (selectedIssue && selectedIssue.status === 'Resolved') {
       if (!filtered.find(f => f.id === selectedIssue.id)) {
@@ -398,7 +401,7 @@ const App: React.FC = () => {
              {currentUser.role === UserRole.ADMIN && (
                <button 
                 onClick={() => { setIsAdminOrgAddingMode(true); setActiveView('MAP'); }} 
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition duration-300 ${isAdminOrgAddingMode ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'bg-slate-100 dark:bg-slate-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition duration-300 ${isAdminOrgAddingMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
                >
                  <Building2 className="w-3.5 h-3.5" />
                  <span className="hidden md:inline">+ Объект</span>
@@ -419,7 +422,7 @@ const App: React.FC = () => {
         {activeView === 'MAP' ? (
           <>
             <div className="absolute top-6 left-6 z-[399] flex flex-col" ref={filterRef}>
-              <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl font-black text-sm shadow-2xl transition-all border-2 outline-none ${isFilterOpen ? 'bg-white dark:bg-slate-800 border-blue-500 text-blue-600 scale-105' : 'bg-gradient-to-r from-blue-600 to-indigo-600 border-transparent text-white hover:shadow-blue-500/20'}`}>
+              <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl font-black text-sm shadow-2xl transition-all border-2 outline-none ${isFilterOpen ? 'bg-white dark:bg-slate-800 border-blue-500 text-blue-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600 border-transparent text-white hover:shadow-blue-500/20'}`}>
                 <div className={`${isFilterOpen ? 'text-blue-600' : 'text-white'}`}>{getCategoryIcon(activeFilter)}</div>
                 <span className="whitespace-nowrap uppercase tracking-wider">{activeFilter === 'ALL' ? 'Все проблемы' : activeFilter}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180 text-blue-600' : 'text-white/80'}`} />
@@ -484,6 +487,8 @@ const App: React.FC = () => {
           <ListView issues={issues} onSelectIssue={handleSelectFromList} />
         ) : activeView === 'USERS' ? (
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
+        ) : activeView === 'DATA' ? (
+          <AdminDataView onDataImported={() => window.location.reload()} />
         ) : (
           <StatisticsView issues={issues} organizations={organizations} />
         )}

@@ -1,13 +1,12 @@
-
 import React from 'react';
-import { Map, List, BarChart3, Info, X, LogOut, Settings, Sun, Moon, Monitor, Type, ShieldCheck, User as UserIcon, Users } from 'lucide-react';
+import { Map, List, BarChart3, Info, X, LogOut, Settings, Sun, Moon, Monitor, Type, ShieldCheck, User as UserIcon, Users, Database } from 'lucide-react';
 import { User, UserRole } from '../../types';
 
 interface BurgerMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  activeView: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS';
-  onSelectView: (view: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS') => void;
+  activeView: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA';
+  onSelectView: (view: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA') => void;
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   fontSize: 'small' | 'medium' | 'large';
@@ -105,11 +104,20 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
               <button 
                 onClick={() => onSelectView('USERS')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
-                  ${activeView === 'USERS' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-800'}
+                  ${activeView === 'USERS' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'}
                 `}
               >
                 <Users className="w-5 h-5" />
                 Пользователи
+              </button>
+              <button 
+                onClick={() => onSelectView('DATA')}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
+                  ${activeView === 'DATA' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'}
+                `}
+              >
+                <Database className="w-5 h-5" />
+                Управление данными
               </button>
             </>
           )}

@@ -264,18 +264,6 @@ function MapSizeHandler() {
   const map = useMap();
   
   useEffect(() => {
-    // Remove any duplicate tile layers that might exist
-    let tileLayerCount = 0;
-    map.eachLayer((layer) => {
-      if (layer instanceof L.TileLayer) {
-        tileLayerCount++;
-        // If we find more than one tile layer, remove it
-        if (tileLayerCount > 1) {
-          map.removeLayer(layer);
-        }
-      }
-    });
-
     // Invalidate size when component mounts
     const timer = setTimeout(() => {
       map.invalidateSize();
@@ -284,49 +272,6 @@ function MapSizeHandler() {
     return () => clearTimeout(timer);
   }, [map]);
   
-  return null;
-}
-
-function TileLayerManager({ tileUrl }: { tileUrl: string }) {
-  const map = useMap();
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const isInitialized = useRef(false);
-
-  useEffect(() => {
-    // Remove ALL existing tile layers first (in case of duplicates)
-    map.eachLayer((layer) => {
-      if (layer instanceof L.TileLayer) {
-        map.removeLayer(layer);
-      }
-    });
-
-    // Create and add new tile layer
-    const newTileLayer = L.tileLayer(tileUrl, {
-      attribution: '',
-      subdomains: 'abcd',
-      maxZoom: 19,
-      minZoom: 3,
-      tileSize: 256,
-      detectRetina: true,
-      updateWhenIdle: false,
-      updateWhenZooming: false,
-      keepBuffer: 4,
-      crossOrigin: true
-    });
-
-    newTileLayer.addTo(map);
-    tileLayerRef.current = newTileLayer;
-    isInitialized.current = true;
-
-    // Cleanup on unmount or URL change
-    return () => {
-      if (tileLayerRef.current && map.hasLayer(tileLayerRef.current)) {
-        map.removeLayer(tileLayerRef.current);
-      }
-      tileLayerRef.current = null;
-    };
-  }, [map, tileUrl]);
-
   return null;
 }
 
@@ -349,7 +294,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   issues, organizations, center, onIssueClick, onMapClick, onOrgClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   const orgUnresolvedCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -378,7 +322,22 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         markerZoomAnimation={true}
       >
         <MapSizeHandler />
-        <TileLayerManager tileUrl={tileUrl} />
+        <TileLayer
+          key={tileUrl}
+          url={tileUrl}
+          attribution=""
+          subdomains="abcd"
+          maxZoom={19}
+          minZoom={3}
+          tileSize={256}
+          zoomOffset={0}
+          detectRetina={true}
+          updateWhenIdle={false}
+          updateWhenZooming={false}
+          keepBuffer={4}
+          crossOrigin={true}
+          className="leaflet-tile-container"
+        />
         
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />
 

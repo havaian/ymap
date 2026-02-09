@@ -1,11 +1,17 @@
 import express from 'express';
-import { register, login, getMe } from './controller.js';
+import { adminGetUsers, adminBlockUser, uploadOrganizations, seedData, clearSeeded } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { adminOnly } from '../middleware/adminOnly.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.get('/me', authMiddleware, getMe);
+router.use(authMiddleware, adminOnly);
+
+router.get('/users', adminGetUsers);
+router.patch('/users/:id/block', adminBlockUser);
+router.post('/upload/organizations', upload.single('file'), uploadOrganizations);
+router.post('/seed/generate', seedData);
+router.delete('/seed/clear', clearSeeded);
 
 export default router;

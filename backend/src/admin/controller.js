@@ -1,110 +1,42 @@
-import User from '../user/model.js';
-import { hashPassword, comparePassword } from '../utils/bcrypt.js';
-import { generateToken } from '../utils/jwt.js';
-import { validateEmail, validatePassword } from '../utils/validators.js';
+import { getUsers, blockUser } from '../user/controller.js';
+import { importOrganizationsFromExcel } from '../services/excel.js';
+import { generateMockData, clearSeededData } from '../services/seeder.js';
 
-export const register = async (req, res) => {
-    const { name, email, password, district } = req.body;
+export const adminGetUsers = getUsers;
+export const adminBlockUser = blockUser;
 
-    if (!name || !email || !password) {
+export const uploadOrganizations = async (req, res) => {
+    if (!req.file) {
         return res.status(400).json({
             success: false,
-            message: 'Name, email and password are required'
+            message: 'No file uploaded'
         });
     }
 
-    if (!validateEmail(email)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid email format'
-        });
-    }
-
-    if (!validatePassword(password)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Password must be at least 6 characters'
-        });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email already registered'
-        });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    const user = await User.create({
-        name,
-        email,
-        password: hashedPassword,
-        district: district || null,
-        role: 'CITIZEN'
-    });
-
-    const token = generateToken({ userId: user._id });
-
-    res.status(201).json({
-        success: true,
-        data: {
-            user: user.toJSON(),
-            token
-        }
-    });
-};
-
-export const login = async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email and password are required'
-        });
-    }
-
-    const user = await User.findOne({ email }).select('+password');
-
-    if (!user) {
-        return res.status(401).json({
-            success: false,
-            message: 'Invalid credentials'
-        });
-    }
-
-    if (user.blocked) {
-        return res.status(403).json({
-            success: false,
-            message: 'Your account has been blocked'
-        });
-    }
-
-    const isValidPassword = await comparePassword(password, user.password);
-
-    if (!isValidPassword) {
-        return res.status(401).json({
-            success: false,
-            message: 'Invalid credentials'
-        });
-    }
-
-    const token = generateToken({ userId: user._id });
+    const result = await importOrganizationsFromExcel(req.file.path);
 
     res.json({
         success: true,
-        data: {
-            user: user.toJSON(),
-            token
-        }
+        data: result
     });
 };
 
-export const getMe = async (req, res) => {
+export const seedData = async (req, res) => {
+    const { issuesCount = 1000, includeComments = true } = req.body;
+
+    const result = await generateMockData(parseInt(issuesCount), includeComments);
+
     res.json({
         success: true,
-        data: req.user.toJSON()
+        data: result
+    });
+};
+
+export const clearSeeded = async (req, res) => {
+    const result = await clearSeededData();
+
+    res.json({
+        success: true,
+        data: result
     });
 };

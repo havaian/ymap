@@ -32,11 +32,13 @@ services:
       - NODE_ENV=${NODE_ENV:-production}
       - BACKEND_PORT=${BACKEND_PORT:-4000}
       - MONGODB_URI=${MONGODB_URI}
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - UPLOADS_DIR=/app/uploads
+      - UPLOADS_DIR=${UPLOADS_DIR}
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
     volumes:
       - ${UPLOADS_DIR:-./uploads}:/app/uploads
     ports:

@@ -29,10 +29,6 @@
         height: 100%;
         z-index: 0;
       }
-
-      .leaflet-control-attribution {
-        display: none !important;
-      }
       
       /* ===== CRITICAL FIX: Eliminate tile boundaries and seams ===== */
       .leaflet-tile-container {
@@ -171,6 +167,22 @@
 
       .leaflet-popup-close-button {
         display: none !important;
+      }
+      
+      /* Hide Leaflet attribution */
+      .leaflet-control-attribution {
+        display: none !important;
+      }
+      
+      /* Ensure no tile layer stacking */
+      .leaflet-tile-pane {
+        z-index: 200 !important;
+      }
+      
+      .leaflet-tile-container {
+        position: absolute !important;
+        width: 100% !important;
+        height: 100% !important;
       }
     </style>
   <script type="importmap">

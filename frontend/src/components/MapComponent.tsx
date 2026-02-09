@@ -275,6 +275,48 @@ function MapSizeHandler() {
   return null;
 }
 
+function TileLayerManager({ tileUrl }: { tileUrl: string }) {
+  const map = useMap();
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+
+  useEffect(() => {
+    // Remove existing tile layer if it exists
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+      tileLayerRef.current = null;
+    }
+
+    // Create new tile layer
+    const newTileLayer = L.tileLayer(tileUrl, {
+      attribution: '',
+      subdomains: 'abcd',
+      maxZoom: 19,
+      minZoom: 3,
+      tileSize: 256,
+      zoomOffset: 0,
+      detectRetina: true,
+      updateWhenIdle: false,
+      updateWhenZooming: false,
+      keepBuffer: 4,
+      crossOrigin: true,
+      className: 'leaflet-tile-container'
+    });
+
+    newTileLayer.addTo(map);
+    tileLayerRef.current = newTileLayer;
+
+    // Cleanup function
+    return () => {
+      if (tileLayerRef.current) {
+        map.removeLayer(tileLayerRef.current);
+        tileLayerRef.current = null;
+      }
+    };
+  }, [map, tileUrl]);
+
+  return null;
+}
+
 interface MapComponentProps {
   issues: Issue[];
   organizations: Organization[];
@@ -294,6 +336,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   issues, organizations, center, onIssueClick, onMapClick, onOrgClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   const orgUnresolvedCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -322,22 +365,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         markerZoomAnimation={true}
       >
         <MapSizeHandler />
-        <TileLayer
-          key={tileUrl}
-          url={tileUrl}
-          attribution=""
-          subdomains="abcd"
-          maxZoom={19}
-          minZoom={3}
-          tileSize={256}
-          zoomOffset={0}
-          detectRetina={true}
-          updateWhenIdle={false}
-          updateWhenZooming={false}
-          keepBuffer={4}
-          crossOrigin={true}
-          className="leaflet-tile-container"
-        />
+        <TileLayerManager tileUrl={tileUrl} />
         
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />
 

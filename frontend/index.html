@@ -29,6 +29,68 @@
         height: 100%;
         z-index: 0;
       }
+
+      .leaflet-control-attribution {
+        display: none !important;
+      }
+      
+      /* ===== CRITICAL FIX: Eliminate tile boundaries and seams ===== */
+      .leaflet-tile-container {
+        pointer-events: none;
+      }
+      
+      .leaflet-tile {
+        /* Prevent tile borders and outlines */
+        border: none !important;
+        outline: none !important;
+        
+        /* Optimize rendering */
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+        
+        /* Hardware acceleration for smoother rendering */
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: transform;
+        
+        /* Prevent gaps between tiles */
+        margin: 0 !important;
+        padding: 0 !important;
+        
+        /* Ensure tiles fit perfectly */
+        width: 256px !important;
+        height: 256px !important;
+      }
+      
+      /* Smooth tile loading without flicker */
+      .leaflet-tile-loaded {
+        opacity: 1 !important;
+      }
+      
+      /* Hide tiles during loading to prevent seams */
+      .leaflet-tile:not(.leaflet-tile-loaded) {
+        opacity: 0;
+      }
+      
+      /* Prevent tile gaps during zoom/pan */
+      .leaflet-zoom-anim .leaflet-zoom-animated {
+        will-change: transform;
+      }
+      
+      .leaflet-pane {
+        z-index: auto;
+      }
+      
+      /* Ensure smooth rendering */
+      .leaflet-map-pane {
+        transform: translate3d(0, 0, 0);
+      }
+      
+      /* Prevent any gaps in tile layer */
+      .leaflet-tile-pane {
+        will-change: transform;
+      }
+      
       ::-webkit-scrollbar {
         width: 6px;
       }

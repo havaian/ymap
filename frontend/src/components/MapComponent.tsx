@@ -318,13 +318,25 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         zoom={13} 
         style={{ height: '100%', width: '100%' }} 
         zoomControl={false}
+        attributionControl={false}
         markerZoomAnimation={true}
       >
         <MapSizeHandler />
         <TileLayer
           key={tileUrl}
-          // attribution='&copy; CARTO'
           url={tileUrl}
+          attribution=""
+          subdomains="abcd"
+          maxZoom={19}
+          minZoom={3}
+          tileSize={256}
+          zoomOffset={0}
+          detectRetina={true}
+          updateWhenIdle={false}
+          updateWhenZooming={false}
+          keepBuffer={4}
+          crossOrigin={true}
+          className="leaflet-tile-container"
         />
         
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />

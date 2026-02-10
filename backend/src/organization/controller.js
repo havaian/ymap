@@ -1,7 +1,7 @@
 import Organization from './model.js';
 
 export const getOrganizations = async (req, res) => {
-    const { type, region, bounds } = req.query;
+    const { type, region } = req.query;
 
     const filter = {};
 
@@ -15,30 +15,7 @@ export const getOrganizations = async (req, res) => {
         filter['region.name'] = region;
     }
 
-    // CRITICAL: Viewport bounds filter for map performance
-    // Format: bounds=minLng,minLat,maxLng,maxLat
-    // Example: bounds=69.1,41.2,69.4,41.4
-    if (bounds) {
-        const [minLng, minLat, maxLng, maxLat] = bounds.split(',').map(parseFloat);
-
-        if (!isNaN(minLng) && !isNaN(minLat) && !isNaN(maxLng) && !isNaN(maxLat)) {
-            // Use MongoDB geospatial query for viewport
-            filter.location = {
-                $geoWithin: {
-                    $box: [
-                        [minLng, minLat],  // Southwest corner
-                        [maxLng, maxLat]   // Northeast corner
-                    ]
-                }
-            };
-        }
-    }
-
-    // Limit to prevent accidental full table scans
-    const limit = parseInt(req.query.limit) || 5000;
-
     const organizations = await Organization.find(filter)
-        .limit(Math.min(limit, 10000))  // Max 10k to prevent abuse
         .select('-__v -createdAt -updatedAt')  // Exclude unnecessary fields
         .lean();  // Return plain objects (faster)
 
@@ -57,7 +34,6 @@ export const getOrganizations = async (req, res) => {
             year: o.year,
             sector: o.sector,
             status: o.status
-            // Don't send budget data unless needed - saves bandwidth
         }))
     });
 };

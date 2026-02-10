@@ -1,7 +1,7 @@
 import Infrastructure from './model.js';
 
 export const getInfrastructure = async (req, res) => {
-    const { type, region, bounds } = req.query;
+    const { type, region } = req.query;
 
     const filter = {};
 
@@ -15,27 +15,7 @@ export const getInfrastructure = async (req, res) => {
         filter['region.name'] = region;
     }
 
-    // CRITICAL: Viewport bounds filter for map performance
-    // Format: bounds=minLng,minLat,maxLng,maxLat
-    if (bounds) {
-        const [minLng, minLat, maxLng, maxLat] = bounds.split(',').map(parseFloat);
-
-        if (!isNaN(minLng) && !isNaN(minLat) && !isNaN(maxLng) && !isNaN(maxLat)) {
-            filter.location = {
-                $geoWithin: {
-                    $box: [
-                        [minLng, minLat],  // Southwest corner
-                        [maxLng, maxLat]   // Northeast corner
-                    ]
-                }
-            };
-        }
-    }
-
-    const limit = parseInt(req.query.limit) || 5000;
-
     const infrastructure = await Infrastructure.find(filter)
-        .limit(Math.min(limit, 10000))
         .select('-__v -createdAt -updatedAt')
         .lean();
 

@@ -21,7 +21,8 @@ export enum IssueCategory {
   ELECTRICITY = 'Electricity',
   EDUCATION = 'Schools & Kindergartens',
   HEALTH = 'Hospitals & Clinics',
-  WASTE = 'Waste Management'
+  WASTE = 'Waste Management',
+  OTHER = 'Other'
 }
 
 export enum Severity {

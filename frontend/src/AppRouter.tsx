@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import App from './App';
 import { LoginView } from './components/LoginView';
 import { User } from '../types';
-import './index.css';
+import '/assets/styles/index.css';
 
 const AppWrapper: React.FC = () => {
   const [currentUser, setCurrentUser] = React.useState<User | null>(() => {

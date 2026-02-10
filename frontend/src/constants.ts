@@ -1,5 +1,5 @@
 
-import { Issue, IssueCategory, Severity, Organization, IssueSubCategory } from '../types';
+import { Issue, IssueCategory, Severity, Organization } from '../types';
 
 export const TASHKENT_CENTER: [number, number] = [41.2995, 69.2401];
 
@@ -10,5 +10,5 @@ export const CATEGORY_COLORS: Record<IssueCategory, string> = {
   [IssueCategory.EDUCATION]: '#10b981', 
   [IssueCategory.HEALTH]: '#ec4899', 
   [IssueCategory.WASTE]: '#8b5cf6', 
-  [IssueCategory.OTHER]: '#64748b', 
+  [IssueCategory.OTHER]: '#64748b',
 };

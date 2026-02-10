@@ -22,7 +22,7 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
   theme, setTheme, fontSize, setFontSize, onOpenAbout,
   currentUser, onLogout
 }) => {
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role.toLowerCase() === 'admin';
   const navigate = useNavigate();
 
   const handleNavigate = (path: string, view: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA') => {

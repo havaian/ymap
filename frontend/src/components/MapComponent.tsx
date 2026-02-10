@@ -38,7 +38,6 @@ function getCategoryIcon(category: IssueCategory) {
   }
 }
 
-// 4 DIFFERENT ICONS FOR ORGANIZATIONS AND INFRASTRUCTURE
 function getOrgIcon(type: IssueCategory, size: number = 18) {
   switch (type) {
     case IssueCategory.EDUCATION:
@@ -59,40 +58,52 @@ function getInfraIcon(type: string, size: number = 18) {
   return <Building2 size={size} strokeWidth={2.5} color="white" />;
 }
 
-// Get colors for different types
 function getOrgColor(type: IssueCategory): string {
   switch (type) {
-    case IssueCategory.EDUCATION: return '#10b981'; // Green
-    case IssueCategory.HEALTH: return '#ef4444'; // Red
-    default: return '#4f46e5'; // Indigo
+    case IssueCategory.EDUCATION: return '#10b981';
+    case IssueCategory.HEALTH: return '#ef4444';
+    default: return '#4f46e5';
   }
 }
 
 function getInfraColor(type: string): string {
-  if (type === 'Roads') return '#f59e0b'; // Amber
-  if (type === 'Water & Sewage') return '#06b6d4'; // Cyan
-  return '#6366f1'; // Indigo
+  if (type === 'Roads') return '#f59e0b';
+  if (type === 'Water & Sewage') return '#06b6d4';
+  return '#6366f1';
 }
 
+// PERFORMANCE: Cache icon creation
+const iconCache = new Map<string, L.DivIcon>();
+
 function createCustomIcon(category: IssueCategory, isZoomedOut: boolean) {
+  const cacheKey = `issue-${category}-${isZoomedOut}`;
+  if (iconCache.has(cacheKey)) return iconCache.get(cacheKey)!;
+
   const color = CATEGORY_COLORS[category] || '#64748b';
   
+  let icon: L.DivIcon;
   if (isZoomedOut) {
     const svg = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="${color}" stroke="white" stroke-width="2.5" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/></svg>`;
-    return L.divIcon({ html: svg, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
+    icon = L.divIcon({ html: svg, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
   } else {
     const iconSvg = renderToStaticMarkup(getCategoryIcon(category));
     const svg = `
-      <div style="background-color: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+      <div style="background-color: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
         ${iconSvg}
       </div>
       <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid white; position: absolute; bottom: -8px; left: 12px;"></div>
     `;
-    return L.divIcon({ html: svg, className: '', iconSize: [38, 48], iconAnchor: [19, 48] });
+    icon = L.divIcon({ html: svg, className: '', iconSize: [38, 48], iconAnchor: [19, 48] });
   }
+  
+  iconCache.set(cacheKey, icon);
+  return icon;
 }
 
 function createOrgIcon(unresolvedCount: number, zoom: number, type: IssueCategory) {
+  const cacheKey = `org-${type}-${zoom}-${unresolvedCount}`;
+  if (iconCache.has(cacheKey)) return iconCache.get(cacheKey)!;
+
   const color = getOrgColor(type);
   const baseSize = zoom >= 15 ? 44 : zoom >= 14 ? 34 : 24;
   const iconSize = zoom >= 15 ? 18 : zoom >= 14 ? 14 : 10;
@@ -109,15 +120,21 @@ function createOrgIcon(unresolvedCount: number, zoom: number, type: IssueCategor
   ` : '';
 
   const svg = `
-    <div class="org-marker-glow" style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+    <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4);">
       ${iconSvg}
       ${badgeSvg}
     </div>
   `;
-  return L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
+  const icon = L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
+  
+  iconCache.set(cacheKey, icon);
+  return icon;
 }
 
 function createInfraIcon(zoom: number, type: string) {
+  const cacheKey = `infra-${type}-${zoom}`;
+  if (iconCache.has(cacheKey)) return iconCache.get(cacheKey)!;
+
   const color = getInfraColor(type);
   const baseSize = zoom >= 15 ? 40 : zoom >= 14 ? 30 : 20;
   const iconSize = zoom >= 15 ? 16 : zoom >= 14 ? 12 : 8;
@@ -126,11 +143,14 @@ function createInfraIcon(zoom: number, type: string) {
   const iconSvg = renderToStaticMarkup(getInfraIcon(type, iconSize));
 
   const svg = `
-    <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+    <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3);">
       ${iconSvg}
     </div>
   `;
-  return L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
+  const icon = L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
+  
+  iconCache.set(cacheKey, icon);
+  return icon;
 }
 
 function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: boolean, zoomLevel: number }) {
@@ -138,7 +158,6 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
   const layerRef = useRef<any>(null);
 
   useEffect(() => {
-    // Cleanup existing layer safely
     if (layerRef.current) {
       if (map.hasLayer(layerRef.current)) {
         map.removeLayer(layerRef.current);
@@ -205,7 +224,7 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
         }
       };
     } catch (e) {
-      console.warn("Heatmap rendering bypassed to prevent canvas crash:", e);
+      console.warn("Heatmap rendering bypassed:", e);
     }
   }, [map, issues, show, zoomLevel]);
 
@@ -229,9 +248,9 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
         clusterGroupRef.current = markerClusterFunc({
           showCoverageOnHover: false,
           spiderfyOnMaxZoom: true,
-          maxClusterRadius: 80, 
-          disableClusteringAtZoom: 15,
-          animate: true,
+          maxClusterRadius: 100, // PERFORMANCE: Increased from 80
+          disableClusteringAtZoom: 16, // PERFORMANCE: Disable at zoom 16
+          animate: false, // PERFORMANCE: Disable animations
           iconCreateFunction: (cluster: any) => {
             const count = cluster.getChildCount();
             let color = '#10b981'; 
@@ -239,7 +258,7 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
             else if (count >= 50) color = '#ef4444';
 
             return L.divIcon({
-              html: `<div class="cluster-anim-pulse" style="background: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">${count}</div>`,
+              html: `<div style="background: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">${count}</div>`,
               className: 'custom-cluster-wrapper',
               iconSize: L.point(38, 38)
             });
@@ -295,9 +314,9 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
         clusterGroupRef.current = markerClusterFunc({
           showCoverageOnHover: false,
           spiderfyOnMaxZoom: true,
-          maxClusterRadius: 60,
+          maxClusterRadius: 80, // PERFORMANCE: Increased from 60
           disableClusteringAtZoom: null,
-          animate: true,
+          animate: false, // PERFORMANCE: Disable animations
           iconCreateFunction: (cluster: any) => {
             const count = cluster.getChildCount();
             let color = '#4f46e5';
@@ -345,43 +364,7 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
         onOrgClick(org);
       });
 
-      const iconSvg = renderToStaticMarkup(getOrgIcon(org.type, 14));
-      const popupContent = `
-        <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-600 dark:text-indigo-400">
-                ${iconSvg}
-              </div>
-              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                ${org.type}
-              </span>
-            </div>
-            <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${org.name}</div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">${org.address}</div>
-            
-            <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700/50">
-              <div class="flex flex-col">
-                 <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 mb-0.5">Активные задачи</span>
-                 <span class="text-sm font-black ${orgUnresolvedCounts[org.id] > 0 ? 'text-red-500' : 'text-green-500'}">
-                   ${orgUnresolvedCounts[org.id] || 0}
-                 </span>
-              </div>
-              <div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest group">
-                Подробнее ${renderToStaticMarkup(<ArrowRight size={10} />)}
-              </div>
-            </div>
-        </div>
-      `;
-
-      marker.bindPopup(popupContent, {
-        closeButton: false,
-        offset: [0, -5],
-        className: 'org-popup'
-      });
-      
-      marker.on('mouseover', (e) => { e.target.openPopup(); });
-      marker.on('mouseout', (e) => { e.target.closePopup(); });
-
+      // PERFORMANCE: Removed hover popup, only click
       return marker;
     });
 
@@ -408,19 +391,19 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
         clusterGroupRef.current = markerClusterFunc({
           showCoverageOnHover: false,
           spiderfyOnMaxZoom: true,
-          maxClusterRadius: 60,
+          maxClusterRadius: 80, // PERFORMANCE: Increased from 60
           disableClusteringAtZoom: null,
-          animate: true,
+          animate: false, // PERFORMANCE: Disable animations
           iconCreateFunction: (cluster: any) => {
             const count = cluster.getChildCount();
-            let color = '#f59e0b'; // Amber for infrastructure
+            let color = '#f59e0b';
             let size = 38;
             
             if (count >= 100) {
-              color = '#dc2626'; // Red
+              color = '#dc2626';
               size = 48;
             } else if (count >= 50) {
-              color = '#ea580c'; // Orange
+              color = '#ea580c';
               size = 44;
             }
 
@@ -458,31 +441,7 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
         if (onInfraClick) onInfraClick(infra);
       });
 
-      const iconSvg = renderToStaticMarkup(getInfraIcon(infra.type, 14));
-      const popupContent = `
-        <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="p-1.5 rounded-lg" style="background-color: ${getInfraColor(infra.type)}20; color: ${getInfraColor(infra.type)};">
-                ${iconSvg}
-              </div>
-              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                ${infra.type}
-              </span>
-            </div>
-            <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${infra.name}</div>
-            ${infra.address ? `<div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">${infra.address}</div>` : ''}
-        </div>
-      `;
-
-      marker.bindPopup(popupContent, {
-        closeButton: false,
-        offset: [0, -5],
-        className: 'infra-popup'
-      });
-      
-      marker.on('mouseover', (e) => { e.target.openPopup(); });
-      marker.on('mouseout', (e) => { e.target.closePopup(); });
-
+      // PERFORMANCE: Removed hover popup, only click
       return marker;
     });
 
@@ -563,12 +522,20 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         zoom={13} 
         style={{ height: '100%', width: '100%' }} 
         zoomControl={false}
-        markerZoomAnimation={true}
+        markerZoomAnimation={false}
+        fadeAnimation={false}
+        zoomAnimation={false}
+        preferCanvas={true}
       >
         <MapSizeHandler />
         <TileLayer
           key={tileUrl}
           url={tileUrl}
+          updateWhenIdle={true}
+          updateWhenZooming={false}
+          keepBuffer={8}
+          maxNativeZoom={19}
+          maxZoom={19}
         />
         
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />

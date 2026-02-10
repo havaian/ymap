@@ -1,0 +1,54 @@
+/* Fix tile border lines */
+.leaflet-tile-container img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  -ms-interpolation-mode: nearest-neighbor;
+  
+  /* Expand tiles slightly to overlap and hide borders */
+  transform: scale(1.005);
+  transform-origin: center;
+}
+
+/* Prevent tile flickering */
+.leaflet-tile {
+  filter: none !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Smooth tile transitions */
+.leaflet-tile-container {
+  will-change: transform;
+}
+
+/* Performance: GPU acceleration for map container */
+.leaflet-container {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Remove tile border artifacts on zoom */
+.leaflet-zoom-animated {
+  will-change: transform;
+}
+
+/* Performance: Reduce marker repaints */
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Optimize cluster animations */
+.custom-cluster-wrapper,
+.custom-org-cluster-wrapper,
+.custom-infra-cluster-wrapper {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}

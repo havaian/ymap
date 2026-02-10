@@ -1,8 +1,8 @@
 // User types
 export enum UserRole {
-  CITIZEN = 'Citizen',
-  ORG_ADMIN = 'Organization Admin',
-  ADMIN = 'Admin'
+  CITIZEN = 'ADMIN',
+  ORG_ADMIN = 'ORG_ADMIN',
+  ADMIN = 'ADMIN'
 }
 
 export interface User {

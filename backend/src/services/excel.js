@@ -11,6 +11,8 @@ const SECTOR_TO_COLLECTION_MAP = {
     'suv': 'infrastructure'
 };
 
+const BATCH_SIZE = 1000; // Process 1000 records at a time
+
 export const importOrganizationsFromExcel = async (filePath) => {
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
@@ -33,7 +35,6 @@ export const importOrganizationsFromExcel = async (filePath) => {
 
     const orgBulkOps = [];
     const infraBulkOps = [];
-    const userBulkOps = [];
     let skipped = 0;
 
     // Step 1: Transform all data into bulk operations
@@ -83,25 +84,53 @@ export const importOrganizationsFromExcel = async (filePath) => {
 
     console.log(`📊 Prepared: ${orgBulkOps.length} orgs, ${infraBulkOps.length} infrastructure, ${skipped} skipped`);
 
-    // Step 2: Bulk insert organizations (FAST!)
+    // Step 2: Bulk insert organizations in BATCHES (prevent timeout)
     let organizationsImported = 0;
     if (orgBulkOps.length > 0) {
-        console.log('⚡ Bulk inserting organizations...');
-        const orgResult = await Organization.bulkWrite(orgBulkOps, { ordered: false });
-        organizationsImported = orgResult.upsertedCount + orgResult.modifiedCount;
+        console.log(`⚡ Bulk inserting organizations in batches of ${BATCH_SIZE}...`);
+        
+        for (let i = 0; i < orgBulkOps.length; i += BATCH_SIZE) {
+            const batch = orgBulkOps.slice(i, i + BATCH_SIZE);
+            const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+            const totalBatches = Math.ceil(orgBulkOps.length / BATCH_SIZE);
+            
+            console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} records)...`);
+            
+            try {
+                const orgResult = await Organization.bulkWrite(batch, { ordered: false });
+                organizationsImported += orgResult.upsertedCount + orgResult.modifiedCount;
+            } catch (error) {
+                console.error(`   ❌ Batch ${batchNum} failed:`, error.message);
+            }
+        }
+        
         console.log(`✅ Organizations: ${organizationsImported} created/updated`);
     }
 
-    // Step 3: Bulk insert infrastructure (FAST!)
+    // Step 3: Bulk insert infrastructure in BATCHES (prevent timeout)
     let infrastructureImported = 0;
     if (infraBulkOps.length > 0) {
-        console.log('⚡ Bulk inserting infrastructure...');
-        const infraResult = await Infrastructure.bulkWrite(infraBulkOps, { ordered: false });
-        infrastructureImported = infraResult.upsertedCount + infraResult.modifiedCount;
+        console.log(`⚡ Bulk inserting infrastructure in batches of ${BATCH_SIZE}...`);
+        
+        for (let i = 0; i < infraBulkOps.length; i += BATCH_SIZE) {
+            const batch = infraBulkOps.slice(i, i + BATCH_SIZE);
+            const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+            const totalBatches = Math.ceil(infraBulkOps.length / BATCH_SIZE);
+            
+            console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} records)...`);
+            
+            try {
+                const infraResult = await Infrastructure.bulkWrite(batch, { ordered: false });
+                infrastructureImported += infraResult.upsertedCount + infraResult.modifiedCount;
+            } catch (error) {
+                console.error(`   ❌ Batch ${batchNum} failed:`, error.message);
+            }
+        }
+        
         console.log(`✅ Infrastructure: ${infrastructureImported} created/updated`);
     }
 
-    // Step 4: Create organization users (need individual ops for password hashing)
+    // Step 4: Create organization users (still slow, but necessary for password hashing)
     console.log('👥 Creating organization users...');
     let usersCreated = 0;
     const credentials = [];
@@ -109,7 +138,14 @@ export const importOrganizationsFromExcel = async (filePath) => {
     // Get all organizations to create users for them
     const organizations = await Organization.find({}).lean();
     
+    let userCount = 0;
     for (const org of organizations) {
+        userCount++;
+        
+        if (userCount % 1000 === 0) {
+            console.log(`   Progress: ${userCount}/${organizations.length} users processed...`);
+        }
+        
         try {
             const userResult = await createOrganizationUser(org, org._id.toString());
             if (userResult.isNew) {

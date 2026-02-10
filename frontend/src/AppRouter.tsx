@@ -100,7 +100,7 @@ const AppWrapper: React.FC = () => {
         <Route 
           path="/users" 
           element={
-            currentUser && currentUser.role === 'Admin' ? (
+            currentUser && currentUser.role.toLowerCase() === 'admin' ? (
               <App currentUser={currentUser} onLogout={handleLogout} initialView="USERS" />
             ) : (
               <Navigate to="/map" replace />
@@ -111,34 +111,12 @@ const AppWrapper: React.FC = () => {
         <Route 
           path="/data" 
           element={
-            currentUser && currentUser.role === 'Admin' ? (
+            currentUser && currentUser.role.toLowerCase() === 'admin' ? (
               <App currentUser={currentUser} onLogout={handleLogout} initialView="DATA" />
             ) : (
               <Navigate to="/map" replace />
             )
           } 
-        />
-
-        <Route 
-            path="/users" 
-            element={
-                currentUser && (currentUser.role === 'Admin' || currentUser.role === 'ADMIN') ? (
-                <App currentUser={currentUser} onLogout={handleLogout} initialView="USERS" />
-                ) : (
-                <Navigate to="/map" replace />
-                )
-            } 
-        />
-
-        <Route 
-            path="/data" 
-            element={
-                currentUser && (currentUser.role === 'Admin' || currentUser.role === 'ADMIN') ? (
-                <App currentUser={currentUser} onLogout={handleLogout} initialView="DATA" />
-                ) : (
-                <Navigate to="/map" replace />
-                )
-            } 
         />
         
         {/* Catch all */}

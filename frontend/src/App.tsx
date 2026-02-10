@@ -370,19 +370,17 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
           <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition">
             <Menu className="w-5 h-5" />
           </button>
-          <div onClick={() => navigate('/map')}>
-            <MapPlusIcon />
-            <div className="hidden sm:block">
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Y.<span className="text-blue-600">Map</span></h1>
-                {currentUser.role === UserRole.ADMIN && (
-                  <span className="bg-red-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                    <ShieldCheck size={8} /> Admin
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest uppercase mt-0.5">Социальная инфраструктура</p>
+          <MapPlusIcon onClick={() => navigate('/map')} />
+          <div className="hidden sm:block">
+            <div className="flex items-center gap-2">
+               <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Y.<span className="text-blue-600">Map</span></h1>
+               {currentUser.role === UserRole.ADMIN && (
+                 <span className="bg-red-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                   <ShieldCheck size={8} /> Admin
+                 </span>
+               )}
             </div>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest uppercase mt-0.5">Социальная инфраструктура</p>
           </div>
         </div>
 

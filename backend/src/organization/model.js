@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const organizationSchema = new mongoose.Schema({
     externalId: {
-        type: Number
+        type: Number,
+        index: true  // Simple index for fast lookups
     },
     projectId: {
         type: Number
@@ -17,7 +18,8 @@ const organizationSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ['Schools & Kindergartens', 'Hospitals & Clinics']
+        enum: ['Schools & Kindergartens', 'Hospitals & Clinics'],
+        index: true  // For type filtering
     },
     objectType: {
         type: String
@@ -38,7 +40,8 @@ const organizationSchema = new mongoose.Schema({
         },
         coordinates: {
             type: [Number],
-            required: true
+            required: true,
+            index: '2dsphere'  // Geospatial index
         }
     },
     address: {
@@ -47,7 +50,7 @@ const organizationSchema = new mongoose.Schema({
     },
     region: {
         id: Number,
-        name: String
+        name: { type: String, index: true }  // For region filtering
     },
     year: {
         type: Number
@@ -82,9 +85,5 @@ const organizationSchema = new mongoose.Schema({
         }
     }
 });
-
-organizationSchema.index({ location: '2dsphere' });
-organizationSchema.index({ type: 1 });
-organizationSchema.index({ 'region.name': 1 });
 
 export default mongoose.model('Organization', organizationSchema);

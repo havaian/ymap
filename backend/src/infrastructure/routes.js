@@ -3,7 +3,7 @@ import {
     getInfrastructure, 
     getInfrastructureById, 
     getNearbyInfrastructure 
-} from './controller';
+} from './controller.js';
 
 const router = express.Router();
 

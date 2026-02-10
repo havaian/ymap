@@ -1,4 +1,4 @@
-import Infrastructure from './model';
+import Infrastructure from './model.js';
 
 export const getInfrastructure = async (req, res) => {
     try {

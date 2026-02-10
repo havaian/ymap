@@ -11,7 +11,7 @@ import { ensureAdminExists } from './services/admin-setup.js';
 
 import authRoutes from './auth/routes.js';
 import issueRoutes from './issue/routes.js';
-import commentRoutes from './comment/routes.js';
+import infrastructureRoutes from './infrastructure/routes.js';
 import organizationRoutes from './organization/routes.js';
 import userRoutes from './user/routes.js';
 import voteRoutes from './vote/routes.js';
@@ -48,8 +48,8 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/issues', issueRoutes);
-app.use('/api/issues', commentRoutes); // Comments are under /api/issues/:issueId/comments
+app.use('/api/issues', issueRoutes); // Comments are under /api/issues/:issueId/comments
+app.use('/api/infrastructure', infrastructureRoutes);
 app.use('/api/organizations', organizationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/votes', voteRoutes);

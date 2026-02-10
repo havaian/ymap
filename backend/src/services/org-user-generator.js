@@ -15,14 +15,10 @@ export const generateOrgUsername = (externalId, name) => {
 
 /**
  * Generate deterministic password from organization fields
- * Combines: external_id, project_id, object_id, object_type, name, lat
  */
 export const generateOrgPassword = (orgData) => {
     const { externalId, projectId, objectId, objectType, name, lat } = orgData;
-
     const combined = `${externalId}|${projectId}|${objectId}|${objectType}|${name}|${lat}`;
-
-    // Create SHA256 hash and take first 16 chars + add special char for security
     const hash = crypto.createHash('sha256').update(combined).digest('hex');
     return `${hash.substring(0, 12)}@${hash.substring(12, 16)}`;
 };
@@ -54,14 +50,14 @@ export const createOrganizationUser = async (orgData, organizationId) => {
             };
         }
 
-        // Create new user
+        // Create new user with ORG_ADMIN role
         const hashedPassword = await hashPassword(plainPassword);
 
         const user = await User.create({
             name: orgData.name,
             email,
             password: hashedPassword,
-            role: 'CITIZEN',
+            role: 'ORG_ADMIN',
             district: orgData.region?.name || null,
             blocked: false,
             organizationId,

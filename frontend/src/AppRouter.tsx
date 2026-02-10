@@ -1,15 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import App from './App';
 import { LoginView } from './components/LoginView';
 import { User } from '../types';
+import './index.css';
 
-// Main app wrapper with routing
-export const AppRouter: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+const AppWrapper: React.FC = () => {
+  const [currentUser, setCurrentUser] = React.useState<User | null>(() => {
     const saved = localStorage.getItem('currentUser');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(() => {
+    const saved = localStorage.getItem('theme');
+    return (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system';
+  });
+
+  React.useEffect(() => {
+    const applyTheme = () => {
+      const root = window.document.documentElement;
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeDark = theme === 'dark' || (theme === 'system' && systemPrefersDark);
+      
+      if (shouldBeDark) {
+        root.classList.add('dark');
+        root.classList.remove('light');
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('light');
+      }
+    };
+    applyTheme();
+  }, [theme]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -25,7 +48,7 @@ export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
+        {/* Login route */}
         <Route 
           path="/login" 
           element={
@@ -45,7 +68,18 @@ export const AppRouter: React.FC = () => {
           path="/map" 
           element={
             currentUser ? (
-              <App currentUser={currentUser} onLogout={handleLogout} />
+              <App currentUser={currentUser} onLogout={handleLogout} initialView="MAP" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        
+        <Route 
+          path="/list" 
+          element={
+            currentUser ? (
+              <App currentUser={currentUser} onLogout={handleLogout} initialView="LIST" />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -85,20 +119,11 @@ export const AppRouter: React.FC = () => {
           } 
         />
         
-        <Route 
-          path="/list" 
-          element={
-            currentUser ? (
-              <App currentUser={currentUser} onLogout={handleLogout} initialView="LIST" />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          } 
-        />
-        
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 };
+
+export const AppRouter = AppWrapper;

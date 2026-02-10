@@ -80,10 +80,16 @@ export const infrastructureAPI = {
       if (params?.type) queryParams.append('type', params.type);
       if (params?.region) queryParams.append('region', params.region);
       
-      const response = await api.get(`/infrastructure?${queryParams.toString()}`);
+      const queryString = queryParams.toString();
+      const url = queryString ? `/infrastructure?${queryString}` : '/infrastructure';
+      
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Failed to fetch infrastructure'
+      };
     }
   },
 
@@ -92,7 +98,10 @@ export const infrastructureAPI = {
       const response = await api.get(`/infrastructure/${id}`);
       return response.data;
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Failed to fetch infrastructure'
+      };
     }
   },
 
@@ -108,7 +117,10 @@ export const infrastructureAPI = {
       const response = await api.get(`/infrastructure/nearby?${queryParams.toString()}`);
       return response.data;
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Failed to fetch nearby infrastructure'
+      };
     }
   }
 };

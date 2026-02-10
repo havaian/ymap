@@ -1,10 +1,19 @@
 import express from 'express';
-import { getInfrastructure, getInfrastructureItem, getNearbyInfrastructure } from './controller.js';
+import { 
+    getInfrastructure, 
+    getInfrastructureById, 
+    getNearbyInfrastructure 
+} from './controller';
 
 const router = express.Router();
 
+// Get all infrastructure (with optional filters)
 router.get('/', getInfrastructure);
+
+// Get nearby infrastructure
 router.get('/nearby', getNearbyInfrastructure);
-router.get('/:id', getInfrastructureItem);
+
+// Get infrastructure by ID
+router.get('/:id', getInfrastructureById);
 
 export default router;

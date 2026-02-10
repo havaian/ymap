@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { issuesAPI, organizationsAPI, adminAPI } from '../services/api';
 import { Issue, Organization, User } from '../../types';
 
@@ -128,38 +128,28 @@ export const useOrganizations = () => {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const hasFetchedRef = useRef(false);
 
     useEffect(() => {
-        const abortController = new AbortController();
-        let isMounted = true;
+        // Prevent double fetch
+        if (hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
 
         const fetchOrganizations = async () => {
             try {
-                if (!isMounted) return;
                 setLoading(true);
                 const response = await organizationsAPI.getAll();
-                if (isMounted) {
-                    setOrganizations(response.data.data);
-                    setError(null);
-                }
+                setOrganizations(response.data.data);
+                setError(null);
             } catch (err: any) {
-                if (isMounted && err.name !== 'AbortError') {
-                    setError(err.response?.data?.message || 'Failed to fetch organizations');
-                    console.error('Error fetching organizations:', err);
-                }
+                setError(err.response?.data?.message || 'Failed to fetch organizations');
+                console.error('Error fetching organizations:', err);
             } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
+                setLoading(false);
             }
         };
 
         fetchOrganizations();
-
-        return () => {
-            isMounted = false;
-            abortController.abort();
-        };
     }, []);
 
     const refetchOrganizations = async () => {

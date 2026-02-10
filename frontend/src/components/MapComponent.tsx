@@ -5,7 +5,7 @@ import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, Severity } from '../../types';
 import { CATEGORY_COLORS } from '../constants';
-import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, ArrowRight } from 'lucide-react';
+import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, Construction, Waves, ArrowRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 // Fix for Leaflet default icons in ESM environment
@@ -38,12 +38,40 @@ function getCategoryIcon(category: IssueCategory) {
   }
 }
 
+// 4 DIFFERENT ICONS FOR ORGANIZATIONS AND INFRASTRUCTURE
 function getOrgIcon(type: IssueCategory, size: number = 18) {
   switch (type) {
-    case IssueCategory.EDUCATION: return <School size={size} strokeWidth={2.5} color="white" />;
-    case IssueCategory.HEALTH: return <Hospital size={size} strokeWidth={2.5} color="white" />;
-    default: return <Building2 size={size} strokeWidth={2.5} color="white" />;
+    case IssueCategory.EDUCATION:
+      return <School size={size} strokeWidth={2.5} color="white" />;
+    case IssueCategory.HEALTH:
+      return <Hospital size={size} strokeWidth={2.5} color="white" />;
+    default:
+      return <Building2 size={size} strokeWidth={2.5} color="white" />;
   }
+}
+
+function getInfraIcon(type: string, size: number = 18) {
+  if (type === 'Roads') {
+    return <Construction size={size} strokeWidth={2.5} color="white" />;
+  } else if (type === 'Water & Sewage') {
+    return <Waves size={size} strokeWidth={2.5} color="white" />;
+  }
+  return <Building2 size={size} strokeWidth={2.5} color="white" />;
+}
+
+// Get colors for different types
+function getOrgColor(type: IssueCategory): string {
+  switch (type) {
+    case IssueCategory.EDUCATION: return '#10b981'; // Green
+    case IssueCategory.HEALTH: return '#ef4444'; // Red
+    default: return '#4f46e5'; // Indigo
+  }
+}
+
+function getInfraColor(type: string): string {
+  if (type === 'Roads') return '#f59e0b'; // Amber
+  if (type === 'Water & Sewage') return '#06b6d4'; // Cyan
+  return '#6366f1'; // Indigo
 }
 
 function createCustomIcon(category: IssueCategory, isZoomedOut: boolean) {
@@ -65,7 +93,7 @@ function createCustomIcon(category: IssueCategory, isZoomedOut: boolean) {
 }
 
 function createOrgIcon(unresolvedCount: number, zoom: number, type: IssueCategory) {
-  const color = '#4f46e5'; 
+  const color = getOrgColor(type);
   const baseSize = zoom >= 15 ? 44 : zoom >= 14 ? 34 : 24;
   const iconSize = zoom >= 15 ? 18 : zoom >= 14 ? 14 : 10;
   const borderRadius = zoom >= 15 ? 14 : zoom >= 14 ? 10 : 6;
@@ -89,6 +117,22 @@ function createOrgIcon(unresolvedCount: number, zoom: number, type: IssueCategor
   return L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
 }
 
+function createInfraIcon(zoom: number, type: string) {
+  const color = getInfraColor(type);
+  const baseSize = zoom >= 15 ? 40 : zoom >= 14 ? 30 : 20;
+  const iconSize = zoom >= 15 ? 16 : zoom >= 14 ? 12 : 8;
+  const borderRadius = zoom >= 15 ? 12 : zoom >= 14 ? 8 : 5;
+
+  const iconSvg = renderToStaticMarkup(getInfraIcon(type, iconSize));
+
+  const svg = `
+    <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+      ${iconSvg}
+    </div>
+  `;
+  return L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
+}
+
 function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: boolean, zoomLevel: number }) {
   const map = useMap();
   const layerRef = useRef<any>(null);
@@ -107,10 +151,6 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
     const heatLayerFunc = (L as any).heatLayer;
     if (typeof heatLayerFunc !== 'function') return;
 
-    /**
-     * СТАБИЛИЗАЦИЯ ИНТЕНСИВНОСТИ:
-     * Ограничиваем веса и гарантируем отсутствие NaN/Infinity для предотвращения IndexSizeError.
-     */
     const heatPoints: [number, number, number][] = issues
       .filter(i => {
           const lat = parseFloat(i.lat as any);
@@ -129,22 +169,14 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
         const orgMultiplier = i.organizationId ? 2.5 : 1.0;
         const votesMultiplier = 1 + (Math.log10(Math.max(0, i.votes) + 1) * 1.5);
         
-        // Клэмпим вес для стабильности отрисовки
         const finalWeight = Math.min(1000, weight * orgMultiplier * votesMultiplier);
         return [i.lat, i.lng, finalWeight];
       });
 
     if (heatPoints.length === 0) return;
 
-    /**
-     * ИСПРАВЛЕНИЕ IndexSizeError:
-     * Ошибка часто возникает из-за дробных или отрицательных значений radius/blur 
-     * при попытке canvas.getImageData(). Используем Math.round и Math.max(1).
-     */
     const radius = Math.round(Math.max(15, (zoomLevel - 10) * 4 + 25));
     const blur = Math.round(Math.max(10, radius * 0.75));
-    
-    // Динамический порог: чем выше зум, тем "чувствительнее" тепло
     const dynamicMax = Math.max(50, 2500 / Math.pow(1.6, Math.max(0, zoomLevel - 11)));
 
     try {
@@ -155,11 +187,11 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
         max: dynamicMax, 
         minOpacity: 0.15, 
         gradient: {
-          0.1: '#3b82f6', // Холодно
-          0.3: '#10b981', // Норма
-          0.5: '#fbbf24', // Внимание
-          0.7: '#f97316', // Проблема
-          1.0: '#ef4444'  // Критический очаг
+          0.1: '#3b82f6',
+          0.3: '#10b981',
+          0.5: '#fbbf24',
+          0.7: '#f97316',
+          1.0: '#ef4444'
         }
       });
       
@@ -264,18 +296,18 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
           showCoverageOnHover: false,
           spiderfyOnMaxZoom: true,
           maxClusterRadius: 60,
-          disableClusteringAtZoom: null, // Always cluster for max performance
+          disableClusteringAtZoom: null,
           animate: true,
           iconCreateFunction: (cluster: any) => {
             const count = cluster.getChildCount();
-            let color = '#4f46e5'; // Indigo for orgs
+            let color = '#4f46e5';
             let size = 38;
             
             if (count >= 100) {
-              color = '#7c3aed'; // Purple for large clusters
+              color = '#7c3aed';
               size = 48;
             } else if (count >= 50) {
-              color = '#6366f1'; // Lighter indigo
+              color = '#6366f1';
               size = 44;
             }
 
@@ -313,8 +345,7 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
         onOrgClick(org);
       });
 
-      // Create popup content
-      const iconSvg = renderToStaticMarkup(org.type === IssueCategory.EDUCATION ? <School size={14} /> : <Hospital size={14} />);
+      const iconSvg = renderToStaticMarkup(getOrgIcon(org.type, 14));
       const popupContent = `
         <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
             <div class="flex items-center gap-2 mb-2">
@@ -360,6 +391,107 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
   return null;
 }
 
+function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, hidden }: any) {
+  const map = useMap();
+  const clusterGroupRef = useRef<any>(null);
+
+  useEffect(() => {
+    const markerClusterFunc = (L as any).markerClusterGroup;
+    if (typeof markerClusterFunc !== 'function' || hidden) {
+        if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+            map.removeLayer(clusterGroupRef.current);
+        }
+        return;
+    };
+
+    if (!clusterGroupRef.current) {
+        clusterGroupRef.current = markerClusterFunc({
+          showCoverageOnHover: false,
+          spiderfyOnMaxZoom: true,
+          maxClusterRadius: 60,
+          disableClusteringAtZoom: null,
+          animate: true,
+          iconCreateFunction: (cluster: any) => {
+            const count = cluster.getChildCount();
+            let color = '#f59e0b'; // Amber for infrastructure
+            let size = 38;
+            
+            if (count >= 100) {
+              color = '#dc2626'; // Red
+              size = 48;
+            } else if (count >= 50) {
+              color = '#ea580c'; // Orange
+              size = 44;
+            }
+
+            return L.divIcon({
+              html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">${count}</div>`,
+              className: 'custom-infra-cluster-wrapper',
+              iconSize: L.point(size, size)
+            });
+          }
+        });
+        map.addLayer(clusterGroupRef.current);
+    }
+
+    return () => {
+      if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+        map.removeLayer(clusterGroupRef.current);
+        clusterGroupRef.current = null;
+      }
+    };
+  }, [map, hidden]);
+
+  useEffect(() => {
+    const clusterGroup = clusterGroupRef.current;
+    if (!clusterGroup || hidden) return;
+
+    clusterGroup.clearLayers();
+
+    const markers = infrastructure.map((infra: Infrastructure) => {
+      const marker = L.marker([infra.lat, infra.lng], {
+        icon: createInfraIcon(zoomLevel, infra.type)
+      });
+      
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (onInfraClick) onInfraClick(infra);
+      });
+
+      const iconSvg = renderToStaticMarkup(getInfraIcon(infra.type, 14));
+      const popupContent = `
+        <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="p-1.5 rounded-lg" style="background-color: ${getInfraColor(infra.type)}20; color: ${getInfraColor(infra.type)};">
+                ${iconSvg}
+              </div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                ${infra.type}
+              </span>
+            </div>
+            <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${infra.name}</div>
+            ${infra.address ? `<div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">${infra.address}</div>` : ''}
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, {
+        closeButton: false,
+        offset: [0, -5],
+        className: 'infra-popup'
+      });
+      
+      marker.on('mouseover', (e) => { e.target.openPopup(); });
+      marker.on('mouseout', (e) => { e.target.closePopup(); });
+
+      return marker;
+    });
+
+    clusterGroup.addLayers(markers);
+  }, [infrastructure, zoomLevel, onInfraClick, hidden]);
+
+  return null;
+}
+
 function MapController({ onMapClick, setZoomLevel, userLocation, triggerLocate }: any) {
   const map = useMap();
   useMapEvents({
@@ -378,7 +510,6 @@ function MapSizeHandler() {
   const map = useMap();
   
   useEffect(() => {
-    // Invalidate size when component mounts
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 100);
@@ -397,9 +528,9 @@ interface MapComponentProps {
   onIssueClick: (issue: Issue) => void;
   onMapClick: (coords: Coordinates) => void;
   onOrgClick: (org: Organization) => void;
+  onInfraClick?: (infra: Infrastructure) => void;
   isAdding: boolean;
   showOrgs: boolean;
-  showInfra: boolean;
   showHeatmap: boolean;
   userLocation: Coordinates | null;
   triggerLocate: number; 
@@ -407,7 +538,7 @@ interface MapComponentProps {
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
-  issues, organizations, center, onIssueClick, onMapClick, onOrgClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
+  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
 
@@ -420,8 +551,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     });
     return counts;
   }, [issues]);
-
-  const canShowOrgs = showOrgs && !showHeatmap;
 
   const tileUrl = isDark 
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -439,7 +568,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         <MapSizeHandler />
         <TileLayer
           key={tileUrl}
-          // attribution='&copy; CARTO'
           url={tileUrl}
         />
         
@@ -456,7 +584,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           organizations={organizations}
           onOrgClick={onOrgClick}
           zoomLevel={zoomLevel}
-          hidden={!canShowOrgs}
+          hidden={!showOrgs || showHeatmap}
           orgUnresolvedCounts={orgUnresolvedCounts}
         />
 
@@ -464,7 +592,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           infrastructure={infrastructure}
           onInfraClick={onInfraClick}
           zoomLevel={zoomLevel}
-          hidden={!showInfra || showHeatmap}
+          hidden={!showOrgs || showHeatmap}
         />
 
         {userLocation && (

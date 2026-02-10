@@ -1,7 +1,7 @@
 import Organization from './model.js';
 
 export const getOrganizations = async (req, res) => {
-    const { type, region, limit = 1000 } = req.query;
+    const { type, region } = req.query;
 
     const filter = {};
 
@@ -13,8 +13,7 @@ export const getOrganizations = async (req, res) => {
         filter['region.name'] = region;
     }
 
-    const organizations = await Organization.find(filter)
-        .limit(parseInt(limit));
+    const organizations = await Organization.find(filter);
 
     res.json({
         success: true,

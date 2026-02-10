@@ -1,7 +1,8 @@
-
+// User types
 export enum UserRole {
-  ADMIN = 'ADMIN',
-  CITIZEN = 'CITIZEN'
+  CITIZEN = 'Citizen',
+  ORG_ADMIN = 'Organization Admin',
+  ADMIN = 'Admin'
 }
 
 export interface User {
@@ -9,25 +10,18 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatar?: string;
-  district?: string;
   blocked?: boolean;
+  organizationId?: string;
 }
 
+// Issue types
 export enum IssueCategory {
   ROADS = 'Roads',
   WATER = 'Water & Sewage',
   ELECTRICITY = 'Electricity',
   EDUCATION = 'Schools & Kindergartens',
   HEALTH = 'Hospitals & Clinics',
-  WASTE = 'Waste Management',
-  OTHER = 'Other'
-}
-
-export enum IssueSubCategory {
-  WATER = 'Water',
-  ELECTRICITY = 'Electricity',
-  GENERAL = 'General/Other'
+  WASTE = 'Waste Management'
 }
 
 export enum Severity {
@@ -39,18 +33,10 @@ export enum Severity {
 
 export interface Comment {
   id: string;
-  author: string;
+  userId: string;
+  userName: string;
   text: string;
-  timestamp: number;
-}
-
-export interface Organization {
-  id: string;
-  name: string;
-  type: IssueCategory.EDUCATION | IssueCategory.HEALTH;
-  lat: number;
-  lng: number;
-  address: string;
+  timestamp: string;
 }
 
 export interface Issue {
@@ -60,18 +46,91 @@ export interface Issue {
   title: string;
   description: string;
   category: IssueCategory;
-  subCategory?: IssueSubCategory;
+  subCategory?: string;
   severity: Severity;
   status: 'Open' | 'In Progress' | 'Resolved';
-  votes: number;
-  comments: Comment[];
-  createdAt: number;
-  aiSummary?: string;
+  userId: string;
+  userName: string;
   organizationId?: string;
   organizationName?: string;
+  aiSummary?: string;
+  votes: number;
+  comments: Comment[];
+  createdAt: string;
+  updatedAt: string;
 }
 
+// Coordinates
 export interface Coordinates {
   lat: number;
   lng: number;
+}
+
+// Organization with complete fields from DB model
+export interface Organization {
+  id: string;
+  externalId?: number;
+  projectId?: number;
+  objectId?: number;
+  name: string;
+  type: IssueCategory;
+  objectType?: string;
+  lat: number;
+  lng: number;
+  address: string;
+  region: {
+    id?: number;
+    name: string;
+  };
+  year?: number;
+  sector?: string;
+  sourceType?: string;
+  sourceName?: string;
+  status?: string;
+  budget?: {
+    committedUZS?: number;
+    spentUZS?: number;
+    committedUSD?: number;
+    spentUSD?: number;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Infrastructure with complete fields from DB model
+export interface Infrastructure {
+  id: string;
+  externalId?: number;
+  projectId?: number;
+  objectId?: number;
+  name: string;
+  type: 'Roads' | 'Water & Sewage';
+  objectType?: string;
+  lat: number;
+  lng: number;
+  address?: string;
+  region?: {
+    id?: number;
+    name?: string;
+  };
+  year?: number;
+  sector?: string;
+  sourceType?: string;
+  sourceName?: string;
+  status?: string;
+  budget?: {
+    committedUZS?: number;
+    spentUZS?: number;
+    committedUSD?: number;
+    spentUSD?: number;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }

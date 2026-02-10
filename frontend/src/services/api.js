@@ -72,4 +72,45 @@ export const adminAPI = {
   clearSeeded: () => api.delete('/admin/seed/clear')
 };
 
+// Infrastructure API
+export const infrastructureAPI = {
+  getAll: async (params = { type, region }) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.type) queryParams.append('type', params.type);
+      if (params?.region) queryParams.append('region', params.region);
+      
+      const response = await api.get(`/infrastructure?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/infrastructure/${id}`);
+      return response.data;
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  getNearby: async (lat, lng, maxDistance, type) => {
+    try {
+      const queryParams = new URLSearchParams({
+        lat: lat.toString(),
+        lng: lng.toString(),
+        ...(maxDistance && { maxDistance: maxDistance.toString() }),
+        ...(type && { type })
+      });
+      
+      const response = await api.get(`/infrastructure/nearby?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  }
+};
+
 export default api;

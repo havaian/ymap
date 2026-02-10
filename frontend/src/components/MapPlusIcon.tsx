@@ -5,12 +5,17 @@ interface MapPlusIconProps {
   className?: string;
 }
 
-export const MapPlusIcon: React.FC<MapPlusIconProps> = ({ onClick, className = '' }) => {
+export const MapPlusIcon: React.FC<MapPlusIconProps> = ({ onClick, className }) => {
   return (
-    <img 
+    <button 
+      onClick={onClick}
+      className={`focus:outline-none hover:opacity-80 transition-opacity cursor-pointer ${className || ''}`}
+    >
+      <img 
         src="/assets/images/icons/icon.svg" 
-        alt="Map Icon" 
+        alt="Y.Map Logo" 
         className="w-8 h-8"
-    />
+      />
+    </button>
   );
 };

@@ -8,26 +8,30 @@ import { NotificationContainer, Toast } from './components/Notification';
 import { ListView } from './components/ListView';
 import { StatisticsView } from './components/StatisticsView';
 import { BurgerMenu } from './components/BurgerMenu';
-import { LoginView } from './components/LoginView';
 import { AdminUserView } from './components/AdminUserView';
 import { AdminDataView } from './components/AdminDataView';
 import { AdminOrgModal } from './components/AdminOrgModal';
 import { MapPlusIcon } from './components/MapPlusIcon';
-import { Issue, Coordinates, Comment, IssueCategory, Organization, User, UserRole } from '../types';
+import { Issue, Coordinates, IssueCategory, Organization, User, UserRole } from '../types';
 import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
-import { authAPI } from './services/api';
+import { useInfrastructure } from './hooks/useInfrastructure';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Menu, Navigation, Locate, Building2, Flame, 
   ChevronDown, Car, Droplets, Zap, GraduationCap, 
   Stethoscope, Trash2, HelpCircle, Layers, ShieldCheck
 } from 'lucide-react';
 
-const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
+interface AppProps {
+  currentUser: User;
+  onLogout: () => void;
+  initialView?: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA';
+}
+
+const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' }) => {
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState<'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA'>(initialView);
   
   // Use backend hooks instead of mock data
   const { 
@@ -44,6 +48,11 @@ const App: React.FC = () => {
     organizations, 
     loading: orgsLoading 
   } = useOrganizations();
+
+  const { 
+    infrastructure, 
+    loading: infraLoading 
+  } = useInfrastructure();
   
   const { 
     users, 
@@ -64,7 +73,6 @@ const App: React.FC = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA'>('MAP');
   
   const [activeFilter, setActiveFilter] = useState<IssueCategory | 'ALL'>('ALL');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -118,21 +126,6 @@ const App: React.FC = () => {
     const sizes = { small: '14px', medium: '16px', large: '18px' };
     root.style.fontSize = sizes[fontSize];
   }, [fontSize]);
-
-  const handleLogin = async (user: User) => {
-    // This is handled by LoginView component with backend
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    addToast(`Добро пожаловать, ${user.name}!`);
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('token');
-    setIsMenuOpen(false);
-    addToast("Вы вышли из системы");
-  };
 
   const addToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Date.now().toString();
@@ -338,7 +331,7 @@ const App: React.FC = () => {
   };
 
   // Show loading state
-  if (issuesLoading || orgsLoading) {
+  if (issuesLoading || orgsLoading || infraLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
@@ -349,13 +342,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (!currentUser) {
-    return (
-      <div className={isDarkMode ? 'dark' : ''}>
-        <LoginView onLogin={handleLogin} />
-      </div>
-    );
-  }
+  const canShowOrgs = showOrgs && !showHeatmap;
 
   return (
     <div className="h-screen w-screen flex flex-col relative overflow-hidden bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
@@ -364,9 +351,9 @@ const App: React.FC = () => {
       <BurgerMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
-        activeView={activeView as any}
+        activeView={activeView}
         onSelectView={(view) => {
-          setActiveView(view as any);
+          setActiveView(view);
           setIsMenuOpen(false);
         }}
         theme={theme}
@@ -375,7 +362,7 @@ const App: React.FC = () => {
         setFontSize={setFontSize}
         onOpenAbout={() => { setIsAboutOpen(true); setIsMenuOpen(false); }}
         currentUser={currentUser}
-        onLogout={handleLogout}
+        onLogout={onLogout}
       />
 
       <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 shadow-sm z-[400] px-6 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
@@ -383,7 +370,7 @@ const App: React.FC = () => {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition">
             <Menu className="w-5 h-5" />
           </button>
-          <MapPlusIcon onClick={() => setActiveView('MAP')} />
+          <MapPlusIcon onClick={() => navigate('/map')} />
           <div className="hidden sm:block">
             <div className="flex items-center gap-2">
                <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Y.<span className="text-blue-600">Map</span></h1>
@@ -449,12 +436,13 @@ const App: React.FC = () => {
             <MapComponent 
                 issues={mapIssues}
                 organizations={organizations}
+                infrastructure={infrastructure}
                 center={TASHKENT_CENTER} 
                 onIssueClick={handleSelectIssue}
                 onMapClick={handleMapClick}
                 onOrgClick={handleOrgClick}
                 isAdding={isAddingMode || isAdminOrgAddingMode}
-                showOrgs={showOrgs}
+                showOrgs={canShowOrgs}
                 showHeatmap={showHeatmap}
                 userLocation={userLocation}
                 triggerLocate={triggerLocate}

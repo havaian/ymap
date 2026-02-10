@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import 'leaflet.heat';
 import 'leaflet.markercluster';
-import { Issue, Coordinates, IssueCategory, Organization, Severity } from '../../types';
+import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, Severity } from '../../types';
 import { CATEGORY_COLORS } from '../constants';
 import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, ArrowRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -392,12 +392,14 @@ function MapSizeHandler() {
 interface MapComponentProps {
   issues: Issue[];
   organizations: Organization[];
+  infrastructure: Infrastructure[];
   center: [number, number];
   onIssueClick: (issue: Issue) => void;
   onMapClick: (coords: Coordinates) => void;
   onOrgClick: (org: Organization) => void;
   isAdding: boolean;
   showOrgs: boolean;
+  showInfra: boolean;
   showHeatmap: boolean;
   userLocation: Coordinates | null;
   triggerLocate: number; 
@@ -419,7 +421,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     return counts;
   }, [issues]);
 
-  const canShowOrgs = showOrgs && zoomLevel >= 14 && !showHeatmap;
+  const canShowOrgs = showOrgs && !showHeatmap;
 
   const tileUrl = isDark 
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -456,6 +458,13 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           zoomLevel={zoomLevel}
           hidden={!canShowOrgs}
           orgUnresolvedCounts={orgUnresolvedCounts}
+        />
+
+        <InfrastructureClusterGroup
+          infrastructure={infrastructure}
+          onInfraClick={onInfraClick}
+          zoomLevel={zoomLevel}
+          hidden={!showInfra || showHeatmap}
         />
 
         {userLocation && (

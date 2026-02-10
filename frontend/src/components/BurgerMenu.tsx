@@ -1,5 +1,6 @@
 import React from 'react';
 import { Map, List, BarChart3, Info, X, LogOut, Settings, Sun, Moon, Monitor, Type, ShieldCheck, User as UserIcon, Users, Database } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../../types';
 
 interface BurgerMenuProps {
@@ -22,6 +23,13 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
   currentUser, onLogout
 }) => {
   const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const navigate = useNavigate();
+
+  const handleNavigate = (path: string, view: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA') => {
+    navigate(path);
+    onSelectView(view);
+    onClose();
+  };
 
   return (
     <>
@@ -62,15 +70,16 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
                    <span className="bg-red-500 text-white text-[7px] font-black px-1 rounded uppercase tracking-tighter">Admin</span>
                 )}
               </div>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">{currentUser?.district || 'Ташкент, Узбекистан'}</p>
+              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Ташкент, Узбекистан</p>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
           <p className="px-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 mt-4">Навигация</p>
+          
           <button 
-            onClick={() => onSelectView('MAP')}
+            onClick={() => handleNavigate('/map', 'MAP')}
             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
               ${activeView === 'MAP' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
             `}
@@ -78,8 +87,9 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
             <Map className="w-5 h-5" />
             Интерактивная карта
           </button>
+          
           <button 
-            onClick={() => onSelectView('LIST')}
+            onClick={() => handleNavigate('/list', 'LIST')}
             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
               ${activeView === 'LIST' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
             `}
@@ -87,8 +97,9 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
             <List className="w-5 h-5" />
             Список обращений
           </button>
+          
           <button 
-            onClick={() => onSelectView('STATISTICS')}
+            onClick={() => handleNavigate('/dashboard', 'STATISTICS')}
             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
               ${activeView === 'STATISTICS' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
             `}
@@ -101,8 +112,9 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
             <>
               <div className="my-4 border-t border-slate-100 dark:border-slate-800 mx-4"></div>
               <p className="px-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Админ-панель</p>
+              
               <button 
-                onClick={() => onSelectView('USERS')}
+                onClick={() => handleNavigate('/users', 'USERS')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
                   ${activeView === 'USERS' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'}
                 `}
@@ -110,8 +122,9 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
                 <Users className="w-5 h-5" />
                 Пользователи
               </button>
+              
               <button 
-                onClick={() => onSelectView('DATA')}
+                onClick={() => handleNavigate('/data', 'DATA')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
                   ${activeView === 'DATA' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'}
                 `}

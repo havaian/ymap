@@ -1,28 +1,43 @@
 import { useState, useEffect } from 'react';
 import { issuesAPI, organizationsAPI, adminAPI } from '../services/api';
-import { Issue, Organization, User } from '../types';
+import { Issue, Organization, User } from '../../types';
 
 export const useIssues = () => {
     const [issues, setIssues] = useState<Issue[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchIssues = async () => {
-        try {
-            setLoading(true);
-            const response = await issuesAPI.getAll();
-            setIssues(response.data.data);
-            setError(null);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch issues');
-            console.error('Error fetching issues:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const abortController = new AbortController();
+        let isMounted = true;
+
+        const fetchIssues = async () => {
+            try {
+                if (!isMounted) return;
+                setLoading(true);
+                const response = await issuesAPI.getAll();
+                if (isMounted) {
+                    setIssues(response.data.data);
+                    setError(null);
+                }
+            } catch (err: any) {
+                if (isMounted && err.name !== 'AbortError') {
+                    setError(err.response?.data?.message || 'Failed to fetch issues');
+                    console.error('Error fetching issues:', err);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
         fetchIssues();
+
+        return () => {
+            isMounted = false;
+            abortController.abort();
+        };
     }, []);
 
     const addIssue = async (data: any) => {
@@ -82,11 +97,25 @@ export const useIssues = () => {
         }
     };
 
+    const refetchIssues = async () => {
+        try {
+            setLoading(true);
+            const response = await issuesAPI.getAll();
+            setIssues(response.data.data);
+            setError(null);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch issues');
+            console.error('Error fetching issues:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         issues,
         loading,
         error,
-        refetch: fetchIssues,
+        refetch: refetchIssues,
         addIssue,
         updateIssueStatus,
         deleteIssue,
@@ -96,11 +125,44 @@ export const useIssues = () => {
 };
 
 export const useOrganizations = () => {
-    const [organizations, setOrganizations] = useState < Organization[] > ([]);
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState < string | null > (null);
+    const [error, setError] = useState<string | null>(null);
 
-    const fetchOrganizations = async () => {
+    useEffect(() => {
+        const abortController = new AbortController();
+        let isMounted = true;
+
+        const fetchOrganizations = async () => {
+            try {
+                if (!isMounted) return;
+                setLoading(true);
+                const response = await organizationsAPI.getAll();
+                if (isMounted) {
+                    setOrganizations(response.data.data);
+                    setError(null);
+                }
+            } catch (err: any) {
+                if (isMounted && err.name !== 'AbortError') {
+                    setError(err.response?.data?.message || 'Failed to fetch organizations');
+                    console.error('Error fetching organizations:', err);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchOrganizations();
+
+        return () => {
+            isMounted = false;
+            abortController.abort();
+        };
+    }, []);
+
+    const refetchOrganizations = async () => {
         try {
             setLoading(true);
             const response = await organizationsAPI.getAll();
@@ -114,39 +176,50 @@ export const useOrganizations = () => {
         }
     };
 
-    useEffect(() => {
-        fetchOrganizations();
-    }, []);
-
     return {
         organizations,
         loading,
         error,
-        refetch: fetchOrganizations
+        refetch: refetchOrganizations
     };
 };
 
 export const useUsers = () => {
-    const [users, setUsers] = useState < User[] > ([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState < string | null > (null);
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const response = await adminAPI.getUsers();
-            setUsers(response.data.data);
-            setError(null);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch users');
-            console.error('Error fetching users:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        const abortController = new AbortController();
+        let isMounted = true;
+
+        const fetchUsers = async () => {
+            try {
+                if (!isMounted) return;
+                setLoading(true);
+                const response = await adminAPI.getUsers();
+                if (isMounted) {
+                    setUsers(response.data.data);
+                    setError(null);
+                }
+            } catch (err: any) {
+                if (isMounted && err.name !== 'AbortError') {
+                    setError(err.response?.data?.message || 'Failed to fetch users');
+                    console.error('Error fetching users:', err);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
         fetchUsers();
+
+        return () => {
+            isMounted = false;
+            abortController.abort();
+        };
     }, []);
 
     const toggleBlockUser = async (userId: string, currentBlocked: boolean) => {
@@ -161,11 +234,25 @@ export const useUsers = () => {
         }
     };
 
+    const refetchUsers = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getUsers();
+            setUsers(response.data.data);
+            setError(null);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch users');
+            console.error('Error fetching users:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         users,
         loading,
         error,
-        refetch: fetchUsers,
+        refetch: refetchUsers,
         toggleBlockUser
     };
 };

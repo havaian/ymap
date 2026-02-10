@@ -246,6 +246,120 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
   return null;
 }
 
+function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden, orgUnresolvedCounts }: any) {
+  const map = useMap();
+  const clusterGroupRef = useRef<any>(null);
+
+  useEffect(() => {
+    const markerClusterFunc = (L as any).markerClusterGroup;
+    if (typeof markerClusterFunc !== 'function' || hidden) {
+        if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+            map.removeLayer(clusterGroupRef.current);
+        }
+        return;
+    };
+
+    if (!clusterGroupRef.current) {
+        clusterGroupRef.current = markerClusterFunc({
+          showCoverageOnHover: false,
+          spiderfyOnMaxZoom: true,
+          maxClusterRadius: 60,
+          disableClusteringAtZoom: null, // Always cluster for max performance
+          animate: true,
+          iconCreateFunction: (cluster: any) => {
+            const count = cluster.getChildCount();
+            let color = '#4f46e5'; // Indigo for orgs
+            let size = 38;
+            
+            if (count >= 100) {
+              color = '#7c3aed'; // Purple for large clusters
+              size = 48;
+            } else if (count >= 50) {
+              color = '#6366f1'; // Lighter indigo
+              size = 44;
+            }
+
+            return L.divIcon({
+              html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);">${count}</div>`,
+              className: 'custom-org-cluster-wrapper',
+              iconSize: L.point(size, size)
+            });
+          }
+        });
+        map.addLayer(clusterGroupRef.current);
+    }
+
+    return () => {
+      if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+        map.removeLayer(clusterGroupRef.current);
+        clusterGroupRef.current = null;
+      }
+    };
+  }, [map, hidden]);
+
+  useEffect(() => {
+    const clusterGroup = clusterGroupRef.current;
+    if (!clusterGroup || hidden) return;
+
+    clusterGroup.clearLayers();
+
+    const markers = organizations.map((org: Organization) => {
+      const marker = L.marker([org.lat, org.lng], {
+        icon: createOrgIcon(orgUnresolvedCounts[org.id] || 0, zoomLevel, org.type)
+      });
+      
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        onOrgClick(org);
+      });
+
+      // Create popup content
+      const iconSvg = renderToStaticMarkup(org.type === IssueCategory.EDUCATION ? <School size={14} /> : <Hospital size={14} />);
+      const popupContent = `
+        <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-600 dark:text-indigo-400">
+                ${iconSvg}
+              </div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                ${org.type}
+              </span>
+            </div>
+            <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${org.name}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">${org.address}</div>
+            
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700/50">
+              <div class="flex flex-col">
+                 <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 mb-0.5">Активные задачи</span>
+                 <span class="text-sm font-black ${orgUnresolvedCounts[org.id] > 0 ? 'text-red-500' : 'text-green-500'}">
+                   ${orgUnresolvedCounts[org.id] || 0}
+                 </span>
+              </div>
+              <div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest group">
+                Подробнее ${renderToStaticMarkup(<ArrowRight size={10} />)}
+              </div>
+            </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, {
+        closeButton: false,
+        offset: [0, -5],
+        className: 'org-popup'
+      });
+      
+      marker.on('mouseover', (e) => { e.target.openPopup(); });
+      marker.on('mouseout', (e) => { e.target.closePopup(); });
+
+      return marker;
+    });
+
+    clusterGroup.addLayers(markers);
+  }, [organizations, zoomLevel, onOrgClick, hidden, orgUnresolvedCounts]);
+
+  return null;
+}
+
 function MapController({ onMapClick, setZoomLevel, userLocation, triggerLocate }: any) {
   const map = useMap();
   useMapEvents({
@@ -336,48 +450,13 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           hidden={showHeatmap}
         />
 
-        {canShowOrgs && organizations.map((org) => (
-            <Marker
-              key={org.id}
-              position={[org.lat, org.lng]}
-              icon={createOrgIcon(orgUnresolvedCounts[org.id] || 0, zoomLevel, org.type)}
-              eventHandlers={{ 
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  onOrgClick(org);
-                },
-                mouseover: (e) => { e.target.openPopup(); },
-                mouseout: (e) => { e.target.closePopup(); }
-              }}
-            >
-                <Popup closeButton={false} offset={[0, -5]} className="org-popup">
-                  <div className="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-600 dark:text-indigo-400">
-                          {org.type === IssueCategory.EDUCATION ? <School size={14} /> : <Hospital size={14} />}
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {org.type}
-                        </span>
-                      </div>
-                      <div className="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">{org.name}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">{org.address}</div>
-                      
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700/50">
-                        <div className="flex flex-col">
-                           <span className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 mb-0.5">Активные задачи</span>
-                           <span className={`text-sm font-black ${orgUnresolvedCounts[org.id] > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                             {orgUnresolvedCounts[org.id] || 0}
-                           </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest group">
-                          Подробнее <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                  </div>
-                </Popup>
-            </Marker>
-        ))}
+        <OrganizationClusterGroup
+          organizations={organizations}
+          onOrgClick={onOrgClick}
+          zoomLevel={zoomLevel}
+          hidden={!canShowOrgs}
+          orgUnresolvedCounts={orgUnresolvedCounts}
+        />
 
         {userLocation && (
           <Marker 

@@ -25,6 +25,12 @@ export enum IssueCategory {
   OTHER = 'Other'
 }
 
+export enum IssueSubCategory {
+  WATER = 'Water',
+  ELECTRICITY = 'Electricity',
+  GENERAL = 'General/Other'
+}
+
 export enum Severity {
   LOW = 'Low',
   MEDIUM = 'Medium',

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { MapComponent } from './components/MapComponent';
 import { DetailSidebar } from './components/DetailSidebar';
 import { OrgSidebar } from './components/OrgSidebar';
+import { DetailPanel } from './components/DetailPanel';
 import { IssueModal } from './components/IssueModal';
 import { AboutModal } from './components/AboutModal';
 import { NotificationContainer, Toast } from './components/Notification';
@@ -16,7 +18,6 @@ import { Issue, Coordinates, IssueCategory, Organization, User, UserRole } from 
 import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { useInfrastructure } from './hooks/useInfrastructure';
-import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Menu, Navigation, Locate, Building2, Flame, 
   ChevronDown, Car, Droplets, Zap, GraduationCap, 
@@ -26,12 +27,16 @@ import {
 interface AppProps {
   currentUser: User;
   onLogout: () => void;
-  initialView?: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA';
+  view: 'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA';
 }
 
-const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' }) => {
+const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
+  const location = useLocation();
+  const params = useParams<{ issueId?: string; orgId?: string }>();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'MAP' | 'LIST' | 'STATISTICS' | 'USERS' | 'DATA'>(initialView);
+  
+  // activeView is now derived from props, not state
+  const activeView = view;
   
   // Use backend hooks instead of mock data
   const { 
@@ -60,8 +65,15 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
     toggleBlockUser 
   } = useUsers();
   
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
-  const [viewingOrg, setViewingOrg] = useState<Organization | null>(null);
+  // Derive from URL params instead of state
+  const selectedIssue = params.issueId 
+    ? issues.find(i => i.id === params.issueId) || null 
+    : null;
+    
+  const viewingOrg = params.orgId 
+    ? organizations.find(o => o.id === params.orgId) || null 
+    : null;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminOrgModalOpen, setIsAdminOrgModalOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -173,28 +185,26 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
       setIsAdminOrgModalOpen(true);
       setIsAdminOrgAddingMode(false);
     } else {
-      setSelectedIssue(null);
-      setViewingOrg(null);
+      // Close any open panels by navigating back to base route
+      if (params.issueId || params.orgId) {
+        navigate(activeView === 'LIST' ? '/list' : '/map');
+      }
     }
   };
 
   const handleOrgClick = (org: Organization) => {
-    setViewingOrg(org);
-    setSelectedIssue(null);
+    const basePath = activeView === 'LIST' ? '/list' : '/map';
+    navigate(`${basePath}/organizations/${org.id}`);
   };
 
   const handleSelectIssue = (issue: Issue) => {
-    setSelectedIssue(issue);
-    setViewingOrg(null);
-    if (activeView !== 'MAP') setActiveView('MAP');
+    const basePath = activeView === 'LIST' ? '/list' : '/map';
+    navigate(`${basePath}/issues/${issue.id}`);
   };
 
   const handleUpdateStatus = async (issueId: string, status: 'Open' | 'In Progress' | 'Resolved') => {
     const result = await updateIssueStatus(issueId, status);
     if (result.success) {
-      if (selectedIssue?.id === issueId) {
-        setSelectedIssue(prev => prev ? { ...prev, status } : null);
-      }
       addToast(`Статус изменен на: ${status}`);
     } else {
       addToast(result.error || 'Ошибка изменения статуса', 'error');
@@ -204,7 +214,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
   const handleDeleteIssue = async (issueId: string) => {
     const result = await deleteIssue(issueId);
     if (result.success) {
-      setSelectedIssue(null);
+      navigate(activeView === 'LIST' ? '/list' : '/map');
       addToast("Обращение удалено модератором");
     } else {
       addToast(result.error || 'Ошибка удаления', 'error');
@@ -235,7 +245,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
     setSelectedOrg(org);
     setSelectedLocation({ lat: org.lat, lng: org.lng });
     setIsModalOpen(true);
-    setViewingOrg(null);
+    // Close org panel
+    navigate(activeView === 'LIST' ? '/list' : '/map');
   };
 
   const handleLocateMe = () => {
@@ -253,9 +264,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
   };
 
   const handleSelectFromList = (issue: Issue) => {
-    setActiveView('MAP');
-    setSelectedIssue(issue);
-    setViewingOrg(null);
+    // Navigate to map view with issue
+    navigate(`/map/issues/${issue.id}`);
+    
+    // Set location for map centering
     const loc = issue.organizationId 
       ? organizations.find(o => o.id === issue.organizationId) || { lat: issue.lat, lng: issue.lng }
       : { lat: issue.lat, lng: issue.lng };
@@ -283,7 +295,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
       setIsModalOpen(false);
       setSelectedLocation(null);
       setSelectedOrg(null);
-      setSelectedIssue(result.issue);
+      
+      // Navigate to the new issue
+      if (result.issue?.id) {
+        navigate(`/map/issues/${result.issue.id}`);
+      }
+      
       addToast("Отчет успешно отправлен!");
     } else {
       addToast(result.error || 'Ошибка создания обращения', 'error');
@@ -293,9 +310,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
   const handleAddComment = async (issueId: string, text: string) => {
     const result = await addCommentToIssue(issueId, text);
     if (result.success) {
-      if (selectedIssue?.id === issueId && result.comment) {
-        setSelectedIssue(prev => prev ? { ...prev, comments: [result.comment, ...prev.comments] } : null);
-      }
       addToast("Комментарий добавлен.");
     } else {
       addToast(result.error || 'Ошибка добавления комментария', 'error');
@@ -305,12 +319,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
   const handleUpvote = async (issueId: string) => {
     const result = await upvoteIssue(issueId);
     if (result.success) {
-      if (selectedIssue?.id === issueId) {
-        const updatedIssue = issues.find(i => i.id === issueId);
-        if (updatedIssue) {
-          setSelectedIssue(updatedIssue);
-        }
-      }
       addToast("Вы поддержали это обращение!");
     } else {
       addToast(result.error || 'Ошибка голосования', 'error');
@@ -353,7 +361,15 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
         onClose={() => setIsMenuOpen(false)} 
         activeView={activeView}
         onSelectView={(view) => {
-          setActiveView(view);
+          // Navigate to appropriate route
+          const routes = {
+            'MAP': '/map',
+            'LIST': '/list',
+            'STATISTICS': '/dashboard',
+            'USERS': '/users',
+            'DATA': '/data'
+          };
+          navigate(routes[view]);
           setIsMenuOpen(false);
         }}
         theme={theme}
@@ -387,7 +403,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
         <div className="flex items-center gap-2 md:gap-4">
              {currentUser.role === UserRole.ADMIN && (
                <button 
-                onClick={() => { setIsAdminOrgAddingMode(true); setActiveView('MAP'); }} 
+                onClick={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }} 
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition duration-300 ${isAdminOrgAddingMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
                >
                  <Building2 className="w-3.5 h-3.5" />
@@ -482,16 +498,30 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, initialView = 'MAP' })
         )}
       </main>
 
-      <DetailSidebar 
-        issue={selectedIssue} 
-        currentUser={currentUser}
-        onClose={() => setSelectedIssue(null)} 
-        onAddComment={handleAddComment} 
-        onUpvote={handleUpvote} 
-        onUpdateStatus={handleUpdateStatus}
-        onDeleteIssue={handleDeleteIssue}
-      />
-      <OrgSidebar org={viewingOrg} issues={issues} onClose={() => setViewingOrg(null)} onIssueClick={handleSelectIssue} onReportIssue={handleReportAtOrg} />
+      {/* Issue Detail Panel with gradient background */}
+      <DetailPanel type="issue" isOpen={!!selectedIssue}>
+        <DetailSidebar 
+          issue={selectedIssue} 
+          currentUser={currentUser}
+          onClose={() => navigate(-1)} 
+          onAddComment={handleAddComment} 
+          onUpvote={handleUpvote} 
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteIssue={handleDeleteIssue}
+        />
+      </DetailPanel>
+
+      {/* Organization Detail Panel with gradient background */}
+      <DetailPanel type="organization" isOpen={!!viewingOrg}>
+        <OrgSidebar 
+          org={viewingOrg} 
+          issues={issues} 
+          onClose={() => navigate(-1)} 
+          onIssueClick={handleSelectIssue} 
+          onReportIssue={handleReportAtOrg} 
+        />
+      </DetailPanel>
+
       <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} />
       <AdminOrgModal isOpen={isAdminOrgModalOpen} onClose={() => { setIsAdminOrgModalOpen(false); setIsAdminOrgAddingMode(false); }} onSubmit={handleAddOrg} selectedLocation={selectedLocation} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />

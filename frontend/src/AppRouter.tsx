@@ -56,7 +56,7 @@ const AppWrapper: React.FC = () => {
           } 
         />
         
-        {/* Protected routes */}
+        {/* Root redirect */}
         <Route 
           path="/" 
           element={
@@ -64,44 +64,54 @@ const AppWrapper: React.FC = () => {
           } 
         />
         
+        {/* Map routes with nested detail views */}
         <Route 
-          path="/map" 
+          path="/map"
           element={
             currentUser ? (
-              <App currentUser={currentUser} onLogout={handleLogout} initialView="MAP" />
+              <App currentUser={currentUser} onLogout={handleLogout} view="MAP" />
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
-        />
+          }
+        >
+          <Route path="issues/:issueId" element={null} />
+          <Route path="organizations/:orgId" element={null} />
+        </Route>
         
+        {/* List routes with nested detail views */}
         <Route 
-          path="/list" 
+          path="/list"
           element={
             currentUser ? (
-              <App currentUser={currentUser} onLogout={handleLogout} initialView="LIST" />
+              <App currentUser={currentUser} onLogout={handleLogout} view="LIST" />
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
-        />
+          }
+        >
+          <Route path="issues/:issueId" element={null} />
+          <Route path="organizations/:orgId" element={null} />
+        </Route>
         
+        {/* Dashboard/Statistics */}
         <Route 
           path="/dashboard" 
           element={
             currentUser ? (
-              <App currentUser={currentUser} onLogout={handleLogout} initialView="STATISTICS" />
+              <App currentUser={currentUser} onLogout={handleLogout} view="STATISTICS" />
             ) : (
               <Navigate to="/login" replace />
             )
           } 
         />
         
+        {/* Admin routes */}
         <Route 
           path="/users" 
           element={
             currentUser && currentUser.role.toLowerCase() === 'admin' ? (
-              <App currentUser={currentUser} onLogout={handleLogout} initialView="USERS" />
+              <App currentUser={currentUser} onLogout={handleLogout} view="USERS" />
             ) : (
               <Navigate to="/map" replace />
             )
@@ -112,7 +122,7 @@ const AppWrapper: React.FC = () => {
           path="/data" 
           element={
             currentUser && currentUser.role.toLowerCase() === 'admin' ? (
-              <App currentUser={currentUser} onLogout={handleLogout} initialView="DATA" />
+              <App currentUser={currentUser} onLogout={handleLogout} view="DATA" />
             ) : (
               <Navigate to="/map" replace />
             )

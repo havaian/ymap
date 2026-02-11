@@ -1,13 +1,40 @@
 import Issue from '../issue/model.js';
 import Comment from '../comment/model.js';
 import Organization from '../organization/model.js';
+import User from '../user/model.js';
+import bcrypt from 'bcryptjs';
 
 const SEVERITIES = ['Low', 'Medium', 'High', 'Critical'];
 const STATUSES = ['Open', 'In Progress', 'Resolved'];
 
-const MOCK_USERS = [
+const MOCK_USER_NAMES = [
     'Тимур Алимов', 'Нигора Саидова', 'Азиза Каримова', 'Бобур Рахимов',
-    'Динара Юсупова', 'Фарход Ахмедов', 'Малика Холматова', 'Рустам Абдуллаев'
+    'Динара Юсупова', 'Фарход Ахмедов', 'Малика Холматова', 'Рустам Абдуллаев',
+    'Шахзода Турсунова', 'Жасур Усманов', 'Гульнора Мирзаева', 'Санжар Раимов',
+    'Дилдора Нурматова', 'Элёр Хакимов', 'Нодира Азимова', 'Акбар Саттаров',
+    'Лайло Исмоилова', 'Отабек Махмудов', 'Севара Юлдашева', 'Улугбек Камолов',
+    'Зилола Рахмонова', 'Мурод Ахмадов', 'Ширин Каримова', 'Давлат Назаров',
+    'Озода Султанова', 'Бекзод Холматов', 'Нигина Абдуллаева', 'Жахонгир Эргашев',
+    'Мохира Садыкова', 'Искандар Турдиев', 'Камола Усмонова', 'Равшан Шарипов',
+    'Дилноза Рахимова', 'Шерзод Муродов', 'Феруза Алимова', 'Бахтиёр Содиков',
+    'Дилбар Хашимова', 'Жамшид Давронов', 'Малохат Юнусова', 'Отабек Бобоев',
+    'Нилуфар Мухаммадова', 'Зухриддин Раупов', 'Шахноза Аминова', 'Умид Носиров',
+    'Гулчехра Ахмедова', 'Рустам Джураев', 'Дилафруз Каримова', 'Бахром Исмаилов',
+    'Шахло Расулова', 'Достон Тошматов', 'Озода Махмудова', 'Алишер Нурматов',
+    'Нилюфер Абдуллаева', 'Шухрат Камалов', 'Диёра Усманова', 'Фаррух Ахмадов',
+    'Мадина Рахмонова', 'Санжарбек Холматов', 'Нозима Турсунова', 'Умидбек Саттаров',
+    'Дилором Мирзаева', 'Жавлон Исмоилов', 'Сайёра Юлдашева', 'Акмал Раимов',
+    'Шахноза Садыкова', 'Дониёр Муродов', 'Нигора Алимова', 'Бахтиёр Эргашев',
+    'Зулфия Холматова', 'Рашид Абдуллаев', 'Латофат Каримова', 'Шахбоз Раупов',
+    'Мухаббат Усмонова', 'Комил Шарипов', 'Дилноз Рахимова', 'Жасурбек Назаров',
+    'Феруза Султанова', 'Ойбек Турдиев', 'Нозима Юнусова', 'Равшанбек Махмудов',
+    'Дилдора Аминова', 'Шерзодбек Джураева', 'Гулнора Каримова', 'Достонбек Исмаилов',
+    'Шахзод Расулов', 'Нилуфар Тошматова', 'Бахром Махмудов', 'Озодахон Нурматова',
+    'Умидбек Абдуллаев', 'Дилафруз Камолова', 'Жавохир Усманов', 'Мадина Ахмадова',
+    'Шухрат Рахмонов', 'Нозимахон Холматова', 'Фарход Турсунов', 'Диёрабону Саттарова',
+    'Санжар Мирзаев', 'Сайёрахон Исмоилова', 'Акмалбек Юлдашев', 'Зулфияхон Раимова',
+    'Рашидбек Садыков', 'Латофатхон Муродова', 'Шахбозбек Алимов', 'Мухаббатхон Эргашева',
+    'Комилбек Холматов', 'Дилнозахон Абдуллаева', 'Жасур Каримов', 'Ойбекбек Раупов'
 ];
 
 const PROBLEM_TEMPLATES = {
@@ -68,17 +95,48 @@ const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) 
 export const generateMockData = async (count = 1000, includeComments = true) => {
     console.log(`🌱 Generating ${count} mock issues...`);
 
+    // Step 1: Calculate how many users we need (1 user per 10 issues + 5 comments)
+    const usersNeeded = Math.ceil(count / 10);
+    console.log(`👥 Creating ${usersNeeded} mock users...`);
+
+    // Step 2: Create mock users with hashed password
+    const hashedPassword = await bcrypt.hash('MockUser123!', 10);
+    const mockUsers = [];
+
+    for (let i = 0; i < usersNeeded; i++) {
+        const userName = MOCK_USER_NAMES[i % MOCK_USER_NAMES.length];
+        const email = `mock.user${i + 1}@test.ymap.uz`;
+
+        mockUsers.push({
+            name: userName,
+            email,
+            password: hashedPassword,
+            role: 'CITIZEN',
+            district: 'Tashkent',
+            isSeeded: true
+        });
+    }
+
+    const insertedUsers = await User.insertMany(mockUsers);
+    console.log(`✅ Created ${insertedUsers.length} mock users`);
+
+    // Step 3: Get organizations
     const orgs = await Organization.find().limit(500);
 
     if (orgs.length === 0) {
         throw new Error('No organizations found. Please import organizations first.');
     }
 
+    // Step 4: Generate issues with user assignment
     const issues = [];
     const now = Date.now();
     const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
 
     for (let i = 0; i < count; i++) {
+        // Assign user: every 10 issues to same user
+        const userIndex = Math.floor(i / 10);
+        const user = insertedUsers[userIndex];
+
         const org = randomChoice(orgs);
         const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
         const templates = PROBLEM_TEMPLATES[org.type][subCategory];
@@ -116,6 +174,7 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
             severity,
             status,
             votes: randomBetween(1, 500),
+            userId: user._id,
             organizationId: org._id.toString(),
             organizationName: org.name,
             aiSummary: `Автоматически определено: ${severity} приоритет. Категория: ${subCategory}.`,
@@ -125,51 +184,60 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
     }
 
     const insertedIssues = await Issue.insertMany(issues);
+    console.log(`✅ Created ${insertedIssues.length} mock issues`);
 
-    // Generate comments separately
+    // Step 5: Generate comments with user assignment
     let commentsGenerated = 0;
     if (includeComments) {
         const allComments = [];
-        for (const issue of insertedIssues) {
-            if (Math.random() > 0.3) {
-                const commentCount = randomBetween(0, 3);
-                for (let j = 0; j < commentCount; j++) {
-                    allComments.push({
-                        issueId: issue._id,
-                        userId: null,
-                        author: randomChoice(MOCK_USERS),
-                        text: randomChoice(COMMENT_TEMPLATES),
-                        createdAt: new Date(now - randomBetween(0, 30 * 24 * 60 * 60 * 1000))
-                    });
-                    commentsGenerated++;
-                }
+
+        for (let userIndex = 0; userIndex < insertedUsers.length; userIndex++) {
+            const user = insertedUsers[userIndex];
+
+            // Each user creates 5 comments on random issues
+            for (let j = 0; j < 5; j++) {
+                const randomIssue = randomChoice(insertedIssues);
+
+                allComments.push({
+                    issueId: randomIssue._id,
+                    userId: user._id,
+                    author: user.name,
+                    text: randomChoice(COMMENT_TEMPLATES),
+                    createdAt: new Date(now - randomBetween(0, 30 * 24 * 60 * 60 * 1000))
+                });
+                commentsGenerated++;
             }
         }
+
         if (allComments.length > 0) {
             await Comment.insertMany(allComments);
         }
     }
 
-    console.log(`✅ Generated ${count} mock issues with ${commentsGenerated} comments`);
+    console.log(`✅ Generated ${count} mock issues with ${commentsGenerated} comments from ${usersNeeded} users`);
 
     return {
         generated: count,
         comments: commentsGenerated,
+        users: usersNeeded,
         organizations: orgs.length
     };
 };
 
 export const clearSeededData = async () => {
-    const issuesResult = await Issue.deleteMany({ isSeeded: true });
-
     // Get all seeded issue IDs before deletion
     const seededIssueIds = await Issue.find({ isSeeded: true }).distinct('_id');
-    const commentsResult = await Comment.deleteMany({ issueId: { $in: seededIssueIds } });
 
-    console.log(`🗑️ Cleared ${issuesResult.deletedCount} seeded issues and ${commentsResult.deletedCount} comments`);
+    // Delete in order: Comments -> Issues -> Users
+    const commentsResult = await Comment.deleteMany({ issueId: { $in: seededIssueIds } });
+    const issuesResult = await Issue.deleteMany({ isSeeded: true });
+    const usersResult = await User.deleteMany({ isSeeded: true });
+
+    console.log(`🗑️ Cleared ${issuesResult.deletedCount} seeded issues, ${commentsResult.deletedCount} comments, and ${usersResult.deletedCount} users`);
 
     return {
         issues: issuesResult.deletedCount,
-        comments: commentsResult.deletedCount
+        comments: commentsResult.deletedCount,
+        users: usersResult.deletedCount
     };
 };

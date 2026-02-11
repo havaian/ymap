@@ -1,6 +1,4 @@
 // backend/src/user/model.js
-// UPDATE the role enum to include ORG_ADMIN
-
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
@@ -41,6 +39,10 @@ const userSchema = new mongoose.Schema({
     },
     organizationName: {
         type: String
+    },
+    isSeeded: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true,
@@ -54,8 +56,5 @@ const userSchema = new mongoose.Schema({
         }
     }
 });
-
-// REMOVE THIS LINE - it creates duplicate index
-// userSchema.index({ email: 1 });
 
 export default mongoose.model('User', userSchema);

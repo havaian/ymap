@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Database, Trash2, FileSpreadsheet, Users, AlertCircle, CheckCircle2, Loader2, Download, BarChart3 } from 'lucide-react';
+import { adminAPI } from '../services/api';
 
 interface AdminDataViewProps {
   onDataImported?: () => void;
@@ -33,29 +34,17 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
     setUploadResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      const response = await adminAPI.uploadOrganizations(selectedFile);
 
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/upload/organizations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUploadResult(data.data);
+      if (response.data.success) {
+        setUploadResult(response.data.data);
         setSelectedFile(null);
         if (onDataImported) onDataImported();
       } else {
-        setUploadResult({ error: data.message });
+        setUploadResult({ error: response.data.message });
       }
     } catch (error: any) {
-      setUploadResult({ error: error.message || 'Upload failed' });
+      setUploadResult({ error: error.response?.data?.message || error.message || 'Upload failed' });
     } finally {
       setIsUploading(false);
     }
@@ -66,26 +55,16 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
     setSeedResult(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/seed/generate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ issuesCount, includeComments })
-      });
+      const response = await adminAPI.seedData({ issuesCount, includeComments });
 
-      const data = await response.json();
-
-      if (data.success) {
-        setSeedResult(data.data);
+      if (response.data.success) {
+        setSeedResult(response.data.data);
         if (onDataImported) onDataImported();
       } else {
-        setSeedResult({ error: data.message });
+        setSeedResult({ error: response.data.message });
       }
     } catch (error: any) {
-      setSeedResult({ error: error.message || 'Seeding failed' });
+      setSeedResult({ error: error.response?.data?.message || error.message || 'Seeding failed' });
     } finally {
       setIsSeeding(false);
     }
@@ -100,24 +79,16 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
     setClearResult(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/seed/clear', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await adminAPI.clearSeeded();
 
-      const data = await response.json();
-
-      if (data.success) {
-        setClearResult(data.data);
+      if (response.data.success) {
+        setClearResult(response.data.data);
         if (onDataImported) onDataImported();
       } else {
-        setClearResult({ error: data.message });
+        setClearResult({ error: response.data.message });
       }
     } catch (error: any) {
-      setClearResult({ error: error.message || 'Clearing failed' });
+      setClearResult({ error: error.response?.data?.message || error.message || 'Clearing failed' });
     } finally {
       setIsClearing(false);
     }
@@ -313,10 +284,14 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
                       {seedResult.error ? (
                         <p className="text-xs text-red-600 dark:text-red-400">{seedResult.error}</p>
                       ) : (
-                        <div className="grid grid-cols-3 gap-3 text-xs">
+                        <div className="grid grid-cols-2 gap-3 text-xs">
                           <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg text-center">
                             <div className="text-2xl font-black text-purple-600 dark:text-purple-400">{seedResult.generated || 0}</div>
                             <div className="text-slate-500 dark:text-slate-400 mt-1">Обращений</div>
+                          </div>
+                          <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg text-center">
+                            <div className="text-2xl font-black text-purple-600 dark:text-purple-400">{seedResult.users || 0}</div>
+                            <div className="text-slate-500 dark:text-slate-400 mt-1">Пользователей</div>
                           </div>
                           <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg text-center">
                             <div className="text-2xl font-black text-purple-600 dark:text-purple-400">{seedResult.comments || 0}</div>
@@ -354,8 +329,8 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
                   <div>
                     <p className="text-sm font-bold text-red-800 dark:text-red-300 mb-1">Внимание!</p>
                     <p className="text-xs text-red-700 dark:text-red-400">
-                      Эта операция удалит только автоматически созданные обращения и комментарии. 
-                      Данные пользователей и организаций не будут затронуты.
+                      Эта операция удалит все автоматически созданные обращения, комментарии и пользователей. 
+                      Данные организаций не будут затронуты.
                     </p>
                   </div>
                 </div>
@@ -394,14 +369,18 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
                       {clearResult.error ? (
                         <p className="text-xs text-red-600 dark:text-red-400">{clearResult.error}</p>
                       ) : (
-                        <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="grid grid-cols-3 gap-3 text-xs">
                           <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg">
-                            <span className="text-slate-500 dark:text-slate-400">Удалено обращений:</span>
+                            <span className="text-slate-500 dark:text-slate-400">Обращений:</span>
                             <span className="font-black text-green-700 dark:text-green-400 ml-2">{clearResult.issues || 0}</span>
                           </div>
                           <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg">
-                            <span className="text-slate-500 dark:text-slate-400">Удалено комментариев:</span>
+                            <span className="text-slate-500 dark:text-slate-400">Комментариев:</span>
                             <span className="font-black text-green-700 dark:text-green-400 ml-2">{clearResult.comments || 0}</span>
+                          </div>
+                          <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg">
+                            <span className="text-slate-500 dark:text-slate-400">Пользователей:</span>
+                            <span className="font-black text-green-700 dark:text-green-400 ml-2">{clearResult.users || 0}</span>
                           </div>
                         </div>
                       )}

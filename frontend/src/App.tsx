@@ -81,7 +81,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [isAdminOrgAddingMode, setIsAdminOrgAddingMode] = useState(false);
-  const [showOrgs, setShowOrgs] = useState(true);
+  const [showOrgs, setShowOrgs] = useState(false);
+  const [showInfrastructure, setShowInfrastructure] = useState(false);
+  const [showStandaloneIssues, setShowStandaloneIssues] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -168,11 +170,20 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         filtered = [...filtered, selectedIssue];
       }
     }
+    
+    // Filter by category
     if (activeFilter !== 'ALL') {
       filtered = filtered.filter(issue => issue.category === activeFilter);
     }
+    
+    // Filter based on toggle states
+    if (!showStandaloneIssues) {
+      // Hide issues without organization or infrastructure
+      filtered = filtered.filter(issue => issue.organizationId);
+    }
+    
     return filtered;
-  }, [issues, activeFilter, selectedIssue]);
+  }, [issues, activeFilter, selectedIssue, showStandaloneIssues]);
 
   const handleMapClick = (coords: Coordinates) => {
     if (isAddingMode) {
@@ -351,6 +362,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   }
 
   const canShowOrgs = showOrgs && !showHeatmap;
+  const canShowInfrastructure = showInfrastructure && !showHeatmap;
 
   return (
     <div className="h-screen w-screen flex flex-col relative overflow-hidden bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
@@ -418,6 +430,14 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 <Building2 className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Учреждения</span>
              </button>
+             <button onClick={() => setShowInfrastructure(!showInfrastructure)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${showInfrastructure ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                <Layers className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Объекты инфраструктуры</span>
+             </button>
+             <button onClick={() => setShowStandaloneIssues(!showStandaloneIssues)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${showStandaloneIssues ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Обращения</span>
+             </button>
         </div>
       </header>
 
@@ -459,6 +479,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 onOrgClick={handleOrgClick}
                 isAdding={isAddingMode || isAdminOrgAddingMode}
                 showOrgs={canShowOrgs}
+                showInfrastructure={canShowInfrastructure}
                 showHeatmap={showHeatmap}
                 userLocation={userLocation}
                 triggerLocate={triggerLocate}

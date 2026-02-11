@@ -531,6 +531,7 @@ interface MapComponentProps {
   onInfraClick?: (infra: Infrastructure) => void;
   isAdding: boolean;
   showOrgs: boolean;
+  showInfrastructure: boolean;
   showHeatmap: boolean;
   userLocation: Coordinates | null;
   triggerLocate: number; 
@@ -538,7 +539,7 @@ interface MapComponentProps {
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
-  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showHeatmap, userLocation, triggerLocate, isDark 
+  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark 
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
 
@@ -592,7 +593,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           infrastructure={infrastructure}
           onInfraClick={onInfraClick}
           zoomLevel={zoomLevel}
-          hidden={!showOrgs || showHeatmap}
+          hidden={!showInfrastructure || showHeatmap}
         />
 
         {userLocation && (

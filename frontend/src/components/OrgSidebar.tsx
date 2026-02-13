@@ -1,3 +1,5 @@
+// frontend/src/components/OrgSidebar.tsx
+
 import React, { useMemo } from 'react';
 import { Organization, Issue, Severity } from '../../types';
 import { CATEGORY_COLORS } from '../constants';

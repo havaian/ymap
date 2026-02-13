@@ -1,3 +1,5 @@
+// frontend/src/components/MapComponent.tsx
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -74,63 +76,95 @@ function getInfraColor(type: string): string {
   return '#6366f1'; // Indigo
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE-LEVEL ICON CACHE
+//
+// Creating icons is expensive: renderToStaticMarkup runs React's server renderer
+// for every SVG, and L.divIcon allocates DOM. With 15k+ markers this becomes the
+// primary performance bottleneck — especially when zoom changes re-trigger it.
+//
+// This cache means each unique icon variant (type + state) is built exactly ONCE
+// per browser session, then reused forever.
+//
+// Key format:
+//   issue_{category}_{0|1}         (0 = full icon, 1 = zoomed-out dot)
+//   org_{type}_{count}             (count capped at 99)
+//   infra_{type}
+// ─────────────────────────────────────────────────────────────────────────────
+const iconCache = new Map<string, L.DivIcon>();
+
+function getCachedIcon(key: string, creator: () => L.DivIcon): L.DivIcon {
+  if (!iconCache.has(key)) {
+    iconCache.set(key, creator());
+  }
+  return iconCache.get(key)!;
+}
+
 function createCustomIcon(category: IssueCategory, isZoomedOut: boolean) {
-  const color = CATEGORY_COLORS[category] || '#64748b';
-  
-  if (isZoomedOut) {
-    const svg = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="${color}" stroke="white" stroke-width="2.5" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/></svg>`;
-    return L.divIcon({ html: svg, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
-  } else {
-    const iconSvg = renderToStaticMarkup(getCategoryIcon(category));
-    const svg = `
-      <div style="background-color: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+  return getCachedIcon(`issue_${category}_${isZoomedOut ? 1 : 0}`, () => {
+    const color = CATEGORY_COLORS[category] || '#64748b';
+
+    if (isZoomedOut) {
+      const svg = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="${color}" stroke="white" stroke-width="2.5" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/></svg>`;
+      return L.divIcon({ html: svg, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
+    } else {
+      const iconSvg = renderToStaticMarkup(getCategoryIcon(category));
+      const svg = `
+        <div style="background-color: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+          ${iconSvg}
+        </div>
+        <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid white; position: absolute; bottom: -8px; left: 12px;"></div>
+      `;
+      return L.divIcon({ html: svg, className: '', iconSize: [38, 48], iconAnchor: [19, 48] });
+    }
+  });
+}
+
+// Fixed-size org icon — zoom parameter removed.
+// Previously icons were recreated on every zoom tick to change size.
+// Now they use a single fixed size; the cluster group handles visual density.
+function createOrgIcon(unresolvedCount: number, type: IssueCategory) {
+  const countKey = unresolvedCount > 99 ? 99 : unresolvedCount;
+  return getCachedIcon(`org_${type}_${countKey}`, () => {
+    const color = getOrgColor(type);
+    const baseSize = 40;
+    const borderRadius = 12;
+    const badgeSize = 20;
+    const badgeFontSize = 10;
+
+    const iconSvg = renderToStaticMarkup(getOrgIcon(type, 18));
+
+    const badgeSvg = unresolvedCount > 0 ? `
+      <div style="position: absolute; top: -7px; right: -7px; background: #ef4444; color: white; border-radius: 50%; width: ${badgeSize}px; height: ${badgeSize}px; display: flex; align-items: center; justify-content: center; font-size: ${badgeFontSize}px; font-weight: 900; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;">
+        ${countKey >= 99 ? '99+' : unresolvedCount}
+      </div>
+    ` : '';
+
+    const html = `
+      <div class="org-marker-glow" style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4);">
+        ${iconSvg}
+        ${badgeSvg}
+      </div>
+    `;
+    return L.divIcon({ html, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize / 2, baseSize / 2] });
+  });
+}
+
+// Fixed-size infra icon — zoom parameter removed.
+function createInfraIcon(type: string) {
+  return getCachedIcon(`infra_${type}`, () => {
+    const color = getInfraColor(type);
+    const baseSize = 32;
+    const borderRadius = 8;
+
+    const iconSvg = renderToStaticMarkup(getInfraIcon(type, 14));
+    const html = `
+      <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3);">
         ${iconSvg}
       </div>
-      <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid white; position: absolute; bottom: -8px; left: 12px;"></div>
     `;
-    return L.divIcon({ html: svg, className: '', iconSize: [38, 48], iconAnchor: [19, 48] });
-  }
-}
-
-function createOrgIcon(unresolvedCount: number, zoom: number, type: IssueCategory) {
-  const color = getOrgColor(type);
-  const baseSize = zoom >= 15 ? 44 : zoom >= 14 ? 34 : 24;
-  const iconSize = zoom >= 15 ? 18 : zoom >= 14 ? 14 : 10;
-  const borderRadius = zoom >= 15 ? 14 : zoom >= 14 ? 10 : 6;
-  const badgeSize = zoom >= 15 ? 22 : zoom >= 14 ? 18 : 14;
-  const badgeFontSize = zoom >= 15 ? 11 : zoom >= 14 ? 9 : 7;
-
-  const iconSvg = renderToStaticMarkup(getOrgIcon(type, iconSize));
-  
-  const badgeSvg = unresolvedCount > 0 ? `
-    <div style="position: absolute; top: -${badgeSize/3}px; right: -${badgeSize/3}px; background: #ef4444; color: white; border-radius: 50%; width: ${badgeSize}px; height: ${badgeSize}px; display: flex; align-items: center; justify-content: center; font-size: ${badgeFontSize}px; font-weight: 900; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;">
-      ${unresolvedCount}
-    </div>
-  ` : '';
-
-  const svg = `
-    <div class="org-marker-glow" style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
-      ${iconSvg}
-      ${badgeSvg}
-    </div>
-  `;
-  return L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
-}
-
-function createInfraIcon(zoom: number, type: string) {
-  const color = getInfraColor(type);
-  const baseSize = zoom >= 15 ? 40 : zoom >= 14 ? 30 : 20;
-  const iconSize = zoom >= 15 ? 16 : zoom >= 14 ? 12 : 8;
-  const borderRadius = zoom >= 15 ? 12 : zoom >= 14 ? 8 : 5;
-
-  const iconSvg = renderToStaticMarkup(getInfraIcon(type, iconSize));
-
-  const svg = `
-    <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
-      ${iconSvg}
-    </div>
-  `;
-  return L.divIcon({ html: svg, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize/2, baseSize/2] });
+    return L.divIcon({ html, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize / 2, baseSize / 2] });
+  });
 }
 
 function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: boolean, zoomLevel: number }) {
@@ -212,68 +246,123 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CLUSTER GROUP ARCHITECTURE — 3-effect pattern
+//
+// The root performance problem was: ALL THREE cluster groups had zoomLevel in
+// their marker-population effect deps. Every zoom event triggered:
+//   clearLayers() → remove all N markers from DOM
+//   createIcon() × N → N renderToStaticMarkup calls
+//   addLayers() → re-insert all N markers into DOM
+//
+// For 15k infrastructure items this is catastrophic on every scroll.
+//
+// Fix: Split into three separate effects per group:
+//   1. [map]         — create cluster group ONCE, destroy on unmount
+//   2. [map, hidden] — toggle map visibility without touching markers
+//   3. [data]        — repopulate markers only when data actually changes
+//   +  [zoomLevel]   — (issues only) update icons when threshold 14 is crossed
+//
+// Result: zoom events no longer trigger any marker operations.
+// ─────────────────────────────────────────────────────────────────────────────
+
 function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
   const map = useMap();
   const clusterGroupRef = useRef<any>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const issuesRef = useRef<Issue[]>([]);
+  // Track the last zoom state used for icon rendering to skip redundant updates
+  const prevZoomedOutRef = useRef<boolean>(zoomLevel < 14);
 
+  // Stable ref for click callback — prevents stale closures when issues array changes
+  const onIssueClickRef = useRef(onIssueClick);
+  useEffect(() => { onIssueClickRef.current = onIssueClick; }, [onIssueClick]);
+
+  // Effect 1: Create cluster group once on mount, clean up on unmount
   useEffect(() => {
     const markerClusterFunc = (L as any).markerClusterGroup;
-    if (typeof markerClusterFunc !== 'function' || hidden) {
-        if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-            map.removeLayer(clusterGroupRef.current);
-        }
-        return;
-    };
+    if (typeof markerClusterFunc !== 'function') return;
 
-    if (!clusterGroupRef.current) {
-        clusterGroupRef.current = markerClusterFunc({
-          showCoverageOnHover: false,
-          spiderfyOnMaxZoom: true,
-          maxClusterRadius: 80, 
-          disableClusteringAtZoom: 15,
-          animate: true,
-          iconCreateFunction: (cluster: any) => {
-            const count = cluster.getChildCount();
-            let color = '#10b981'; 
-            if (count >= 10 && count < 50) color = '#f59e0b';
-            else if (count >= 50) color = '#ef4444';
-
-            return L.divIcon({
-              html: `<div class="cluster-anim-pulse" style="background: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">${count}</div>`,
-              className: 'custom-cluster-wrapper',
-              iconSize: L.point(38, 38)
-            });
-          }
+    clusterGroupRef.current = markerClusterFunc({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 80, 
+      disableClusteringAtZoom: 15,
+      animate: true,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        let color = '#10b981'; 
+        if (count >= 10 && count < 50) color = '#f59e0b';
+        else if (count >= 50) color = '#ef4444';
+        return L.divIcon({
+          html: `<div class="cluster-anim-pulse" style="background: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">${count}</div>`,
+          className: 'custom-cluster-wrapper',
+          iconSize: L.point(38, 38)
         });
-        map.addLayer(clusterGroupRef.current);
-    }
+      }
+    });
 
     return () => {
-      if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-        map.removeLayer(clusterGroupRef.current);
+      if (clusterGroupRef.current) {
+        if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
         clusterGroupRef.current = null;
       }
     };
+  }, [map]);
+
+  // Effect 2: Toggle visibility without touching markers
+  useEffect(() => {
+    if (!clusterGroupRef.current) return;
+    if (hidden) {
+      if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
+    } else {
+      if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current);
+    }
   }, [map, hidden]);
 
+  // Effect 3: Repopulate markers only when issue DATA changes — NOT on zoom
   useEffect(() => {
-    const clusterGroup = clusterGroupRef.current;
-    if (!clusterGroup || hidden) return;
+    const cg = clusterGroupRef.current;
+    if (!cg) return;
 
-    clusterGroup.clearLayers();
+    cg.clearLayers();
+    markersRef.current = [];
+    issuesRef.current = [];
+
+    if (hidden) return;
+
     const isZoomedOut = zoomLevel < 14;
+    prevZoomedOutRef.current = isZoomedOut;
+
     const freeIssues = issues.filter((i: Issue) => !i.organizationId && i.lat && i.lng);
+    issuesRef.current = freeIssues;
 
     const markers = freeIssues.map((issue: Issue) => {
       const marker = L.marker([issue.lat, issue.lng], {
         icon: createCustomIcon(issue.category, isZoomedOut)
       });
-      marker.on('click', () => onIssueClick(issue));
+      // Use ref so click always calls the latest handler without rebinding
+      marker.on('click', () => onIssueClickRef.current(issue));
       return marker;
     });
 
-    clusterGroup.addLayers(markers);
-  }, [issues, zoomLevel, onIssueClick, hidden]);
+    markersRef.current = markers;
+    cg.addLayers(markers);
+  }, [issues, hidden]); // zoomLevel intentionally NOT here — handled by effect 4
+
+  // Effect 4: Update icons only when zoom crosses the dot↔full threshold (zoom 14).
+  // Uses setIcon() which is O(n) but orders of magnitude faster than clearLayers+addLayers.
+  useEffect(() => {
+    const isZoomedOut = zoomLevel < 14;
+    // Early return if the visual state hasn't actually changed
+    if (isZoomedOut === prevZoomedOutRef.current) return;
+    prevZoomedOutRef.current = isZoomedOut;
+
+    markersRef.current.forEach((marker, i) => {
+      const issue = issuesRef.current[i];
+      if (issue) marker.setIcon(createCustomIcon(issue.category, isZoomedOut));
+    });
+  }, [zoomLevel]);
 
   return null;
 }
@@ -281,68 +370,93 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
 function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden, orgUnresolvedCounts }: any) {
   const map = useMap();
   const clusterGroupRef = useRef<any>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const orgsRef = useRef<Organization[]>([]);
 
+  // Stable refs for callbacks and counts
+  const onOrgClickRef = useRef(onOrgClick);
+  useEffect(() => { onOrgClickRef.current = onOrgClick; }, [onOrgClick]);
+
+  // Keep counts ref current so the data effect always uses latest values
+  // without needing orgUnresolvedCounts in its deps (which would force full marker recreation)
+  const orgCountsRef = useRef(orgUnresolvedCounts);
+  useEffect(() => { orgCountsRef.current = orgUnresolvedCounts; }, [orgUnresolvedCounts]);
+
+  // Effect 1: Create cluster group once
   useEffect(() => {
     const markerClusterFunc = (L as any).markerClusterGroup;
-    if (typeof markerClusterFunc !== 'function' || hidden) {
-        if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-            map.removeLayer(clusterGroupRef.current);
+    if (typeof markerClusterFunc !== 'function') return;
+
+    clusterGroupRef.current = markerClusterFunc({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 60,
+      disableClusteringAtZoom: null,
+      animate: true,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        let color = '#4f46e5';
+        let size = 38;
+        
+        if (count >= 100) {
+          color = '#7c3aed';
+          size = 48;
+        } else if (count >= 50) {
+          color = '#6366f1';
+          size = 44;
         }
-        return;
-    };
 
-    if (!clusterGroupRef.current) {
-        clusterGroupRef.current = markerClusterFunc({
-          showCoverageOnHover: false,
-          spiderfyOnMaxZoom: true,
-          maxClusterRadius: 60,
-          disableClusteringAtZoom: null,
-          animate: true,
-          iconCreateFunction: (cluster: any) => {
-            const count = cluster.getChildCount();
-            let color = '#4f46e5';
-            let size = 38;
-            
-            if (count >= 100) {
-              color = '#7c3aed';
-              size = 48;
-            } else if (count >= 50) {
-              color = '#6366f1';
-              size = 44;
-            }
-
-            return L.divIcon({
-              html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);">${count}</div>`,
-              className: 'custom-org-cluster-wrapper',
-              iconSize: L.point(size, size)
-            });
-          }
+        return L.divIcon({
+          html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);">${count}</div>`,
+          className: 'custom-org-cluster-wrapper',
+          iconSize: L.point(size, size)
         });
-        map.addLayer(clusterGroupRef.current);
-    }
+      }
+    });
 
     return () => {
-      if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-        map.removeLayer(clusterGroupRef.current);
+      if (clusterGroupRef.current) {
+        if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
         clusterGroupRef.current = null;
       }
     };
+  }, [map]);
+
+  // Effect 2: Toggle visibility
+  useEffect(() => {
+    if (!clusterGroupRef.current) return;
+    if (hidden) {
+      if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
+    } else {
+      if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current);
+    }
   }, [map, hidden]);
 
+  // Effect 3: Repopulate markers only when organization list changes.
+  // orgUnresolvedCounts is accessed via ref (always current, not a dep).
+  // Icon badge counts are handled separately in effect 4.
   useEffect(() => {
-    const clusterGroup = clusterGroupRef.current;
-    if (!clusterGroup || hidden) return;
+    const cg = clusterGroupRef.current;
+    if (!cg) return;
 
-    clusterGroup.clearLayers();
+    cg.clearLayers();
+    markersRef.current = [];
+    orgsRef.current = [];
+
+    if (hidden) return;
+
+    orgsRef.current = organizations;
+    const arrowSvg = renderToStaticMarkup(<ArrowRight size={10} />);
 
     const markers = organizations.map((org: Organization) => {
+      const unresolvedCount = orgCountsRef.current[org.id] || 0;
       const marker = L.marker([org.lat, org.lng], {
-        icon: createOrgIcon(orgUnresolvedCounts[org.id] || 0, zoomLevel, org.type)
+        icon: createOrgIcon(unresolvedCount, org.type)
       });
-      
+
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
-        onOrgClick(org);
+        onOrgClickRef.current(org);
       });
 
       const iconSvg = renderToStaticMarkup(getOrgIcon(org.type, 14));
@@ -362,12 +476,12 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
             <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700/50">
               <div class="flex flex-col">
                  <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 mb-0.5">Активные задачи</span>
-                 <span class="text-sm font-black ${orgUnresolvedCounts[org.id] > 0 ? 'text-red-500' : 'text-green-500'}">
-                   ${orgUnresolvedCounts[org.id] || 0}
+                 <span class="text-sm font-black ${unresolvedCount > 0 ? 'text-red-500' : 'text-green-500'}">
+                   ${unresolvedCount}
                  </span>
               </div>
               <div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest group">
-                Подробнее ${renderToStaticMarkup(<ArrowRight size={10} />)}
+                Подробнее ${arrowSvg}
               </div>
             </div>
         </div>
@@ -378,15 +492,27 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
         offset: [0, -5],
         className: 'org-popup'
       });
-      
+
       marker.on('mouseover', (e) => { e.target.openPopup(); });
       marker.on('mouseout', (e) => { e.target.closePopup(); });
 
       return marker;
     });
 
-    clusterGroup.addLayers(markers);
-  }, [organizations, zoomLevel, onOrgClick, hidden, orgUnresolvedCounts]);
+    markersRef.current = markers;
+    cg.addLayers(markers);
+  }, [organizations, hidden]); // orgUnresolvedCounts NOT here — handled in effect 4
+
+  // Effect 4: Update only the badge icons when issue counts change.
+  // This runs when issues are resolved/reopened without recreating all org markers.
+  // Note: popup count text may be slightly stale; the badge icon is always current.
+  useEffect(() => {
+    if (!markersRef.current.length) return;
+    orgsRef.current.forEach((org, i) => {
+      const marker = markersRef.current[i];
+      if (marker) marker.setIcon(createOrgIcon(orgUnresolvedCounts[org.id] || 0, org.type));
+    });
+  }, [orgUnresolvedCounts]);
 
   return null;
 }
@@ -395,67 +521,78 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
   const map = useMap();
   const clusterGroupRef = useRef<any>(null);
 
+  // Stable ref for optional click callback
+  const onInfraClickRef = useRef(onInfraClick);
+  useEffect(() => { onInfraClickRef.current = onInfraClick; }, [onInfraClick]);
+
+  // Effect 1: Create cluster group once
   useEffect(() => {
     const markerClusterFunc = (L as any).markerClusterGroup;
-    if (typeof markerClusterFunc !== 'function' || hidden) {
-        if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-            map.removeLayer(clusterGroupRef.current);
+    if (typeof markerClusterFunc !== 'function') return;
+
+    clusterGroupRef.current = markerClusterFunc({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 60,
+      disableClusteringAtZoom: null,
+      animate: true,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        let color = '#f59e0b'; // Amber for infrastructure
+        let size = 38;
+        
+        if (count >= 100) {
+          color = '#dc2626'; // Red
+          size = 48;
+        } else if (count >= 50) {
+          color = '#ea580c'; // Orange
+          size = 44;
         }
-        return;
-    };
 
-    if (!clusterGroupRef.current) {
-        clusterGroupRef.current = markerClusterFunc({
-          showCoverageOnHover: false,
-          spiderfyOnMaxZoom: true,
-          maxClusterRadius: 60,
-          disableClusteringAtZoom: null,
-          animate: true,
-          iconCreateFunction: (cluster: any) => {
-            const count = cluster.getChildCount();
-            let color = '#f59e0b'; // Amber for infrastructure
-            let size = 38;
-            
-            if (count >= 100) {
-              color = '#dc2626'; // Red
-              size = 48;
-            } else if (count >= 50) {
-              color = '#ea580c'; // Orange
-              size = 44;
-            }
-
-            return L.divIcon({
-              html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">${count}</div>`,
-              className: 'custom-infra-cluster-wrapper',
-              iconSize: L.point(size, size)
-            });
-          }
+        return L.divIcon({
+          html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">${count}</div>`,
+          className: 'custom-infra-cluster-wrapper',
+          iconSize: L.point(size, size)
         });
-        map.addLayer(clusterGroupRef.current);
-    }
+      }
+    });
 
     return () => {
-      if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-        map.removeLayer(clusterGroupRef.current);
+      if (clusterGroupRef.current) {
+        if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
         clusterGroupRef.current = null;
       }
     };
+  }, [map]);
+
+  // Effect 2: Toggle visibility
+  useEffect(() => {
+    if (!clusterGroupRef.current) return;
+    if (hidden) {
+      if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
+    } else {
+      if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current);
+    }
   }, [map, hidden]);
 
+  // Effect 3: Repopulate markers only when infrastructure data changes.
+  // No zoom dependency — icons are fixed size, clustering handles visual density.
   useEffect(() => {
-    const clusterGroup = clusterGroupRef.current;
-    if (!clusterGroup || hidden) return;
+    const cg = clusterGroupRef.current;
+    if (!cg) return;
 
-    clusterGroup.clearLayers();
+    cg.clearLayers();
+
+    if (hidden) return;
 
     const markers = infrastructure.map((infra: Infrastructure) => {
       const marker = L.marker([infra.lat, infra.lng], {
-        icon: createInfraIcon(zoomLevel, infra.type)
+        icon: createInfraIcon(infra.type)
       });
-      
+
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
-        if (onInfraClick) onInfraClick(infra);
+        if (onInfraClickRef.current) onInfraClickRef.current(infra);
       });
 
       const iconSvg = renderToStaticMarkup(getInfraIcon(infra.type, 14));
@@ -479,15 +616,15 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
         offset: [0, -5],
         className: 'infra-popup'
       });
-      
+
       marker.on('mouseover', (e) => { e.target.openPopup(); });
       marker.on('mouseout', (e) => { e.target.closePopup(); });
 
       return marker;
     });
 
-    clusterGroup.addLayers(markers);
-  }, [infrastructure, zoomLevel, onInfraClick, hidden]);
+    cg.addLayers(markers);
+  }, [infrastructure, hidden]); // zoomLevel intentionally NOT here
 
   return null;
 }

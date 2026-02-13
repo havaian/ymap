@@ -1,3 +1,5 @@
+// frontend/src/components/DetailSidebar.tsx
+
 import React, { useState } from 'react';
 import { Issue, Comment, IssueSubCategory, UserRole, User as UserType } from '../../types';
 import { CATEGORY_COLORS } from '../constants';

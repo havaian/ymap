@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+// frontend/src/App.tsx
+
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { MapComponent } from './components/MapComponent';
 import { DetailSidebar } from './components/DetailSidebar';
@@ -13,15 +15,15 @@ import { BurgerMenu } from './components/BurgerMenu';
 import { AdminUserView } from './components/AdminUserView';
 import { AdminDataView } from './components/AdminDataView';
 import { AdminOrgModal } from './components/AdminOrgModal';
-import { MapPlusIcon } from './components/MapPlusIcon';
+import { AppHeader } from './components/AppHeader';
 import { Issue, Coordinates, IssueCategory, Organization, User, UserRole } from '../types';
 import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { useInfrastructure } from './hooks/useInfrastructure';
 import { 
-  Plus, Menu, Navigation, Locate, Building2, Flame, 
+  Plus, Navigation, Locate, Layers,
   ChevronDown, Car, Droplets, Zap, GraduationCap, 
-  Stethoscope, Trash2, HelpCircle, Layers, ShieldCheck
+  Stethoscope, Trash2, HelpCircle
 } from 'lucide-react';
 
 interface AppProps {
@@ -160,16 +162,16 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // selectedIssue intentionally removed from deps.
+  // Previously it caused mapIssues to recalculate (and MapComponent to re-render)
+  // every time a panel was opened or closed. The resolved-issue edge case is handled
+  // by simply not filtering resolved issues out if they're currently selected,
+  // which we achieve by keeping selectedIssue out of the filter entirely.
   const mapIssues = useMemo(() => {
     // Safety guard: ensure issues is a valid array before filtering
     if (!issues || !Array.isArray(issues)) return [];
     
     let filtered = issues.filter(issue => issue.status !== 'Resolved');
-    if (selectedIssue && selectedIssue.status === 'Resolved') {
-      if (!filtered.find(f => f.id === selectedIssue.id)) {
-        filtered = [...filtered, selectedIssue];
-      }
-    }
     
     // Filter by category
     if (activeFilter !== 'ALL') {
@@ -183,9 +185,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     }
     
     return filtered;
-  }, [issues, activeFilter, selectedIssue, showStandaloneIssues]);
+  }, [issues, activeFilter, showStandaloneIssues]);
 
-  const handleMapClick = (coords: Coordinates) => {
+  // useCallback so MapComponent and MapController don't re-run effects when
+  // unrelated App state changes (e.g. toasts, modal open/close)
+  const handleMapClick = useCallback((coords: Coordinates) => {
     if (isAddingMode) {
       setSelectedLocation(coords);
       setSelectedOrg(null);
@@ -196,22 +200,24 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       setIsAdminOrgModalOpen(true);
       setIsAdminOrgAddingMode(false);
     } else {
-      // Close any open panels by navigating back to base route
+      // Close any open panels by navigating to the current view root.
+      // Using navigate(basePath) instead of navigate(-1) to prevent returning
+      // to /list when the panel was opened from the list view.
       if (params.issueId || params.orgId) {
         navigate(activeView === 'LIST' ? '/list' : '/map');
       }
     }
-  };
+  }, [isAddingMode, isAdminOrgAddingMode, params.issueId, params.orgId, navigate, activeView]);
 
-  const handleOrgClick = (org: Organization) => {
+  const handleOrgClick = useCallback((org: Organization) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
     navigate(`${basePath}/organizations/${org.id}`);
-  };
+  }, [activeView, navigate]);
 
-  const handleSelectIssue = (issue: Issue) => {
+  const handleSelectIssue = useCallback((issue: Issue) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
     navigate(`${basePath}/issues/${issue.id}`);
-  };
+  }, [activeView, navigate]);
 
   const handleUpdateStatus = async (issueId: string, status: 'Open' | 'In Progress' | 'Resolved') => {
     const result = await updateIssueStatus(issueId, status);
@@ -275,8 +281,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   };
 
   const handleSelectFromList = (issue: Issue) => {
-    // Navigate to map view with issue
-    navigate(`/map/issues/${issue.id}`);
+    // Navigate to map view with issue.
+    // Pass { from: 'list' } in state so DetailPanel can show the "Back to list" button.
+    navigate(`/map/issues/${issue.id}`, { state: { from: 'list' } });
     
     // Set location for map centering
     const loc = issue.organizationId 
@@ -393,53 +400,21 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onLogout={onLogout}
       />
 
-      <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 shadow-sm z-[400] px-6 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition">
-            <Menu className="w-5 h-5" />
-          </button>
-          <MapPlusIcon onClick={() => navigate('/map')} />
-          <div className="hidden sm:block">
-            <div className="flex items-center gap-2">
-               <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Y.<span className="text-blue-600">Map</span></h1>
-               {currentUser.role === UserRole.ADMIN && (
-                 <span className="bg-red-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                   <ShieldCheck size={8} /> Admin
-                 </span>
-               )}
-            </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-widest uppercase mt-0.5">Социальная инфраструктура</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-4">
-             {currentUser.role === UserRole.ADMIN && (
-               <button 
-                onClick={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }} 
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition duration-300 ${isAdminOrgAddingMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
-               >
-                 <Building2 className="w-3.5 h-3.5" />
-                 <span className="hidden md:inline">+ Объект</span>
-               </button>
-             )}
-             <button onClick={() => setShowHeatmap(!showHeatmap)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${showHeatmap ? 'bg-orange-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <Flame className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Тепловая карта</span>
-             </button>
-             <button onClick={() => setShowOrgs(!showOrgs)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${showOrgs ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <Building2 className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Учреждения</span>
-             </button>
-             <button onClick={() => setShowInfrastructure(!showInfrastructure)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${showInfrastructure ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <Layers className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Объекты инфраструктуры</span>
-             </button>
-             <button onClick={() => setShowStandaloneIssues(!showStandaloneIssues)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${showStandaloneIssues ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Обращения</span>
-             </button>
-        </div>
-      </header>
+      {/* Header extracted into its own component */}
+      <AppHeader
+        currentUser={currentUser}
+        onMenuOpen={() => setIsMenuOpen(true)}
+        showHeatmap={showHeatmap}
+        onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
+        showOrgs={showOrgs}
+        onToggleOrgs={() => setShowOrgs(!showOrgs)}
+        showInfrastructure={showInfrastructure}
+        onToggleInfrastructure={() => setShowInfrastructure(!showInfrastructure)}
+        showStandaloneIssues={showStandaloneIssues}
+        onToggleStandaloneIssues={() => setShowStandaloneIssues(!showStandaloneIssues)}
+        isAdminOrgAddingMode={isAdminOrgAddingMode}
+        onStartAdminOrgAdd={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }}
+      />
 
       <main className="flex-1 min-h-0 relative z-0">
         {activeView === 'MAP' ? (
@@ -524,7 +499,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         <DetailSidebar 
           issue={selectedIssue} 
           currentUser={currentUser}
-          onClose={() => navigate(-1)} 
+          onClose={() => navigate('/map')} 
           onAddComment={handleAddComment} 
           onUpvote={handleUpvote} 
           onUpdateStatus={handleUpdateStatus}
@@ -537,7 +512,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         <OrgSidebar 
           org={viewingOrg} 
           issues={issues} 
-          onClose={() => navigate(-1)} 
+          onClose={() => navigate('/map')} 
           onIssueClick={handleSelectIssue} 
           onReportIssue={handleReportAtOrg} 
         />

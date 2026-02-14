@@ -1,3 +1,5 @@
+// backend/src/app.js
+
 import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
@@ -7,6 +9,8 @@ import { config, validateEnv } from './config/env.js';
 import { connectDB } from './config/database.js';
 import { connectRedis } from './config/redis.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { authMiddleware, strictAuthMiddleware } from './middleware/auth.js';
+import { adminOnly } from './middleware/adminOnly.js';
 import { ensureAdminExists } from './services/admin-setup.js';
 
 import authRoutes from './auth/routes.js';
@@ -17,63 +21,88 @@ import userRoutes from './user/routes.js';
 import voteRoutes from './vote/routes.js';
 import adminRoutes from './admin/routes.js';
 
-// Validate environment variables
 validateEnv();
 
 const app = express();
 app.set('trust proxy', 1);
 
-// Security middleware
+// ── Security ─────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
     origin: process.env.CORS_ORIGIN || '*',
     credentials: true
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// Auth endpoints: strict — prevent brute-force
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 20,                    // 20 login attempts per window
+    message: { success: false, message: 'Too many attempts, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false
 });
-app.use('/api/', limiter);
 
-// Body parsing
+// Data endpoints: generous — map app fires many requests on load
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000,        // 1 minute window
+    max: 300,                   // 300 req/min per IP (5 req/s)
+    message: { success: false, message: 'Rate limit exceeded' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => req.method === 'GET' // GET requests are unauthenticated reads, skip rate limit
+});
+
+// Admin endpoints: moderate
+const adminLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    message: { success: false, message: 'Rate limit exceeded' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// ── Body parsing ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check
+// ── Health check (public) ─────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/issues', issueRoutes); // Comments are under /api/issues/:issueId/comments
-app.use('/api/infrastructure', infrastructureRoutes);
-app.use('/api/organizations', organizationRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/votes', voteRoutes);
-app.use('/api/admin', adminRoutes);
+// ── Public routes ─────────────────────────────────────────────────────────────
+// Auth: login/register are public. /auth/me uses strictAuthMiddleware inside its route.
+app.use('/api/auth', authLimiter, authRoutes);
 
-// 404 handler
+// Map data read access is intentionally public — citizens can browse without accounts.
+// Write operations (create issue, vote, comment) are protected inside each route file.
+app.use('/api/issues', apiLimiter, issueRoutes);
+app.use('/api/organizations', apiLimiter, organizationRoutes);
+app.use('/api/infrastructure', apiLimiter, infrastructureRoutes);
+
+// ── Authenticated routes ──────────────────────────────────────────────────────
+// All /api/users and /api/votes require a valid JWT
+app.use('/api/users', apiLimiter, authMiddleware, userRoutes);
+app.use('/api/votes', apiLimiter, authMiddleware, voteRoutes);
+
+// ── Admin routes ──────────────────────────────────────────────────────────────
+// strictAuthMiddleware does a DB lookup — ensures admin account still exists and isn't blocked
+app.use('/api/admin', adminLimiter, strictAuthMiddleware, adminOnly, adminRoutes);
+
+// ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Route not found'
-    });
+    res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-// Error handler (must be last)
+// ── Error handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
-// Start server
+// ── Start ─────────────────────────────────────────────────────────────────────
 const startServer = async () => {
     try {
-        // Connect to databases
         await connectDB();
         await connectRedis();
-
-        // Ensure admin user exists
         await ensureAdminExists();
 
         app.listen(config.port, '0.0.0.0', () => {
@@ -93,13 +122,5 @@ const startServer = async () => {
 
 startServer();
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully...');
-    process.exit(0);
-});
-
-process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down gracefully...');
-    process.exit(0);
-});
+process.on('SIGTERM', () => { console.log('SIGTERM received'); process.exit(0); });
+process.on('SIGINT',  () => { console.log('SIGINT received');  process.exit(0); });

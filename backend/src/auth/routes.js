@@ -1,11 +1,15 @@
+// backend/src/auth/routes.js
+
 import express from 'express';
 import { register, login, getMe } from './controller.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { strictAuthMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
-router.get('/me', authMiddleware, getMe);
+
+// /me needs a DB lookup to return fresh, complete user data
+router.get('/me', strictAuthMiddleware, getMe);
 
 export default router;

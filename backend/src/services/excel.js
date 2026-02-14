@@ -1,8 +1,9 @@
+// backend/src/services/excel.js
+
 import xlsx from 'xlsx';
 import Organization from '../organization/model.js';
 import Infrastructure from '../infrastructure/model.js';
 import { transformExcelRowToOrganization, transformExcelRowToInfrastructure } from './transform.js';
-import { createOrganizationUser } from './org-user-generator.js';
 
 const SECTOR_TO_COLLECTION_MAP = {
     "ta'lim": 'organization',
@@ -11,9 +12,11 @@ const SECTOR_TO_COLLECTION_MAP = {
     'suv': 'infrastructure'
 };
 
-const BATCH_SIZE = 1000; // Process 1000 records at a time
+const BATCH_SIZE = 1000;
 
-export const importOrganizationsFromExcel = async (filePath) => {
+// onProgress(phase, currentBatch, totalBatches)
+// phase: 'preparing' | 'orgs' | 'infrastructure'
+export const importOrganizationsFromExcel = async (filePath, onProgress = () => {}) => {
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -32,6 +35,7 @@ export const importOrganizationsFromExcel = async (filePath) => {
     });
 
     console.log(`📊 Importing ${dataRows.length} objects from Excel...`);
+    onProgress('preparing', 0, dataRows.length);
 
     const orgBulkOps = [];
     const infraBulkOps = [];
@@ -84,18 +88,20 @@ export const importOrganizationsFromExcel = async (filePath) => {
 
     console.log(`📊 Prepared: ${orgBulkOps.length} orgs, ${infraBulkOps.length} infrastructure, ${skipped} skipped`);
 
-    // Step 2: Bulk insert organizations in BATCHES (prevent timeout)
+    // Step 2: Bulk insert organizations in batches
     let organizationsImported = 0;
     if (orgBulkOps.length > 0) {
+        const totalBatches = Math.ceil(orgBulkOps.length / BATCH_SIZE);
         console.log(`⚡ Bulk inserting organizations in batches of ${BATCH_SIZE}...`);
-        
+        onProgress('orgs', 0, totalBatches);
+
         for (let i = 0; i < orgBulkOps.length; i += BATCH_SIZE) {
             const batch = orgBulkOps.slice(i, i + BATCH_SIZE);
             const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-            const totalBatches = Math.ceil(orgBulkOps.length / BATCH_SIZE);
-            
+
             console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} records)...`);
-            
+            onProgress('orgs', batchNum, totalBatches);
+
             try {
                 const orgResult = await Organization.bulkWrite(batch, { ordered: false });
                 organizationsImported += orgResult.upsertedCount + orgResult.modifiedCount;
@@ -103,22 +109,24 @@ export const importOrganizationsFromExcel = async (filePath) => {
                 console.error(`   ❌ Batch ${batchNum} failed:`, error.message);
             }
         }
-        
+
         console.log(`✅ Organizations: ${organizationsImported} created/updated`);
     }
 
-    // Step 3: Bulk insert infrastructure in BATCHES (prevent timeout)
+    // Step 3: Bulk insert infrastructure in batches
     let infrastructureImported = 0;
     if (infraBulkOps.length > 0) {
+        const totalBatches = Math.ceil(infraBulkOps.length / BATCH_SIZE);
         console.log(`⚡ Bulk inserting infrastructure in batches of ${BATCH_SIZE}...`);
-        
+        onProgress('infrastructure', 0, totalBatches);
+
         for (let i = 0; i < infraBulkOps.length; i += BATCH_SIZE) {
             const batch = infraBulkOps.slice(i, i + BATCH_SIZE);
             const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-            const totalBatches = Math.ceil(infraBulkOps.length / BATCH_SIZE);
-            
+
             console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} records)...`);
-            
+            onProgress('infrastructure', batchNum, totalBatches);
+
             try {
                 const infraResult = await Infrastructure.bulkWrite(batch, { ordered: false });
                 infrastructureImported += infraResult.upsertedCount + infraResult.modifiedCount;
@@ -126,52 +134,16 @@ export const importOrganizationsFromExcel = async (filePath) => {
                 console.error(`   ❌ Batch ${batchNum} failed:`, error.message);
             }
         }
-        
+
         console.log(`✅ Infrastructure: ${infrastructureImported} created/updated`);
     }
 
-    // Step 4: Create organization users (still slow, but necessary for password hashing)
-    console.log('👥 Creating organization users...');
-    let usersCreated = 0;
-    const credentials = [];
-    
-    // Get all organizations to create users for them
-    const organizations = await Organization.find({}).lean();
-    
-    let userCount = 0;
-    for (const org of organizations) {
-        userCount++;
-        
-        if (userCount % 1000 === 0) {
-            console.log(`   Progress: ${userCount}/${organizations.length} users processed...`);
-        }
-        
-        try {
-            const userResult = await createOrganizationUser(org, org._id.toString());
-            if (userResult.isNew) {
-                usersCreated++;
-                if (credentials.length < 100) {
-                    credentials.push({
-                        organizationId: org._id.toString(),
-                        organizationName: org.name,
-                        email: userResult.email,
-                        password: userResult.password
-                    });
-                }
-            }
-        } catch (error) {
-            // User might already exist, that's ok
-        }
-    }
-
-    console.log(`✅ Import complete: ${organizationsImported} organizations, ${infrastructureImported} infrastructure, ${usersCreated} users created, ${skipped} skipped`);
+    console.log(`✅ Import complete: ${organizationsImported} organizations, ${infrastructureImported} infrastructure, ${skipped} skipped`);
 
     return {
         total: dataRows.length,
         organizations: organizationsImported,
         infrastructure: infrastructureImported,
-        usersCreated,
-        skipped,
-        credentials: credentials
+        skipped
     };
 };

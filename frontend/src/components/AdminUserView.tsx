@@ -1,3 +1,4 @@
+// frontend/src/components/AdminUserView.tsx
 
 import React, { useState } from 'react';
 import { User, UserRole } from '../../types';

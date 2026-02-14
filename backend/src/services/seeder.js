@@ -80,7 +80,8 @@ const PROBLEM_TEMPLATES = {
     }
 };
 
-// Standalone issue templates — no organization, reported by citizens on the street
+// Standalone issue templates — no organization, reported by citizens on the street.
+// Keys MUST match IssueCategory enum values in types.ts exactly.
 const STANDALONE_TEMPLATES = {
     Roads: [
         'Яма на дороге угрожает безопасности',
@@ -94,7 +95,7 @@ const STANDALONE_TEMPLATES = {
         'Выбоины на дороге рядом с жилым домом',
         'Сломан дорожный знак'
     ],
-    Water: [
+    'Water & Sewage': [
         'Прорыв водопровода на улице',
         'Вода течёт из-под земли',
         'Неприятный запах из канализационного люка',
@@ -112,19 +113,19 @@ const STANDALONE_TEMPLATES = {
         'Сломан уличный фонарь',
         'Провода свисают над тротуаром'
     ],
-    Education: [
+    'Schools & Kindergartens': [
         'Опасный участок дороги к школе',
         'Нет пешеходного перехода у школы',
         'Стихийная свалка рядом со школой',
         'Отсутствует освещение у входа в школу'
     ],
-    Health: [
+    'Hospitals & Clinics': [
         'Несанкционированная свалка рядом с поликлиникой',
         'Нет пандуса у входа в медучреждение',
         'Опасный участок на пути к больнице',
         'Грязь и антисанитария у входа'
     ],
-    Waste: [
+    'Waste Management': [
         'Стихийная свалка мусора во дворе',
         'Переполненные мусорные контейнеры',
         'Мусор не убирают уже несколько дней',

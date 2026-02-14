@@ -90,10 +90,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [isAdminOrgAddingMode, setIsAdminOrgAddingMode] = useState(false);
-  const [showOrgs, setShowOrgs] = useState(false);
-  const [showInfrastructure, setShowInfrastructure] = useState(false);
-  const [showStandaloneIssues, setShowStandaloneIssues] = useState(false);
-  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showOrgs, setShowOrgs] = useState(() => localStorage.getItem('ymap_show_orgs') === '1');
+  const [showInfrastructure, setShowInfrastructure] = useState(() => localStorage.getItem('ymap_show_infra') === '1');
+  const [showStandaloneIssues, setShowStandaloneIssues] = useState(() => localStorage.getItem('ymap_show_issues') === '1');
+  const [showHeatmap, setShowHeatmap] = useState(() => localStorage.getItem('ymap_show_heatmap') === '1');
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
@@ -416,13 +416,13 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         currentUser={currentUser}
         onMenuOpen={() => setIsMenuOpen(true)}
         showHeatmap={showHeatmap}
-        onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
+        onToggleHeatmap={() => { const v = !showHeatmap; setShowHeatmap(v); localStorage.setItem('ymap_show_heatmap', v ? '1' : '0'); }}
         showOrgs={showOrgs}
-        onToggleOrgs={() => setShowOrgs(!showOrgs)}
+        onToggleOrgs={() => { const v = !showOrgs; setShowOrgs(v); localStorage.setItem('ymap_show_orgs', v ? '1' : '0'); }}
         showInfrastructure={showInfrastructure}
-        onToggleInfrastructure={() => setShowInfrastructure(!showInfrastructure)}
+        onToggleInfrastructure={() => { const v = !showInfrastructure; setShowInfrastructure(v); localStorage.setItem('ymap_show_infra', v ? '1' : '0'); }}
         showStandaloneIssues={showStandaloneIssues}
-        onToggleStandaloneIssues={() => setShowStandaloneIssues(!showStandaloneIssues)}
+        onToggleStandaloneIssues={() => { const v = !showStandaloneIssues; setShowStandaloneIssues(v); localStorage.setItem('ymap_show_issues', v ? '1' : '0'); }}
         isAdminOrgAddingMode={isAdminOrgAddingMode}
         onStartAdminOrgAdd={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }}
       />
@@ -549,6 +549,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
           setShowOrgs(orgs);
           setShowInfrastructure(infrastructure);
           setShowStandaloneIssues(issues);
+          localStorage.setItem('ymap_show_orgs', orgs ? '1' : '0');
+          localStorage.setItem('ymap_show_infra', infrastructure ? '1' : '0');
+          localStorage.setItem('ymap_show_issues', issues ? '1' : '0');
           setShowLayerPicker(false);
         }}
       />

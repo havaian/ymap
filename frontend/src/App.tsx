@@ -500,7 +500,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         ) : activeView === 'USERS' ? (
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
         ) : activeView === 'DATA' ? (
-          <AdminDataView onDataImported={() => window.location.reload()} />
+          <AdminDataView onDataImported={() => addToast('Данные успешно обновлены')} />
         ) : (
           <StatisticsView issues={issues} organizations={organizations} />
         )}

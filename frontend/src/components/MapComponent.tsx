@@ -657,6 +657,30 @@ function MapSizeHandler() {
   return null;
 }
 
+// Eliminates the vertical/horizontal hairline seams that appear between map tiles.
+// Browsers render tile edges at sub-pixel boundaries, leaving 1px gaps.
+// Extending each tile by 1px via negative margin makes them overlap and
+// closes the gap without any visual distortion.
+function TileSeamFix() {
+  useEffect(() => {
+    const styleId = 'leaflet-tile-seam-fix';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .leaflet-tile {
+        margin-right: -1px !important;
+        margin-bottom: -1px !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.getElementById(styleId)?.remove();
+    };
+  }, []);
+  return null;
+}
+
 interface MapComponentProps {
   issues: Issue[];
   organizations: Organization[];
@@ -704,6 +728,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         markerZoomAnimation={true}
       >
         <MapSizeHandler />
+        <TileSeamFix />
         <TileLayer
           key={tileUrl}
           url={tileUrl}

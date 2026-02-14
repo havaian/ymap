@@ -5,6 +5,7 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { MapComponent } from './components/MapComponent';
 import { DetailSidebar } from './components/DetailSidebar';
 import { OrgSidebar } from './components/OrgSidebar';
+import { InfraSidebar } from './components/InfraSidebar';
 import { DetailPanel } from './components/DetailPanel';
 import { IssueModal } from './components/IssueModal';
 import { AboutModal } from './components/AboutModal';
@@ -16,7 +17,8 @@ import { AdminUserView } from './components/AdminUserView';
 import { AdminDataView } from './components/AdminDataView';
 import { AdminOrgModal } from './components/AdminOrgModal';
 import { AppHeader } from './components/AppHeader';
-import { Issue, Coordinates, IssueCategory, Organization, User, UserRole } from '../types';
+import { LayerPickerModal, hasSeenLayerPicker } from './components/LayerPickerModal';
+import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, User, UserRole } from '../types';
 import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { useInfrastructure } from './hooks/useInfrastructure';
@@ -34,7 +36,7 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const location = useLocation();
-  const params = useParams<{ issueId?: string; orgId?: string }>();
+  const params = useParams<{ issueId?: string; orgId?: string; infraId?: string }>();
   const navigate = useNavigate();
   
   // activeView is now derived from props, not state
@@ -76,8 +78,13 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     ? organizations.find(o => o.id === params.orgId) || null 
     : null;
 
+  const viewingInfra = params.infraId
+    ? infrastructure.find(i => i.id === params.infraId) || null
+    : null;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminOrgModalOpen, setIsAdminOrgModalOpen] = useState(false);
+  const [showLayerPicker, setShowLayerPicker] = useState(() => !hasSeenLayerPicker());
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
@@ -213,6 +220,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
     navigate(`${basePath}/organizations/${org.id}`);
   }, [activeView, navigate]);
+
+  const handleInfraClick = useCallback((infra: Infrastructure) => {
+    navigate(`/map/infrastructure/${infra.id}`);
+  }, [navigate]);
 
   const handleSelectIssue = useCallback((issue: Issue) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
@@ -452,6 +463,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 onIssueClick={handleSelectIssue}
                 onMapClick={handleMapClick}
                 onOrgClick={handleOrgClick}
+                onInfraClick={handleInfraClick}
                 isAdding={isAddingMode || isAdminOrgAddingMode}
                 showOrgs={canShowOrgs}
                 showInfrastructure={canShowInfrastructure}
@@ -511,16 +523,35 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       <DetailPanel type="organization" isOpen={!!viewingOrg}>
         <OrgSidebar 
           org={viewingOrg} 
-          issues={issues} 
+          issues={issues}
+          currentUser={currentUser}
           onClose={() => navigate('/map')} 
           onIssueClick={handleSelectIssue} 
           onReportIssue={handleReportAtOrg} 
         />
       </DetailPanel>
 
+      {/* Infrastructure Detail Panel */}
+      <DetailPanel type="organization" isOpen={!!viewingInfra}>
+        <InfraSidebar
+          infra={viewingInfra}
+          currentUser={currentUser}
+          onClose={() => navigate('/map')}
+        />
+      </DetailPanel>
+
       <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} />
       <AdminOrgModal isOpen={isAdminOrgModalOpen} onClose={() => { setIsAdminOrgModalOpen(false); setIsAdminOrgAddingMode(false); }} onSubmit={handleAddOrg} selectedLocation={selectedLocation} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      <LayerPickerModal
+        isOpen={showLayerPicker}
+        onConfirm={({ orgs, infrastructure, issues }) => {
+          setShowOrgs(orgs);
+          setShowInfrastructure(infrastructure);
+          setShowStandaloneIssues(issues);
+          setShowLayerPicker(false);
+        }}
+      />
     </div>
   );
 };

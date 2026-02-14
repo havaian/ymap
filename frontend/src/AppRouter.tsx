@@ -79,6 +79,7 @@ const AppWrapper: React.FC = () => {
         >
           <Route path="issues/:issueId" element={null} />
           <Route path="organizations/:orgId" element={null} />
+          <Route path="infrastructure/:infraId" element={null} />
         </Route>
         
         {/* List routes with nested detail views */}

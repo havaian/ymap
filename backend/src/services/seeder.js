@@ -162,17 +162,29 @@ const randomFloat = (min, max) => Math.random() * (max - min) + min;
 export const generateMockData = async (count = 1000, includeComments = true) => {
     console.log(`🌱 Generating ${count} mock issues...`);
 
+    // Auto-clear any leftover seeded data from previous runs to avoid duplicate key errors
+    const existingSeededIssueIds = await Issue.find({ isSeeded: true }).distinct('_id');
+    if (existingSeededIssueIds.length > 0) {
+        console.log(`🧹 Clearing ${existingSeededIssueIds.length} leftover seeded issues from previous run...`);
+        await Comment.deleteMany({ issueId: { $in: existingSeededIssueIds } });
+        await Issue.deleteMany({ isSeeded: true });
+        await User.deleteMany({ isSeeded: true });
+        console.log(`✅ Cleared previous seeded data`);
+    }
+
     // Step 1: Calculate how many users we need (1 user per 10 issues + 5 comments)
     const usersNeeded = Math.ceil(count / 10);
     console.log(`👥 Creating ${usersNeeded} mock users...`);
 
     // Step 2: Create mock users with hashed password
     const hashedPassword = await bcrypt.hash('MockUser123!', 10);
+    // Timestamp prefix ensures emails are unique across runs (secondary safety net)
+    const runId = Date.now();
     const mockUsers = [];
 
     for (let i = 0; i < usersNeeded; i++) {
         const userName = MOCK_USER_NAMES[i % MOCK_USER_NAMES.length];
-        const email = `mock.user${i + 1}@test.ymap.uz`;
+        const email = `mock.${runId}.${i + 1}@test.ymap.uz`;
 
         mockUsers.push({
             name: userName,

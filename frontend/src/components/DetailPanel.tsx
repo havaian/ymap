@@ -35,7 +35,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ children, type, isOpen
     <>
       {/* Backdrop — clicking it closes the panel and stays on current view */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/60 backdrop-blur-lg z-40 animate-in fade-in duration-200"
         onClick={handleClose}
       />
 

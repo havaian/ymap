@@ -80,6 +80,72 @@ const PROBLEM_TEMPLATES = {
     }
 };
 
+// Standalone issue templates — no organization, reported by citizens on the street
+const STANDALONE_TEMPLATES = {
+    Roads: [
+        'Яма на дороге угрожает безопасности',
+        'Разбитый асфальт на перекрёстке',
+        'Отсутствует разметка на дороге',
+        'Сломан светофор',
+        'Повреждённый тротуар',
+        'Нет пешеходного перехода',
+        'Затопление дороги после дождя',
+        'Упавшее дерево перекрыло проезд',
+        'Выбоины на дороге рядом с жилым домом',
+        'Сломан дорожный знак'
+    ],
+    Water: [
+        'Прорыв водопровода на улице',
+        'Вода течёт из-под земли',
+        'Неприятный запах из канализационного люка',
+        'Открытый канализационный люк',
+        'Затопление подвала из-за прорыва',
+        'Лужа из грунтовых вод посреди двора',
+        'Отключили воду без предупреждения',
+        'Ржавая вода из крана'
+    ],
+    Electricity: [
+        'Оборванный провод на земле',
+        'Не горят фонари на улице',
+        'Искрит электрощит во дворе',
+        'Отключили электричество в квартале',
+        'Сломан уличный фонарь',
+        'Провода свисают над тротуаром'
+    ],
+    Education: [
+        'Опасный участок дороги к школе',
+        'Нет пешеходного перехода у школы',
+        'Стихийная свалка рядом со школой',
+        'Отсутствует освещение у входа в школу'
+    ],
+    Health: [
+        'Несанкционированная свалка рядом с поликлиникой',
+        'Нет пандуса у входа в медучреждение',
+        'Опасный участок на пути к больнице',
+        'Грязь и антисанитария у входа'
+    ],
+    Waste: [
+        'Стихийная свалка мусора во дворе',
+        'Переполненные мусорные контейнеры',
+        'Мусор не убирают уже несколько дней',
+        'Сжигают мусор рядом с жилыми домами',
+        'Нелегальный сброс строительного мусора',
+        'Нет мусорных контейнеров в районе',
+        'Разбросанный мусор после рынка',
+        'Мусорный бак сломан и переполнен'
+    ]
+};
+
+// Approximate bounding box for Tashkent city
+const TASHKENT_BOUNDS = {
+    latMin: 41.20,
+    latMax: 41.38,
+    lngMin: 69.13,
+    lngMax: 69.38
+};
+
+const STANDALONE_CATEGORIES = Object.keys(STANDALONE_TEMPLATES);
+
 const COMMENT_TEMPLATES = [
     'Когда планируется ремонт?',
     'Ситуация критическая, нужно срочно решить',
@@ -91,6 +157,7 @@ const COMMENT_TEMPLATES = [
 
 const randomChoice = (array) => array[Math.floor(Math.random() * array.length)];
 const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomFloat = (min, max) => Math.random() * (max - min) + min;
 
 export const generateMockData = async (count = 1000, includeComments = true) => {
     console.log(`🌱 Generating ${count} mock issues...`);
@@ -127,7 +194,8 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
         throw new Error('No organizations found. Please import organizations first.');
     }
 
-    // Step 4: Generate issues with user assignment
+    // Step 4: Generate issues with user assignment.
+    // ~30% of issues are standalone (no organization), ~70% are org-bound.
     const issues = [];
     const now = Date.now();
     const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
@@ -136,11 +204,6 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
         // Assign user: every 10 issues to same user
         const userIndex = Math.floor(i / 10);
         const user = insertedUsers[userIndex];
-
-        const org = randomChoice(orgs);
-        const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
-        const templates = PROBLEM_TEMPLATES[org.type][subCategory];
-        const title = randomChoice(templates);
 
         // Weight severities: 70% Medium/Low, 30% High/Critical
         const severityRand = Math.random();
@@ -157,34 +220,73 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
         else if (statusRand > 0.7) status = 'In Progress';
         else status = 'Open';
 
-        const latOffset = (Math.random() - 0.5) * 0.002;
-        const lngOffset = (Math.random() - 0.5) * 0.002;
+        const createdAt = new Date(ninetyDaysAgo + Math.random() * (now - ninetyDaysAgo));
 
-        issues.push({
-            lat: org.lat + latOffset,
-            lng: org.lng + lngOffset,
-            location: {
-                type: 'Point',
-                coordinates: [org.lng + lngOffset, org.lat + latOffset]
-            },
-            title,
-            description: `Обращение по объекту ${org.name}. ${title}. Требуется решение проблемы.`,
-            category: org.type,
-            subCategory,
-            severity,
-            status,
-            votes: randomBetween(1, 500),
-            userId: user._id,
-            organizationId: org._id.toString(),
-            organizationName: org.name,
-            aiSummary: `Автоматически определено: ${severity} приоритет. Категория: ${subCategory}.`,
-            isSeeded: true,
-            createdAt: new Date(ninetyDaysAgo + Math.random() * (now - ninetyDaysAgo))
-        });
+        if (Math.random() < 0.3) {
+            // --- Standalone issue (no organization) ---
+            const category = randomChoice(STANDALONE_CATEGORIES);
+            const title = randomChoice(STANDALONE_TEMPLATES[category]);
+            const lat = randomFloat(TASHKENT_BOUNDS.latMin, TASHKENT_BOUNDS.latMax);
+            const lng = randomFloat(TASHKENT_BOUNDS.lngMin, TASHKENT_BOUNDS.lngMax);
+
+            issues.push({
+                lat,
+                lng,
+                location: {
+                    type: 'Point',
+                    coordinates: [lng, lat]
+                },
+                title,
+                description: `Обращение от жителя. ${title}. Просьба обратить внимание и решить проблему.`,
+                category,
+                subCategory: 'General/Other',
+                severity,
+                status,
+                votes: randomBetween(1, 300),
+                userId: user._id,
+                // organizationId and organizationName intentionally omitted
+                aiSummary: `Автоматически определено: ${severity} приоритет. Самостоятельное обращение без привязки к учреждению.`,
+                isSeeded: true,
+                createdAt
+            });
+        } else {
+            // --- Org-bound issue ---
+            const org = randomChoice(orgs);
+            const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
+            const templates = PROBLEM_TEMPLATES[org.type][subCategory];
+            const title = randomChoice(templates);
+
+            const latOffset = (Math.random() - 0.5) * 0.002;
+            const lngOffset = (Math.random() - 0.5) * 0.002;
+
+            issues.push({
+                lat: org.lat + latOffset,
+                lng: org.lng + lngOffset,
+                location: {
+                    type: 'Point',
+                    coordinates: [org.lng + lngOffset, org.lat + latOffset]
+                },
+                title,
+                description: `Обращение по объекту ${org.name}. ${title}. Требуется решение проблемы.`,
+                category: org.type,
+                subCategory,
+                severity,
+                status,
+                votes: randomBetween(1, 500),
+                userId: user._id,
+                organizationId: org._id.toString(),
+                organizationName: org.name,
+                aiSummary: `Автоматически определено: ${severity} приоритет. Категория: ${subCategory}.`,
+                isSeeded: true,
+                createdAt
+            });
+        }
     }
 
     const insertedIssues = await Issue.insertMany(issues);
-    console.log(`✅ Created ${insertedIssues.length} mock issues`);
+    const standaloneCount = issues.filter(i => !i.organizationId).length;
+    const orgBoundCount = issues.length - standaloneCount;
+    console.log(`✅ Created ${insertedIssues.length} mock issues (${orgBoundCount} org-bound, ${standaloneCount} standalone)`);
 
     // Step 5: Generate comments with user assignment
     let commentsGenerated = 0;
@@ -218,6 +320,8 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
 
     return {
         generated: count,
+        standalone: standaloneCount,
+        orgBound: orgBoundCount,
         comments: commentsGenerated,
         users: usersNeeded,
         organizations: orgs.length

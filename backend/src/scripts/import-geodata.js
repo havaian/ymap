@@ -75,6 +75,98 @@ function normalizeToMultiPolygon(geometry) {
 }
 
 /**
+ * Repair self-intersecting polygons that MongoDB 2dsphere rejects.
+ * Uses turf.unkinkPolygon to split crossing edges into valid parts,
+ * then reassembles as MultiPolygon.
+ */
+function repairGeometry(geometry) {
+    try {
+        if (geometry.type === 'MultiPolygon') {
+            // Process each polygon in the multi separately
+            const repairedPolygons = [];
+
+            for (const polyCoords of geometry.coordinates) {
+                const poly = turf.polygon(polyCoords);
+                const kinks = turf.kinks(poly);
+
+                if (kinks.features.length > 0) {
+                    // Has self-intersections — unkink it
+                    const unkinked = turf.unkinkPolygon(poly);
+                    for (const part of unkinked.features) {
+                        repairedPolygons.push(part.geometry.coordinates);
+                    }
+                } else {
+                    repairedPolygons.push(polyCoords);
+                }
+            }
+
+            return {
+                type: 'MultiPolygon',
+                coordinates: repairedPolygons
+            };
+        }
+
+        if (geometry.type === 'Polygon') {
+            const poly = turf.polygon(geometry.coordinates);
+            const kinks = turf.kinks(poly);
+
+            if (kinks.features.length === 0) {
+                return geometry; // Already valid
+            }
+
+            const unkinked = turf.unkinkPolygon(poly);
+            return {
+                type: 'MultiPolygon',
+                coordinates: unkinked.features.map(f => f.geometry.coordinates)
+            };
+        }
+
+        return geometry;
+    } catch (err) {
+        console.warn(`    ⚠ Geometry repair failed: ${err.message}`);
+        return null;
+    }
+}
+
+/**
+ * Try to upsert a document. If it fails due to invalid GeoJSON (self-intersecting edges),
+ * attempt to repair the geometry and retry.
+ */
+async function upsertWithRepair(Model, filter, doc, label) {
+    try {
+        return await Model.findOneAndUpdate(filter, doc, { upsert: true, new: true });
+    } catch (err) {
+        // Check if this is a GeoJSON validation error (code 16755)
+        if (err.code === 16755 || err?.errorResponse?.code === 16755) {
+            console.warn(`    ⚠ ${label}: invalid geometry detected, attempting repair...`);
+
+            const repaired = repairGeometry(doc.geometry);
+            if (!repaired) {
+                console.warn(`    ❌ ${label}: repair failed, skipping`);
+                return null;
+            }
+
+            // Recompute centroid and area from repaired geometry
+            doc.geometry = repaired;
+            doc.centroid = computeCentroid(repaired);
+            doc.areaKm2 = computeAreaKm2(repaired);
+
+            try {
+                const result = await Model.findOneAndUpdate(filter, doc, { upsert: true, new: true });
+                console.warn(`    ✅ ${label}: repaired successfully`);
+                return result;
+            } catch (retryErr) {
+                console.warn(`    ❌ ${label}: repair didn't fix the issue (${retryErr.message}), skipping`);
+                return null;
+            }
+        }
+
+        // Some other error — rethrow
+        throw err;
+    }
+}
+
+/**
  * Compute centroid using turf.js
  */
 function computeCentroid(geometry) {
@@ -208,11 +300,8 @@ async function importRegions() {
             areaKm2
         };
 
-        await Region.findOneAndUpdate(
-            { code },
-            regionDoc,
-            { upsert: true, new: true }
-        );
+        const result = await upsertWithRepair(Region, { code }, regionDoc, `Region ${code} ${regionDoc.name.en}`);
+        if (!result) continue;
 
         imported.push(regionDoc);
         console.log(`  ✅ Region ${code}: ${regionDoc.name.en} (${areaKm2} km²)`);
@@ -309,11 +398,14 @@ async function importDistrictsFromGeoJSON(regions) {
             };
 
             // Upsert by regionCode + English name (primary key for dedup)
-            const doc = await District.findOneAndUpdate(
+            const doc = await upsertWithRepair(
+                District,
                 { regionCode, 'name.en': districtDoc.name.en },
                 districtDoc,
-                { upsert: true, new: true }
+                districtDoc.name.en || 'unknown'
             );
+
+            if (!doc) continue;
 
             allDistricts.push({ ...districtDoc, _id: doc._id });
             console.log(`    ✅ ${districtDoc.name.en} → region ${regionCode} (${areaKm2} km²)`);

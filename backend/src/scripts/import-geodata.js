@@ -193,10 +193,58 @@ function normalizeGeometry(data) {
 }
 
 /**
+ * Remove consecutive duplicate coordinates from a ring.
+ * Fixes "may not have duplicate vertices" errors from MongoDB.
+ */
+function deduplicateRing(ring) {
+    if (!ring || ring.length < 2) return ring;
+    const deduped = [ring[0]];
+    for (let i = 1; i < ring.length; i++) {
+        const prev = deduped[deduped.length - 1];
+        const curr = ring[i];
+        if (prev[0] !== curr[0] || prev[1] !== curr[1]) {
+            deduped.push(curr);
+        }
+    }
+    // Ensure ring is closed
+    if (deduped.length >= 2) {
+        const first = deduped[0];
+        const last = deduped[deduped.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+            deduped.push([...first]);
+        }
+    }
+    return deduped;
+}
+
+function deduplicateGeometry(geometry) {
+    if (!geometry) return null;
+    if (geometry.type === 'MultiPolygon') {
+        return {
+            type: 'MultiPolygon',
+            coordinates: geometry.coordinates.map(poly =>
+                poly.map(ring => deduplicateRing(ring))
+            )
+        };
+    }
+    if (geometry.type === 'Polygon') {
+        return {
+            type: 'Polygon',
+            coordinates: geometry.coordinates.map(ring => deduplicateRing(ring))
+        };
+    }
+    return geometry;
+}
+
+/**
  * Repair self-intersecting polygons that MongoDB 2dsphere rejects.
  */
 function repairGeometry(geometry) {
     try {
+        // Step 1: Deduplicate vertices
+        geometry = deduplicateGeometry(geometry);
+
+        // Step 2: Fix self-intersections
         if (geometry.type === 'MultiPolygon') {
             const repaired = [];
             for (const polyCoords of geometry.coordinates) {
@@ -284,7 +332,7 @@ async function importRegions() {
         // Fetch polygon
         console.log(`  📡 ${nameuz} (code ${regioncode})...`);
         const geomData = await apiFetch(`/api/json/regions/${regioncode}`);
-        const geometry = normalizeGeometry(geomData);
+        const geometry = deduplicateGeometry(normalizeGeometry(geomData));
 
         if (!geometry) {
             console.warn(`  ❌ No geometry for ${nameuz}, skipping`);
@@ -357,7 +405,7 @@ async function importDistricts(regions) {
                 continue;
             }
 
-            const geometry = normalizeGeometry(geomData);
+            const geometry = deduplicateGeometry(normalizeGeometry(geomData));
             if (!geometry) {
                 console.warn(` ❌ no geometry`);
                 continue;

@@ -13,11 +13,44 @@
 // Helpers
 // ─────────────────────────────────────────────
 
-const SUFFIXES = /\s*(viloyati|tumani|shahri|shaxri|shahar|respublikasi|sh\.|t\.)\s*$/i;
+const SUFFIXES = /\s*(viloyati|tumani|shahri|shaxri|shahar|respublikasi|sh\.|sh|t\.)\s*$/i;
 
+// All apostrophe-like unicode chars → standard ASCII apostrophe
+const APOSTROPHE_VARIANTS = /[\u02BB\u02BC\u2018\u2019\u201B\u0060\u00B4\u2032]/g;
+
+// Common Cyrillic lookalike → Latin replacements
+const CYRILLIC_LATIN = [
+    [/\u0430/g, 'a'],  // а → a
+    [/\u0435/g, 'e'],  // е → e
+    [/\u043E/g, 'o'],  // о → o
+    [/\u0440/g, 'r'],  // р → r (looks like Latin p/r)
+    [/\u0441/g, 's'],  // с → s
+    [/\u0443/g, 'u'],  // у → u
+    [/\u0445/g, 'x'],  // х → x
+    [/\u0410/g, 'a'],  // А → a
+    [/\u0415/g, 'e'],  // Е → e
+    [/\u041E/g, 'o'],  // О → o
+    [/\u0421/g, 's'],  // С → s
+    [/\u0425/g, 'x'],  // Х → x
+];
+
+/**
+ * Normalize UZ name for map lookup:
+ * - replace unicode apostrophe variants with ASCII '
+ * - replace Cyrillic lookalikes with Latin equivalents
+ * - lowercase
+ * - strip administrative suffixes (viloyati, tumani, shahri, etc.)
+ */
 export function normalizeUzName(nameuz) {
     if (!nameuz) return '';
-    return nameuz.toLowerCase().replace(SUFFIXES, '').trim();
+    let n = nameuz;
+    // Normalize apostrophes
+    n = n.replace(APOSTROPHE_VARIANTS, "'");
+    // Normalize Cyrillic lookalikes
+    for (const [from, to] of CYRILLIC_LATIN) {
+        n = n.replace(from, to);
+    }
+    return n.toLowerCase().replace(SUFFIXES, '').trim();
 }
 
 /**
@@ -28,9 +61,15 @@ function transliterateUz(name) {
     if (!name) return '';
     // Strip suffix first
     let n = name.replace(SUFFIXES, '').trim();
-    // Capitalize first letter of each word
-    n = n.replace(/\b\w/g, c => c.toUpperCase());
-    // Common UZ → EN letter swaps
+    // Normalize apostrophes
+    n = n.replace(APOSTROPHE_VARIANTS, "'");
+    // Normalize Cyrillic lookalikes
+    for (const [from, to] of CYRILLIC_LATIN) {
+        n = n.replace(from, to);
+    }
+    // Lowercase everything first, then capitalize first letter of each space-separated word
+    n = n.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+    // Common UZ → EN letter swaps (applied AFTER capitalization)
     const swaps = [
         [/o['ʻʼ]/gi, 'o'],
         [/g['ʻʼ]/gi, 'g'],
@@ -43,6 +82,8 @@ function transliterateUz(name) {
     for (const [from, to] of swaps) {
         n = n.replace(from, to);
     }
+    // Re-capitalize first letter (swaps may have lowered it)
+    n = n.replace(/(^|\s)\S/g, c => c.toUpperCase());
     return n;
 }
 
@@ -153,6 +194,7 @@ const DISTRICT_NAMES = {
     "do'stlik": { en: 'Dustlik', ru: 'Дустлик' },
     'forish': { en: 'Forish', ru: 'Фариш' },
     'gallaorol': { en: 'Gallaorol', ru: 'Галлаорол' },
+    "g'allaorol": { en: 'Gallaorol', ru: 'Галлаорол' },  // API uses ʻ prefix
     "sharof rashidov": { en: 'Sharof Rashidov', ru: 'Шароф Рашидов' },
     "mirzacho'l": { en: 'Mirzachul', ru: 'Мирзачуль' },
     'paxtakor': { en: 'Pakhtakor', ru: 'Пахтакор' },
@@ -205,6 +247,8 @@ const DISTRICT_NAMES = {
     'tomdi': { en: 'Tamdy', ru: 'Тамды' },
     'uchquduq': { en: 'Uchkuduk', ru: 'Учкудук' },
     'zarafshon': { en: 'Zarafshan', ru: 'Зарафшан' },
+    'karmana': { en: 'Karmana', ru: 'Кармана' },
+    "g'ozg'on": { en: 'Gazgan', ru: 'Газган' },
 
     // ═══ Samarkand region (14) ═══
     "kattaqo'rg'on": { en: 'Kattakurgan', ru: 'Каттакурган' },
@@ -217,6 +261,7 @@ const DISTRICT_NAMES = {
     'oqdaryo': { en: 'Akdarya', ru: 'Акдарья' },
     'samarqand': { en: 'Samarkand', ru: 'Самарканд' },
     'toyloq': { en: 'Tayloq', ru: 'Тайлок' },
+    'tayloq': { en: 'Tayloq', ru: 'Тайлок' },  // API spelling variant
     "pastdarg'om": { en: 'Pastdargom', ru: 'Пастдаргом' },
     'narpay': { en: 'Narpay', ru: 'Нарпай' },
     'paxtachi': { en: 'Pakhtachi', ru: 'Пахтачи' },
@@ -228,6 +273,7 @@ const DISTRICT_NAMES = {
     'guliston': { en: 'Guliston', ru: 'Гулистан' },
     'mirzaobod': { en: 'Mirzaabad', ru: 'Мирзаабад' },
     'oqoltin': { en: 'Akaltin', ru: 'Акалтын' },
+    'oq oltin': { en: 'Akaltin', ru: 'Акалтын' },  // API sends with space
     'sardoba': { en: 'Sardoba', ru: 'Сардоба' },
     'sayxunobod': { en: 'Saykhunabad', ru: 'Сайхунабад' },
     'sirdaryo': { en: 'Sirdarya', ru: 'Сырдарья' },
@@ -242,9 +288,11 @@ const DISTRICT_NAMES = {
     'denov': { en: 'Denov', ru: 'Денау' },
     "jarqo'rg'on": { en: 'Jarkurgan', ru: 'Джаркурган' },
     'muzrabod': { en: 'Muzrabod', ru: 'Музрабад' },
+    'muzrabot': { en: 'Muzrabod', ru: 'Музрабад' },  // Cyrillic а in API name
     'oltinsoy': { en: 'Oltinsoy', ru: 'Алтынсай' },
     "qiziriq": { en: 'Kizirik', ru: 'Кизирик' },
     "kumqo'rg'on": { en: 'Kumkurgan', ru: 'Кумкурган' },
+    "qumqo'rg'on": { en: 'Kumkurgan', ru: 'Кумкурган' },  // API spelling variant
     'sariosiyo': { en: 'Sariosiyo', ru: 'Сариасия' },
     'sherobod': { en: 'Sherobod', ru: 'Шерабад' },
     "sho'rchi": { en: 'Shurchi', ru: 'Шурчи' },
@@ -278,10 +326,14 @@ const DISTRICT_NAMES = {
     'parkent': { en: 'Parkent', ru: 'Паркент' },
     'piskent': { en: 'Piskent', ru: 'Пскент' },
     'quyi chirchiq': { en: 'Quyi Chirchiq', ru: 'Нижний Чирчик' },
+    'quyichirchiq': { en: 'Quyi Chirchiq', ru: 'Нижний Чирчик' },  // API sends without space
     "o'rta chirchiq": { en: 'Orta Chirchiq', ru: 'Средний Чирчик' },
+    "o'rtachirchiq": { en: 'Orta Chirchiq', ru: 'Средний Чирчик' },  // API sends without space
     "yangyo'ul": { en: 'Yangiyul', ru: 'Янгиюль' },
     'yangiyol': { en: 'Yangiyul', ru: 'Янгиюль' },
+    "yangiyo'l": { en: 'Yangiyul', ru: 'Янгиюль' },  // API spelling
     "yuqori chirchiq": { en: 'Yuqori Chirchiq', ru: 'Верхний Чирчик' },
+    'yuqorichirchiq': { en: 'Yuqori Chirchiq', ru: 'Верхний Чирчик' },  // API sends without space
     'zangiota': { en: 'Zangiota', ru: 'Зангиата' },
     'toshkent': { en: 'Tashkent', ru: 'Ташкент' },
     "olmaliq": { en: 'Olmaliq', ru: 'Алмалык' },
@@ -316,10 +368,14 @@ const DISTRICT_NAMES = {
     "qorao'zak": { en: 'Karauzyak', ru: 'Караузяк' },
     'chimboy': { en: 'Chimbay', ru: 'Чимбай' },
     "sho'manay": { en: 'Shumanay', ru: 'Шуманай' },
+    'shumanay': { en: 'Shumanay', ru: 'Шуманай' },  // API spelling variant
     "xo'jayli": { en: 'Khojayli', ru: 'Ходжейли' },
     "qonliko'l": { en: 'Kanlikul', ru: 'Канлыкуль' },
+    "qanliko'l": { en: 'Kanlikul', ru: 'Канлыкуль' },  // API spelling variant
     'kegeyli': { en: 'Kegeyli', ru: 'Кегейли' },
     "bo'zatov": { en: 'Bozatau', ru: 'Бозатау' },
     "mo'ynoq": { en: 'Muynak', ru: 'Муйнак' },
     "qo'ng'irot": { en: 'Kungrad', ru: 'Кунград' },
+    'ellikqala': { en: 'Ellikkala', ru: 'Элликкала' },
+    "ellikqal'a": { en: 'Ellikkala', ru: 'Элликкала' },  // API spelling variant
 };

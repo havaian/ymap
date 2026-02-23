@@ -1,19 +1,26 @@
 import mongoose from 'mongoose';
 
 const districtSchema = new mongoose.Schema({
+    // Official regioncode from crop.agro.uz API
     regionCode: {
         type: Number,
         required: true,
         index: true
     },
+    // API internal id for this district
+    apiId: {
+        type: Number,
+        unique: true,
+        index: true
+    },
+    // Cadastral number, e.g. "17:10"
+    cadNum: {
+        type: String
+    },
     name: {
         en: { type: String, required: true },
         ru: { type: String },
-        uz: { type: String }
-    },
-    // Merged from .js source when available
-    shapeID: {
-        type: String
+        uz: { type: String, required: true }
     },
     geometry: {
         type: {
@@ -39,7 +46,13 @@ const districtSchema = new mongoose.Schema({
     },
     areaKm2: {
         type: Number
-    }
+    },
+    // Crop types available in this district (from /api/plants/{id})
+    crops: [{
+        apiId: Number,
+        name: String,   // UZ name from API
+        color: String   // hex color
+    }]
 }, {
     timestamps: true,
     toJSON: {

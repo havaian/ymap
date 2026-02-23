@@ -1,15 +1,21 @@
 import mongoose from 'mongoose';
 
 const regionSchema = new mongoose.Schema({
+    // Official regioncode from crop.agro.uz API (10-23 range)
     code: {
         type: Number,
         required: true,
         unique: true,
         index: true
     },
+    // API internal id (separate from regioncode)
+    apiId: {
+        type: Number,
+        index: true
+    },
     name: {
         en: { type: String, required: true },
-        ru: { type: String, required: true },
+        ru: { type: String },
         uz: { type: String, required: true }
     },
     geometry: {

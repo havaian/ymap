@@ -308,6 +308,18 @@ export const AnalyticsDashboard: React.FC = () => {
         [cropAnalytics]
     );
 
+    // Listen for district-drilldown events from the DistrictTable
+    React.useEffect(() => {
+        const handler = (e: any) => {
+            const { id, name, scores } = e.detail;
+            setDrilldownId(id);
+            setDrilldownName(name);
+            setDrilldownScores(scores);
+        };
+        window.addEventListener('district-drilldown', handler);
+        return () => window.removeEventListener('district-drilldown', handler);
+    }, []);
+
     // ── Loading / Error ──
 
     if (loading) {
@@ -338,18 +350,6 @@ export const AnalyticsDashboard: React.FC = () => {
     const o = overview!;
     const totalBudget = o.budget.committedUZS;
     const spentBudget = o.budget.spentUZS;
-
-    // Listen for district-drilldown events from the DistrictTable
-    React.useEffect(() => {
-        const handler = (e: any) => {
-            const { id, name, scores } = e.detail;
-            setDrilldownId(id);
-            setDrilldownName(name);
-            setDrilldownScores(scores);
-        };
-        window.addEventListener('district-drilldown', handler);
-        return () => window.removeEventListener('district-drilldown', handler);
-    }, []);
 
     return (
         <React.Fragment>

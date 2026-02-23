@@ -9,6 +9,7 @@ import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, Severi
 import { CATEGORY_COLORS } from '../../constants';
 import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, Construction, Waves, ArrowRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { ChoroplethLayer, ChoroplethLegend } from '../analytics/ChoroplethLayer';
 
 // Fix for Leaflet default icons in ESM environment
 if (L.Icon && L.Icon.Default) {
@@ -697,10 +698,13 @@ interface MapComponentProps {
   userLocation: Coordinates | null;
   triggerLocate: number; 
   isDark: boolean;
+  showChoropleth: boolean;
+  choroplethMetric: string;
+  onDistrictClick?: (districtId: string, name: any, scores: any) => void;
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
-  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark 
+  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark, showChoropleth, choroplethMetric, onDistrictClick
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
 
@@ -735,6 +739,12 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         />
         
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />
+
+        <ChoroplethLayer
+          show={showChoropleth && !showHeatmap}
+          metric={choroplethMetric}
+          onDistrictClick={onDistrictClick}
+        />
 
         <MarkerClusterGroup 
           issues={issues} 
@@ -778,6 +788,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
         <MapController onMapClick={onMapClick} setZoomLevel={setZoomLevel} userLocation={userLocation} triggerLocate={triggerLocate} />
       </MapContainer>
+      {showChoropleth && !showHeatmap && (
+        <div className="absolute bottom-24 left-4 z-[400]">
+          <ChoroplethLegend metric={choroplethMetric} />
+        </div>
+      )}
     </div>
   );
 };

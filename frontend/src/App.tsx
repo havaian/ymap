@@ -22,6 +22,7 @@ import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, User, 
 import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { useInfrastructure } from './hooks/useInfrastructure';
+import { DistrictDrilldown } from './components/analytics/DistrictDrilldown';
 import { 
   Plus, Navigation, Locate, Layers,
   ChevronDown, Car, Droplets, Zap, GraduationCap, 
@@ -104,6 +105,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [triggerLocate, setTriggerLocate] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const [showChoropleth, setShowChoropleth] = useState(false);
+  const [choroplethMetric, setChoroplethMetric] = useState('composite');
+  const [drilldownDistrictId, setDrilldownDistrictId] = useState<string | null>(null);
+  const [drilldownDistrictName, setDrilldownDistrictName] = useState<any>(null);
+  const [drilldownDistrictScores, setDrilldownDistrictScores] = useState<any>(null);
 
   // Settings state
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
@@ -215,6 +222,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       }
     }
   }, [isAddingMode, isAdminOrgAddingMode, params.issueId, params.orgId, navigate, activeView]);
+
+  const handleDistrictClick = useCallback((districtId: string, name: any, scores: any) => {
+    setDrilldownDistrictId(districtId);
+    setDrilldownDistrictName(name);
+    setDrilldownDistrictScores(scores);
+  }, []);
 
   const handleOrgClick = useCallback((org: Organization) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
@@ -426,6 +439,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onToggleStandaloneIssues={() => { const v = !showStandaloneIssues; setShowStandaloneIssues(v); localStorage.setItem('ymap_show_issues', v ? '1' : '0'); }}
         isAdminOrgAddingMode={isAdminOrgAddingMode}
         onStartAdminOrgAdd={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }}
+        showChoropleth={showChoropleth}
+        onToggleChoropleth={() => setShowChoropleth(p => !p)}
+        choroplethMetric={choroplethMetric}
+        onChoroplethMetricChange={setChoroplethMetric}
       />
 
       <main className="flex-1 min-h-0 relative z-0">
@@ -472,6 +489,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 userLocation={userLocation}
                 triggerLocate={triggerLocate}
                 isDark={isDarkMode}
+                showChoropleth={showChoropleth}
+                choroplethMetric={choroplethMetric}
+                onDistrictClick={handleDistrictClick}
             />
             <div className="absolute bottom-8 right-6 z-[400] flex flex-col items-end gap-4">
                 <button onClick={handleLocateMe} className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-300 border border-slate-100 dark:border-slate-700"><Locate className="w-6 h-6" /></button>
@@ -555,6 +575,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
           localStorage.setItem('ymap_show_issues', issues ? '1' : '0');
           setShowLayerPicker(false);
         }}
+      />
+      <DistrictDrilldown
+        districtId={drilldownDistrictId}
+        districtName={drilldownDistrictName}
+        scores={drilldownDistrictScores}
+        onClose={() => setDrilldownDistrictId(null)}
       />
     </div>
   );

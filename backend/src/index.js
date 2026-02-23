@@ -25,6 +25,7 @@ import analyticsRoutes from './analytics/routes.js';
 import regionRoutes from './region/routes.js';
 import districtRoutes from './district/routes.js';
 import markerRoutes from './markers/routes.js';
+import openBudgetRoutes from './openbudget/routes.js';
 
 validateEnv();
 
@@ -110,6 +111,9 @@ app.use('/api/districts', apiLimiter, authMiddleware, districtRoutes);
 
 // ── Marker routes (public, used by map for displaying issues/infrastructure/organizations)
 app.use('/api/markers', apiLimiter, authMiddleware, markerRoutes);
+
+// ── Open Budget routes (public, used by analytics dashboard and open budget page)
+app.use('/api/openbudget', apiLimiter, authMiddleware, openBudgetRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

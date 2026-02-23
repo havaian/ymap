@@ -2,15 +2,15 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Building2, Flame, Plus, Layers, ShieldCheck } from 'lucide-react';
+import { Menu, Building2, Flame, Plus, Layers, ShieldCheck, Map as MapIcon } from 'lucide-react';
 import { MapPlusIcon } from '../map/MapPlusIcon';
 import { User, UserRole } from '../../../types';
 
 interface AppHeaderProps {
   currentUser: User;
   onMenuOpen: () => void;
-  showHeatmap: boolean;
   activeView: string;
+  showHeatmap: boolean;
   onToggleHeatmap: () => void;
   showOrgs: boolean;
   onToggleOrgs: () => void;
@@ -20,13 +20,17 @@ interface AppHeaderProps {
   onToggleStandaloneIssues: () => void;
   isAdminOrgAddingMode: boolean;
   onStartAdminOrgAdd: () => void;
+  showChoropleth: boolean;
+  onToggleChoropleth: () => void;
+  choroplethMetric: string;
+  onChoroplethMetricChange: (metric: string) => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   currentUser,
   onMenuOpen,
-  showHeatmap,
   activeView,
+  showHeatmap,
   onToggleHeatmap,
   showOrgs,
   onToggleOrgs,
@@ -36,6 +40,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onToggleStandaloneIssues,
   isAdminOrgAddingMode,
   onStartAdminOrgAdd,
+  showChoropleth,
+  onToggleChoropleth,
+  choroplethMetric,
+  onChoroplethMetricChange,
 }) => {
   const navigate = useNavigate();
 
@@ -93,6 +101,32 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <Flame className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Тепловая карта</span>
           </button>
+
+          <button
+            onClick={onToggleChoropleth}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
+              showChoropleth
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <MapIcon className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Районы</span>
+          </button>
+
+          {showChoropleth && (
+            <select
+              value={choroplethMetric}
+              onChange={(e) => onChoroplethMetricChange(e.target.value)}
+              className="appearance-none bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-full px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 focus:outline-none cursor-pointer"
+            >
+              <option value="composite">Общий</option>
+              <option value="infrastructure">Инфра</option>
+              <option value="issues">Обращения</option>
+              <option value="budget">Бюджет</option>
+              <option value="crops">Агро</option>
+            </select>
+          )}
 
           <button
             onClick={onToggleOrgs}

@@ -51,13 +51,13 @@ async function findDistrictForPoint(lat, lng, districtCache) {
         geometry: { $geoIntersects: { $geometry: point } }
     }).lean();
 
-    // Fallback: nearest centroid within 50km
+    // Fallback: nearest centroid within 200km (needed for large regions like Navoi, Karakalpakstan)
     if (!district) {
         district = await District.findOne({
             centroid: {
                 $near: {
                     $geometry: point,
-                    $maxDistance: 50000
+                    $maxDistance: 200000 // 200km fallback radius (needed for large regions like Navoi, Karakalpakstan)
                 }
             }
         }).lean();

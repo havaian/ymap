@@ -325,6 +325,13 @@ async function importDistrictsFromGeoJSON(regions) {
 
     console.log(`\n📍 Importing districts from ${files.length} .geojson files`);
 
+    // Clean up previously imported districts (they may have dedup issues from earlier runs)
+    const oldCount = await District.countDocuments();
+    if (oldCount > 0) {
+        console.log(`  🗑  Clearing ${oldCount} existing districts before reimport...`);
+        await District.deleteMany({});
+    }
+
     const allDistricts = [];
 
     for (const filePath of files) {
@@ -334,6 +341,12 @@ async function importDistrictsFromGeoJSON(regions) {
         console.log(`\n  📂 ${fileName} (${geojson.features?.length || 0} features)`);
 
         if (!geojson.features?.length) continue;
+
+        // Log property keys from first feature for debugging
+        const firstProps = geojson.features[0]?.properties;
+        if (firstProps) {
+            console.log(`    📋 Properties: [${Object.keys(firstProps).join(', ')}]`);
+        }
 
         for (const feature of geojson.features) {
             const props = feature.properties;
@@ -376,39 +389,75 @@ async function importDistrictsFromGeoJSON(regions) {
                     }
                 }
                 if (regionCode !== null) {
-                    console.warn(`    ⚠ ${props?.ADM2_EN || 'unknown'}: used centroid fallback → region ${regionCode}`);
+                    const fName = props?.ADM2_EN || props?.name || props?.Name || 'unknown';
+                    console.warn(`    ⚠ ${fName}: used centroid fallback → region ${regionCode}`);
                 }
             }
 
             if (regionCode === null) {
-                console.warn(`    ⚠ Skipping ${props?.ADM2_EN || 'unknown'}: could not determine region`);
+                const fName = props?.ADM2_EN || props?.name || props?.Name || 'unknown';
+                console.warn(`    ⚠ Skipping ${fName}: could not determine region`);
                 continue;
+            }
+
+            // Extract names from various property key patterns
+            // Some district files use ADM1_* keys, some ADM2_*, some just "name"
+            const nameEn = props.ADM2_EN || props.ADM1_EN
+                || props.name_en || props.NAME_EN || props.Name_EN
+                || props.name || props.Name || props.NAME
+                || props.shapeName || props.district || props.DISTRICT
+                || props.label || '';
+            const nameRu = props.ADM2_RU || props.ADM1_RU
+                || props.name_ru || props.NAME_RU || props.Name_RU || '';
+            const nameUz = props.ADM2_UZ || props.ADM1_UZ
+                || props.name_uz || props.NAME_UZ || props.Name_UZ || '';
+
+            // Warn if no name found — log available keys for debugging
+            if (!nameEn) {
+                const keys = Object.keys(props).join(', ');
+                console.warn(`    ⚠ No district name found! Available properties: [${keys}]`);
+                console.warn(`      Values: ${JSON.stringify(props)}`);
             }
 
             const districtDoc = {
                 regionCode,
                 name: {
-                    en: props.ADM2_EN || props.name_en || props.name || '',
-                    ru: props.ADM2_RU || props.name_ru || '',
-                    uz: props.ADM2_UZ || props.name_uz || ''
+                    en: nameEn,
+                    ru: nameRu,
+                    uz: nameUz
                 },
                 geometry,
                 centroid,
                 areaKm2
             };
 
-            // Upsert by regionCode + English name (primary key for dedup)
+            // Dedup key: use regionCode + name if name exists,
+            // otherwise fall back to regionCode + centroid (rounded to avoid float issues)
+            let upsertFilter;
+            if (nameEn) {
+                upsertFilter = { regionCode, 'name.en': nameEn };
+            } else {
+                // Centroid-based dedup for nameless features
+                const cLng = Math.round(centroid.coordinates[0] * 10000) / 10000;
+                const cLat = Math.round(centroid.coordinates[1] * 10000) / 10000;
+                upsertFilter = {
+                    regionCode,
+                    'centroid.coordinates.0': { $gte: cLng - 0.001, $lte: cLng + 0.001 },
+                    'centroid.coordinates.1': { $gte: cLat - 0.001, $lte: cLat + 0.001 }
+                };
+            }
+
             const doc = await upsertWithRepair(
                 District,
-                { regionCode, 'name.en': districtDoc.name.en },
+                upsertFilter,
                 districtDoc,
-                districtDoc.name.en || 'unknown'
+                nameEn || `unnamed@${centroid.coordinates}`
             );
 
             if (!doc) continue;
 
             allDistricts.push({ ...districtDoc, _id: doc._id });
-            console.log(`    ✅ ${districtDoc.name.en} → region ${regionCode} (${areaKm2} km²)`);
+            console.log(`    ✅ ${nameEn || '(unnamed)'} → region ${regionCode} (${areaKm2} km²)`);
         }
     }
 

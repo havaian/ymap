@@ -24,6 +24,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@turf/turf": "^7.3.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",

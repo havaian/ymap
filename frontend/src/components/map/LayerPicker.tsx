@@ -62,7 +62,7 @@ function LayerToggle({ active, label, icon, color, onClick }: {
 // ── Metric chips (shown when choropleth is active) ──────
 const METRICS = [
   { value: 'composite', label: 'Общий' },
-  { value: 'infrastructure', label: 'Инфра' },
+  { value: 'infrastructure', label: 'Объекты инф-ры' },
   { value: 'issues', label: 'Обращения' },
   { value: 'budget', label: 'Бюджет' },
   { value: 'crops', label: 'Агро' },

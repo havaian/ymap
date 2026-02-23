@@ -1,6 +1,7 @@
 // backend/src/app.js
 
 import 'express-async-errors';
+import compression from 'compression';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -23,6 +24,7 @@ import adminRoutes from './admin/routes.js';
 import analyticsRoutes from './analytics/routes.js';
 import regionRoutes from './region/routes.js';
 import districtRoutes from './district/routes.js';
+import markerRoutes from './markers/routes.js';
 
 validateEnv();
 
@@ -65,6 +67,12 @@ const adminLimiter = rateLimit({
     legacyHeaders: false
 });
 
+// Gzip — cuts response size by 70-80%
+app.use(compression());
+
+// Body parsing (existing)
+app.use(express.json({ limit: '10mb' }));
+
 // ── Body parsing ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -99,6 +107,9 @@ app.use('/api/analytics', strictAuthMiddleware, adminOnly, analyticsRoutes);
 // ── Region & District routes (public, used by map for geojson and dropdowns)
 app.use('/api/regions', apiLimiter, authMiddleware, regionRoutes);
 app.use('/api/districts', apiLimiter, authMiddleware, districtRoutes);
+
+// ── Marker routes (public, used by map for displaying issues/infrastructure/organizations)
+app.use('/api/markers', apiLimiter, authMiddleware, markerRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

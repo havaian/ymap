@@ -1,10 +1,8 @@
-// frontend/src/services/api.ts
-
-import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
@@ -20,12 +18,14 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response interceptor - redirect to login on 401
+// Response interceptor - handle errors
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response) => response,
   (error) => {
     const is401 = error.response?.status === 401;
     // Don't redirect if the 401 came from login/register themselves
@@ -45,107 +45,115 @@ api.interceptors.response.use(
   }
 );
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────
 
-export interface ApiResponse<T = unknown> {
+interface IssueFilterParams {
+  category?: string;
+  status?: string;
+  severity?: string;
+}
+
+interface OrgFilterParams {
+  type?: string;
+}
+
+interface InfraFilterParams {
+  type?: string;
+  region?: string;
+}
+
+interface NearbyParams {
+  lat: number;
+  lng: number;
+  maxDistance?: number;
+  type?: string;
+}
+
+interface ApiResult<T = any> {
   success: boolean;
   data?: T;
   message?: string;
   error?: string;
 }
 
-export interface JobStatus {
-  id: string;
-  status: 'running' | 'done' | 'error';
-  phase: string;
-  progress: number;
-  total: number;
-  result: ImportResult | null;
-  error: string | null;
-  createdAt: number;
-}
-
-export interface ImportResult {
-  total: number;
-  organizations: number;
-  infrastructure: number;
-  skipped: number;
-}
-
-export interface SeedData {
-  issuesCount: number;
-  includeComments: boolean;
-}
-
-// ─── Auth API ─────────────────────────────────────────────────────────────────
+// ─── Auth API ─────────────────────────────────────────
 
 export const authAPI = {
-  register: (data: { name: string; email: string; password: string; district?: string }) =>
+  register: (data: { name: string; email: string; password: string }): Promise<AxiosResponse> =>
     api.post('/auth/register', data),
-  login: (data: { email: string; password: string }) =>
+  login: (data: { email: string; password: string }): Promise<AxiosResponse> =>
     api.post('/auth/login', data),
-  getMe: () =>
+  getMe: (): Promise<AxiosResponse> =>
     api.get('/auth/me')
 };
 
-// ─── Issues API ───────────────────────────────────────────────────────────────
+// ─── Markers API (lightweight, for map display) ───────
+
+export const markersAPI = {
+  getIssues: (params?: IssueFilterParams): Promise<AxiosResponse> =>
+    api.get('/markers/issues', { params }),
+  getOrganizations: (params?: OrgFilterParams): Promise<AxiosResponse> =>
+    api.get('/markers/organizations', { params }),
+  getInfrastructure: (params?: InfraFilterParams): Promise<AxiosResponse> =>
+    api.get('/markers/infrastructure', { params }),
+};
+
+// ─── Full detail APIs (on-demand, when user clicks) ───
 
 export const issuesAPI = {
-  getAll: (params?: Record<string, unknown>) =>
+  getAll: (params?: IssueFilterParams & { limit?: number }): Promise<AxiosResponse> =>
     api.get('/issues', { params }),
-  getOne: (id: string) =>
+  getOne: (id: string): Promise<AxiosResponse> =>
     api.get(`/issues/${id}`),
-  create: (data: unknown) =>
+  create: (data: Record<string, any>): Promise<AxiosResponse> =>
     api.post('/issues', data),
-  update: (id: string, data: unknown) =>
+  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
     api.patch(`/issues/${id}`, data),
-  delete: (id: string) =>
+  delete: (id: string): Promise<AxiosResponse> =>
     api.delete(`/issues/${id}`),
-  vote: (id: string) =>
+  vote: (id: string): Promise<AxiosResponse> =>
     api.post(`/issues/${id}/vote`),
-  addComment: (id: string, data: { text: string }) =>
+  addComment: (id: string, data: { text: string }): Promise<AxiosResponse> =>
     api.post(`/issues/${id}/comments`, data),
-  getComments: (id: string) =>
+  getComments: (id: string): Promise<AxiosResponse> =>
     api.get(`/issues/${id}/comments`)
 };
 
-// ─── Organizations API ────────────────────────────────────────────────────────
+// ─── Organizations API ────────────────────────────────
 
 export const organizationsAPI = {
-  getAll: (params?: Record<string, unknown>) =>
+  getAll: (params?: OrgFilterParams): Promise<AxiosResponse> =>
     api.get('/organizations', { params }),
-  getOne: (id: string) =>
+  getOne: (id: string): Promise<AxiosResponse> =>
     api.get(`/organizations/${id}`),
-  getNearby: (params: Record<string, unknown>) =>
+  getNearby: (params?: NearbyParams): Promise<AxiosResponse> =>
     api.get('/organizations/nearby', { params })
 };
 
-// ─── Admin API ────────────────────────────────────────────────────────────────
+// ─── Admin API ────────────────────────────────────────
 
 export const adminAPI = {
-  getUsers: () =>
+  getUsers: (): Promise<AxiosResponse> =>
     api.get('/admin/users'),
-  blockUser: (id: string, blocked: boolean) =>
+  blockUser: (id: string, blocked: boolean): Promise<AxiosResponse> =>
     api.patch(`/admin/users/${id}/block`, { blocked }),
-  uploadOrganizations: (file: File) => {
+  uploadOrganizations: (file: File): Promise<AxiosResponse> => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post('/admin/upload/organizations', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  getJobStatus: (jobId: string) =>
-    api.get<ApiResponse<JobStatus>>(`/admin/jobs/${jobId}`),
-  seedData: (data: SeedData) =>
+  seedData: (data: Record<string, any>): Promise<AxiosResponse> =>
     api.post('/admin/seed/generate', data),
-  clearSeeded: () =>
+  clearSeeded: (): Promise<AxiosResponse> =>
     api.delete('/admin/seed/clear')
 };
 
-// ─── Infrastructure API ───────────────────────────────────────────────────────
+// ─── Infrastructure API ───────────────────────────────
 
 export const infrastructureAPI = {
-  getAll: async (params?: { type?: string; region?: string }) => {
+  getAll: async (params?: InfraFilterParams): Promise<ApiResult> => {
     try {
       const queryParams = new URLSearchParams();
       if (params?.type) queryParams.append('type', params.type);
@@ -153,50 +161,32 @@ export const infrastructureAPI = {
 
       const queryString = queryParams.toString();
       const url = queryString ? `/infrastructure?${queryString}` : '/infrastructure';
-
       const response = await api.get(url);
       return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      return {
-        success: false,
-        error: axiosError.response?.data?.message || 'Failed to fetch infrastructure'
-      };
+    } catch (error: any) {
+      return { success: false, error: error.message, data: [] };
     }
   },
-
-  getById: async (id: string) => {
+  getById: async (id: string): Promise<ApiResult> => {
     try {
       const response = await api.get(`/infrastructure/${id}`);
       return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      return {
-        success: false,
-        error: axiosError.response?.data?.message || 'Failed to fetch infrastructure'
-      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
   },
-
-  getNearby: async (lat: number, lng: number, maxDistance?: number, type?: string) => {
+  getNearby: async (lat: number, lng: number, maxDistance: number = 5000, type?: string): Promise<ApiResult> => {
     try {
-      const queryParams = new URLSearchParams({
-        lat: lat.toString(),
-        lng: lng.toString(),
-        ...(maxDistance && { maxDistance: maxDistance.toString() }),
-        ...(type && { type })
+      const params = new URLSearchParams({
+        lat: String(lat),
+        lng: String(lng),
+        maxDistance: String(maxDistance)
       });
-
-      const response = await api.get(`/infrastructure/nearby?${queryParams.toString()}`);
+      if (type) params.append('type', type);
+      const response = await api.get(`/infrastructure/nearby?${params}`);
       return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      return {
-        success: false,
-        error: axiosError.response?.data?.message || 'Failed to fetch nearby infrastructure'
-      };
+    } catch (error: any) {
+      return { success: false, error: error.message, data: [] };
     }
   }
 };
-
-export default api;

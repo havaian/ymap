@@ -20,6 +20,9 @@ import organizationRoutes from './organization/routes.js';
 import userRoutes from './user/routes.js';
 import voteRoutes from './vote/routes.js';
 import adminRoutes from './admin/routes.js';
+import analyticsRoutes from './analytics/routes.js';
+import regionRoutes from './region/routes.js';
+import districtRoutes from './district/routes.js';
 
 validateEnv();
 
@@ -89,6 +92,13 @@ app.use('/api/votes', apiLimiter, authMiddleware, voteRoutes);
 // ── Admin routes ──────────────────────────────────────────────────────────────
 // strictAuthMiddleware does a DB lookup — ensures admin account still exists and isn't blocked
 app.use('/api/admin', adminLimiter, strictAuthMiddleware, adminOnly, adminRoutes);
+
+// ── Analytics routes (protected by adminOnly but not rate-limited, as they may be used for internal reporting)
+app.use('/api/analytics', strictAuthMiddleware, adminOnly, analyticsRoutes);
+
+// ── Region & District routes (public, used by map for geojson and dropdowns)
+app.use('/api/regions', apiLimiter, authMiddleware, regionRoutes);
+app.use('/api/districts', apiLimiter, authMiddleware, districtRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

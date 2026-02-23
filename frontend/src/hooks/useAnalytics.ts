@@ -77,46 +77,84 @@ export interface CropAnalytics {
     byDistrict: any[];
 }
 
+export interface BudgetAnalytics {
+    totals: {
+        committedUZS: number; spentUZS: number;
+        committedUSD: number; spentUSD: number;
+        executionRate: number; costPerResolved: number | null;
+        resolvedCount: number;
+    };
+    byDistrict: {
+        districtId: string; districtName: { en: string; ru: string; uz: string };
+        regionCode: number; areaKm2: number;
+        totalCommittedUZS: number; totalSpentUZS: number;
+        totalCommittedUSD: number; totalSpentUSD: number;
+        orgCount: number; infraCount: number;
+        resolvedCount: number; executionRate: number;
+        costPerResolved: number | null; budgetPerKm2: number;
+    }[];
+}
+
 export const useAnalytics = () => {
     const [overview, setOverview] = useState<OverviewData | null>(null);
     const [districtScoring, setDistrictScoring] = useState<DistrictScore[]>([]);
     const [regionSummary, setRegionSummary] = useState<RegionSummary[]>([]);
     const [issueAnalytics, setIssueAnalytics] = useState<IssueAnalytics | null>(null);
     const [cropAnalytics, setCropAnalytics] = useState<CropAnalytics | null>(null);
+    const [budgetAnalytics, setBudgetAnalytics] = useState<BudgetAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchAll = useCallback(async (regionCode?: number) => {
+    // Filters
+    const [regionCode, setRegionCode] = useState<number | null>(null);
+    const [period, setPeriod] = useState<number | null>(null); // days
+
+    const fetchAll = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const params = regionCode ? { regionCode } : {};
+            const params: any = {};
+            if (regionCode) params.regionCode = regionCode;
+            if (period) params.period = period;
 
-            const [overviewRes, scoringRes, regionsRes, issuesRes, cropsRes] = await Promise.all([
+            const [overviewRes, scoringRes, regionsRes, issuesRes, cropsRes, budgetRes] = await Promise.all([
                 api.get('/analytics/overview'),
                 api.get('/analytics/districts/scoring', { params }),
                 api.get('/analytics/regions/summary'),
                 api.get('/analytics/issues', { params }),
-                api.get('/analytics/crops', { params })
+                api.get('/analytics/crops', { params }),
+                api.get('/analytics/budget', { params })
             ]);
 
             setOverview(overviewRes.data.data);
-            setDistrictScoring(scoringRes.data.data.districts);
+            setDistrictScoring(scoringRes.data.data.districts || scoringRes.data.data);
             setRegionSummary(regionsRes.data.data);
             setIssueAnalytics(issuesRes.data.data);
             setCropAnalytics(cropsRes.data.data);
+            setBudgetAnalytics(budgetRes.data.data);
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Failed to fetch analytics');
             console.error('Analytics fetch error:', err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [regionCode, period]);
 
     useEffect(() => {
         fetchAll();
     }, [fetchAll]);
+
+    // District detail (on demand)
+    const fetchDistrictDetail = useCallback(async (id: string) => {
+        try {
+            const res = await api.get(`/analytics/districts/${id}`);
+            return res.data.data;
+        } catch (err) {
+            console.error('District detail error:', err);
+            return null;
+        }
+    }, []);
 
     return {
         overview,
@@ -124,8 +162,15 @@ export const useAnalytics = () => {
         regionSummary,
         issueAnalytics,
         cropAnalytics,
+        budgetAnalytics,
         loading,
         error,
-        refetch: fetchAll
+        refetch: fetchAll,
+        fetchDistrictDetail,
+        // Filters
+        regionCode,
+        setRegionCode,
+        period,
+        setPeriod,
     };
 };

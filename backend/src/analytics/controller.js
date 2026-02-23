@@ -932,3 +932,333 @@ export const getRegionSummary = async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to fetch region summary' });
     }
 };
+
+// ─────────────────────────────────────────────
+// GET /api/analytics/budget
+// Budget efficiency analysis (spec section III)
+// Query: ?regionCode=17
+// ─────────────────────────────────────────────
+
+export const getBudgetAnalytics = async (req, res) => {
+    try {
+        const { regionCode } = req.query;
+        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
+
+        const [orgBudget, infraBudget, costPerIssue] = await Promise.all([
+            // Org budget by district
+            Organization.aggregate([
+                { $match: { districtId: { $exists: true }, ...regionFilter } },
+                {
+                    $group: {
+                        _id: '$districtId',
+                        regionCode: { $first: '$regionCode' },
+                        orgCount: { $sum: 1 },
+                        committedUZS: { $sum: '$budget.committedUZS' },
+                        spentUZS: { $sum: '$budget.spentUZS' },
+                        committedUSD: { $sum: '$budget.committedUSD' },
+                        spentUSD: { $sum: '$budget.spentUSD' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'districts',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'district'
+                    }
+                },
+                { $unwind: '$district' },
+                {
+                    $project: {
+                        districtId: '$_id',
+                        districtName: '$district.name',
+                        regionCode: 1,
+                        orgCount: 1,
+                        areaKm2: '$district.areaKm2',
+                        committedUZS: 1, spentUZS: 1,
+                        committedUSD: 1, spentUSD: 1,
+                        executionRate: {
+                            $cond: [
+                                { $gt: ['$committedUZS', 0] },
+                                { $round: [{ $multiply: [{ $divide: ['$spentUZS', '$committedUZS'] }, 100] }, 1] },
+                                0
+                            ]
+                        }
+                    }
+                },
+                { $sort: { spentUZS: -1 } }
+            ]),
+
+            // Infra budget by district
+            Infrastructure.aggregate([
+                { $match: { districtId: { $exists: true }, ...regionFilter } },
+                {
+                    $group: {
+                        _id: '$districtId',
+                        regionCode: { $first: '$regionCode' },
+                        infraCount: { $sum: 1 },
+                        committedUZS: { $sum: '$budget.committedUZS' },
+                        spentUZS: { $sum: '$budget.spentUZS' },
+                        committedUSD: { $sum: '$budget.committedUSD' },
+                        spentUSD: { $sum: '$budget.spentUSD' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'districts',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'district'
+                    }
+                },
+                { $unwind: '$district' },
+                {
+                    $project: {
+                        districtId: '$_id',
+                        districtName: '$district.name',
+                        regionCode: 1,
+                        infraCount: 1,
+                        areaKm2: '$district.areaKm2',
+                        committedUZS: 1, spentUZS: 1,
+                        committedUSD: 1, spentUSD: 1,
+                        executionRate: {
+                            $cond: [
+                                { $gt: ['$committedUZS', 0] },
+                                { $round: [{ $multiply: [{ $divide: ['$spentUZS', '$committedUZS'] }, 100] }, 1] },
+                                0
+                            ]
+                        }
+                    }
+                },
+                { $sort: { spentUZS: -1 } }
+            ]),
+
+            // Cost per resolved issue by district
+            // Spec 3.2: budget / resolved issues count
+            Issue.aggregate([
+                { $match: { districtId: { $exists: true }, status: 'Resolved', ...regionFilter } },
+                {
+                    $group: {
+                        _id: '$districtId',
+                        regionCode: { $first: '$regionCode' },
+                        resolvedCount: { $sum: 1 }
+                    }
+                }
+            ])
+        ]);
+
+        // Merge cost-per-issue with budget data
+        const resolvedMap = new Map(costPerIssue.map(c => [c._id.toString(), c.resolvedCount]));
+
+        // Combined budget per district
+        const districtBudgets = new Map();
+        for (const d of [...orgBudget, ...infraBudget]) {
+            const id = d.districtId.toString();
+            if (!districtBudgets.has(id)) {
+                districtBudgets.set(id, {
+                    districtId: id,
+                    districtName: d.districtName,
+                    regionCode: d.regionCode,
+                    areaKm2: d.areaKm2,
+                    totalCommittedUZS: 0,
+                    totalSpentUZS: 0,
+                    totalCommittedUSD: 0,
+                    totalSpentUSD: 0,
+                    orgCount: 0,
+                    infraCount: 0
+                });
+            }
+            const entry = districtBudgets.get(id);
+            entry.totalCommittedUZS += d.committedUZS || 0;
+            entry.totalSpentUZS += d.spentUZS || 0;
+            entry.totalCommittedUSD += d.committedUSD || 0;
+            entry.totalSpentUSD += d.spentUSD || 0;
+            entry.orgCount += d.orgCount || 0;
+            entry.infraCount += d.infraCount || 0;
+        }
+
+        const efficiency = Array.from(districtBudgets.values()).map(d => {
+            const resolvedCount = resolvedMap.get(d.districtId) || 0;
+            const executionRate = d.totalCommittedUZS > 0
+                ? Math.round((d.totalSpentUZS / d.totalCommittedUZS) * 1000) / 10
+                : 0;
+            const costPerResolved = resolvedCount > 0
+                ? Math.round(d.totalSpentUZS / resolvedCount)
+                : null;
+            const budgetPerKm2 = d.areaKm2 > 0
+                ? Math.round(d.totalSpentUZS / d.areaKm2)
+                : 0;
+
+            return {
+                ...d,
+                resolvedCount,
+                executionRate,
+                costPerResolved,
+                budgetPerKm2
+            };
+        });
+
+        efficiency.sort((a, b) => b.totalSpentUZS - a.totalSpentUZS);
+
+        // Aggregate totals
+        const totals = efficiency.reduce((acc, d) => {
+            acc.committedUZS += d.totalCommittedUZS;
+            acc.spentUZS += d.totalSpentUZS;
+            acc.committedUSD += d.totalCommittedUSD;
+            acc.spentUSD += d.totalSpentUSD;
+            acc.resolvedCount += d.resolvedCount;
+            return acc;
+        }, { committedUZS: 0, spentUZS: 0, committedUSD: 0, spentUSD: 0, resolvedCount: 0 });
+
+        totals.executionRate = totals.committedUZS > 0
+            ? Math.round((totals.spentUZS / totals.committedUZS) * 1000) / 10
+            : 0;
+        totals.costPerResolved = totals.resolvedCount > 0
+            ? Math.round(totals.spentUZS / totals.resolvedCount)
+            : null;
+
+        res.json({
+            success: true,
+            data: {
+                totals,
+                byDistrict: efficiency
+            }
+        });
+    } catch (err) {
+        console.error('Budget analytics error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch budget analytics' });
+    }
+};
+
+// ─────────────────────────────────────────────
+// GET /api/analytics/choropleth
+// District scoring as GeoJSON for map layer
+// Query: ?metric=composite|issues|infrastructure|budget|crops&regionCode=17
+// ─────────────────────────────────────────────
+
+export const getChoropleth = async (req, res) => {
+    try {
+        const { metric = 'composite', regionCode } = req.query;
+        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
+
+        // Get districts with geometry
+        const districts = await District.find(regionFilter)
+            .select('name regionCode areaKm2 geometry centroid crops')
+            .lean();
+
+        // Get stats per district (same logic as scoring but lighter)
+        const [issueStats, orgStats, infraStats] = await Promise.all([
+            Issue.aggregate([
+                { $match: { districtId: { $exists: true }, ...regionFilter } },
+                {
+                    $group: {
+                        _id: '$districtId',
+                        issueCount: { $sum: 1 },
+                        resolvedCount: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+                        criticalCount: { $sum: { $cond: [{ $eq: ['$severity', 'Critical'] }, 1, 0] } }
+                    }
+                }
+            ]),
+            Organization.aggregate([
+                { $match: { districtId: { $exists: true }, ...regionFilter } },
+                {
+                    $group: {
+                        _id: '$districtId',
+                        orgCount: { $sum: 1 },
+                        committedUZS: { $sum: '$budget.committedUZS' },
+                        spentUZS: { $sum: '$budget.spentUZS' }
+                    }
+                }
+            ]),
+            Infrastructure.aggregate([
+                { $match: { districtId: { $exists: true }, ...regionFilter } },
+                {
+                    $group: {
+                        _id: '$districtId',
+                        infraCount: { $sum: 1 },
+                        committedUZS: { $sum: '$budget.committedUZS' },
+                        spentUZS: { $sum: '$budget.spentUZS' }
+                    }
+                }
+            ])
+        ]);
+
+        const issueMap = new Map(issueStats.map(s => [s._id.toString(), s]));
+        const orgMap = new Map(orgStats.map(s => [s._id.toString(), s]));
+        const infraMap = new Map(infraStats.map(s => [s._id.toString(), s]));
+
+        // Compute raw values for normalization
+        const rawValues = districts.map(dist => {
+            const id = dist._id.toString();
+            const issues = issueMap.get(id) || {};
+            const orgs = orgMap.get(id) || {};
+            const infra = infraMap.get(id) || {};
+            const area = dist.areaKm2 || 1;
+
+            const issueCount = issues.issueCount || 0;
+            const resolvedCount = issues.resolvedCount || 0;
+            const resolutionRate = issueCount > 0 ? resolvedCount / issueCount : 0;
+            const issueDensity = issueCount / area;
+
+            const totalFacilities = (orgs.orgCount || 0) + (infra.infraCount || 0);
+            const facilityDensity = totalFacilities / area;
+
+            const totalCommitted = (orgs.committedUZS || 0) + (infra.committedUZS || 0);
+            const totalSpent = (orgs.spentUZS || 0) + (infra.spentUZS || 0);
+            const budgetExecution = totalCommitted > 0 ? totalSpent / totalCommitted : 0;
+
+            const cropDiversity = dist.crops?.length || 0;
+
+            return { dist, issueDensity, resolutionRate, facilityDensity, budgetExecution, cropDiversity, issueCount, totalFacilities };
+        });
+
+        // Normalization ranges
+        const maxIssueDensity = Math.max(...rawValues.map(d => d.issueDensity), 0.001);
+        const maxFacilityDensity = Math.max(...rawValues.map(d => d.facilityDensity), 0.001);
+        const maxCropDiv = Math.max(...rawValues.map(d => d.cropDiversity), 1);
+
+        // Build GeoJSON features
+        const features = rawValues.map(({ dist, issueDensity, resolutionRate, facilityDensity, budgetExecution, cropDiversity, issueCount, totalFacilities }) => {
+            const infraScore = Math.min((facilityDensity / maxFacilityDensity) * 100, 100);
+            const issueScore = Math.max(0, (1 - issueDensity / maxIssueDensity) * 60 + resolutionRate * 40);
+            const budgetScore = budgetExecution * 100;
+            const cropScore = (cropDiversity / maxCropDiv) * 100;
+            const composite = Math.round(infraScore * 0.30 + issueScore * 0.30 + budgetScore * 0.25 + cropScore * 0.15);
+
+            const scores = {
+                composite,
+                infrastructure: Math.round(infraScore),
+                issues: Math.round(issueScore),
+                budget: Math.round(budgetScore),
+                crops: Math.round(cropScore)
+            };
+
+            const value = scores[metric] ?? scores.composite;
+
+            return {
+                type: 'Feature',
+                properties: {
+                    districtId: dist._id.toString(),
+                    name: dist.name,
+                    regionCode: dist.regionCode,
+                    areaKm2: dist.areaKm2,
+                    value,
+                    scores,
+                    issueCount,
+                    facilityCount: totalFacilities,
+                    cropDiversity
+                },
+                geometry: dist.geometry
+            };
+        }).filter(f => f.geometry); // exclude districts without geometry
+
+        res.json({
+            type: 'FeatureCollection',
+            metric,
+            features
+        });
+    } catch (err) {
+        console.error('Choropleth error:', err);
+        res.status(500).json({ success: false, error: 'Failed to generate choropleth' });
+    }
+};

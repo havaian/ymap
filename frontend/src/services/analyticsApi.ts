@@ -1,5 +1,3 @@
-// frontend/src/services/analyticsApi.ts
-
 import axios, { AxiosResponse } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -42,4 +40,10 @@ export const analyticsAPI = {
 
     getRegionSummary: (): Promise<AxiosResponse> =>
         api.get('/analytics/regions/summary'),
+
+    getBudget: (params?: Pick<AnalyticsParams, 'regionCode'>): Promise<AxiosResponse> =>
+        api.get('/analytics/budget', { params }),
+
+    getChoropleth: (params?: { metric?: string; regionCode?: number }): Promise<AxiosResponse> =>
+        api.get('/analytics/choropleth', { params }),
 };

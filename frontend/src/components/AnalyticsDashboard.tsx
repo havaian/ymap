@@ -11,6 +11,7 @@ import {
     BarChart3, Activity, Award, Layers
 } from 'lucide-react';
 import { useAnalytics, DistrictScore, RegionSummary } from '../hooks/useAnalytics';
+import { DistrictDrilldown } from './DistrictDrilldown';
 
 // ─────────────────────────────────────────────
 // Color palette
@@ -178,7 +179,13 @@ const DistrictTable: React.FC<{ districts: DistrictScore[]; limit?: number }> = 
                 </thead>
                 <tbody>
                     {shown.map((d) => (
-                        <tr key={d.districtId} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                        <tr key={d.districtId} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors cursor-pointer"
+                            onClick={() => {
+                                // Dispatch custom event for drilldown
+                                window.dispatchEvent(new CustomEvent('district-drilldown', {
+                                    detail: { id: d.districtId, name: d.districtName, scores: d.scores }
+                                }));
+                            }}>
                             <td className="py-2.5 px-2 font-black text-slate-300 dark:text-slate-600">{d.rank}</td>
                             <td className="py-2.5 px-2">
                                 <div className="font-bold text-slate-800 dark:text-slate-200">
@@ -212,12 +219,20 @@ const DistrictTable: React.FC<{ districts: DistrictScore[]; limit?: number }> = 
 // ─────────────────────────────────────────────
 
 export const AnalyticsDashboard: React.FC = () => {
-    const { overview, districtScoring, regionSummary, issueAnalytics, cropAnalytics, loading, error, refetch } = useAnalytics();
-    const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
+    const {
+        overview, districtScoring, regionSummary, issueAnalytics, cropAnalytics,
+        budgetAnalytics, loading, error, refetch, fetchDistrictDetail,
+        regionCode: selectedRegion, setRegionCode: setSelectedRegion,
+        period, setPeriod
+    } = useAnalytics();
+
+    // District drilldown
+    const [drilldownId, setDrilldownId] = useState<string | null>(null);
+    const [drilldownName, setDrilldownName] = useState<any>(null);
+    const [drilldownScores, setDrilldownScores] = useState<any>(null);
 
     const handleRegionChange = (code: number | null) => {
         setSelectedRegion(code);
-        refetch(code ?? undefined);
     };
 
     // ── Chart data transforms ──
@@ -324,7 +339,20 @@ export const AnalyticsDashboard: React.FC = () => {
     const totalBudget = o.budget.committedUZS;
     const spentBudget = o.budget.spentUZS;
 
+    // Listen for district-drilldown events from the DistrictTable
+    React.useEffect(() => {
+        const handler = (e: any) => {
+            const { id, name, scores } = e.detail;
+            setDrilldownId(id);
+            setDrilldownName(name);
+            setDrilldownScores(scores);
+        };
+        window.addEventListener('district-drilldown', handler);
+        return () => window.removeEventListener('district-drilldown', handler);
+    }, []);
+
     return (
+        <React.Fragment>
         <div className="h-full overflow-y-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
 
@@ -338,7 +366,23 @@ export const AnalyticsDashboard: React.FC = () => {
                             {o.counts.districts} районов · {o.counts.organizations + o.counts.infrastructure} объектов · {o.counts.issues} обращений
                         </p>
                     </div>
-                    <RegionSelector regions={regionSummary} selected={selectedRegion} onSelect={handleRegionChange} />
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <select
+                                value={period ?? ''}
+                                onChange={(e) => setPeriod(e.target.value ? parseInt(e.target.value) : null)}
+                                className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                            >
+                                <option value="">Все время</option>
+                                <option value="30">30 дней</option>
+                                <option value="90">90 дней</option>
+                                <option value="180">6 месяцев</option>
+                                <option value="365">1 год</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
+                        <RegionSelector regions={regionSummary} selected={selectedRegion} onSelect={handleRegionChange} />
+                    </div>
                 </div>
 
                 {/* ── Overview Cards ── */}
@@ -618,7 +662,91 @@ export const AnalyticsDashboard: React.FC = () => {
                     </Section>
                 )}
 
+                {/* ── Row 7: Budget Efficiency ── */}
+                {budgetAnalytics && (
+                    <Section title="Эффективность бюджета" icon={<DollarSign size={16} />} className="lg:col-span-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Выделено</p>
+                                <p className="text-sm font-black text-slate-800 dark:text-slate-100">{formatBudget(budgetAnalytics.totals.committedUZS)} сум</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Освоено</p>
+                                <p className="text-sm font-black text-emerald-600">{formatBudget(budgetAnalytics.totals.spentUZS)} сум</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Исполнение</p>
+                                <p className="text-sm font-black text-blue-600">{budgetAnalytics.totals.executionRate}%</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Цена решения</p>
+                                <p className="text-sm font-black text-amber-600">
+                                    {budgetAnalytics.totals.costPerResolved
+                                        ? formatBudget(budgetAnalytics.totals.costPerResolved) + ' сум'
+                                        : '—'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {budgetAnalytics.byDistrict.length > 0 && (
+                            <div className="overflow-x-auto -mx-2">
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                                            <th className="text-left py-2 px-2 font-bold">Район</th>
+                                            <th className="text-right py-2 px-2 font-bold">Выделено</th>
+                                            <th className="text-right py-2 px-2 font-bold">Освоено</th>
+                                            <th className="text-right py-2 px-2 font-bold">Исп. %</th>
+                                            <th className="text-right py-2 px-2 font-bold">Решено</th>
+                                            <th className="text-right py-2 px-2 font-bold">Цена/решение</th>
+                                            <th className="text-right py-2 px-2 font-bold">Бюджет/км²</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {budgetAnalytics.byDistrict.slice(0, 20).map((d: any) => (
+                                            <tr key={d.districtId}
+                                                className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer"
+                                                onClick={() => {
+                                                    setDrilldownId(d.districtId);
+                                                    setDrilldownName(d.districtName);
+                                                    setDrilldownScores(null);
+                                                }}>
+                                                <td className="py-2 px-2 font-bold text-slate-700 dark:text-slate-200">
+                                                    {d.districtName?.en || d.districtName?.uz || '—'}
+                                                </td>
+                                                <td className="py-2 px-2 text-right tabular-nums">{formatBudget(d.totalCommittedUZS)}</td>
+                                                <td className="py-2 px-2 text-right tabular-nums text-emerald-600">{formatBudget(d.totalSpentUZS)}</td>
+                                                <td className="py-2 px-2 text-right tabular-nums">
+                                                    <span className={`font-bold ${d.executionRate >= 70 ? 'text-emerald-600' : d.executionRate >= 40 ? 'text-amber-600' : 'text-red-500'}`}>
+                                                        {d.executionRate}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-2 px-2 text-right tabular-nums">{d.resolvedCount}</td>
+                                                <td className="py-2 px-2 text-right tabular-nums text-amber-600">
+                                                    {d.costPerResolved ? formatBudget(d.costPerResolved) : '—'}
+                                                </td>
+                                                <td className="py-2 px-2 text-right tabular-nums text-slate-500">
+                                                    {formatBudget(d.budgetPerKm2)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </Section>
+                )}
+
             </div>
         </div>
+
+        {/* District drilldown panel */}
+        <DistrictDrilldown
+            districtId={drilldownId}
+            districtName={drilldownName}
+            scores={drilldownScores}
+            onClose={() => setDrilldownId(null)}
+        />
+    </React.Fragment>
     );
 };

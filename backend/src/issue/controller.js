@@ -4,43 +4,81 @@ import Vote from '../vote/model.js';
 import Organization from '../organization/model.js';
 import { validateCoordinates } from '../utils/validators.js';
 
+/**
+ * GET /api/issues
+ * 
+ * OPTIMIZED: Uses $lookup aggregation to fetch all comments in ONE query
+ * instead of N+1 (was: 3000 separate Comment.find() calls = 34 seconds)
+ */
 export const getIssues = async (req, res) => {
     const { category, status, severity, limit = 1000 } = req.query;
 
-    const filter = {};
-    if (category) filter.category = category;
-    if (status) filter.status = status;
-    if (severity) filter.severity = severity;
+    const match = {};
+    if (category) match.category = category;
+    if (status) match.status = status;
+    if (severity) match.severity = severity;
 
-    const issues = await Issue.find(filter)
-        .sort({ createdAt: -1 })
-        .limit(parseInt(limit));
-
-    // For each issue, get its comments
-    const issuesWithComments = await Promise.all(
-        issues.map(async (issue) => {
-            const comments = await Comment.find({ issueId: issue._id })
-                .sort({ createdAt: 1 })
-                .lean();
-
-            const issueObj = issue.toJSON();
-            issueObj.comments = comments.map(c => ({
-                id: c._id.toString(),
-                author: c.author,
-                text: c.text,
-                timestamp: new Date(c.createdAt).getTime()
-            }));
-
-            return issueObj;
-        })
-    );
+    const issues = await Issue.aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $limit: parseInt(limit) },
+        // Single $lookup replaces 3000 individual Comment.find() calls
+        {
+            $lookup: {
+                from: 'comments',
+                localField: '_id',
+                foreignField: 'issueId',
+                pipeline: [
+                    { $sort: { createdAt: 1 } },
+                    {
+                        $project: {
+                            id: { $toString: '$_id' },
+                            author: 1,
+                            text: 1,
+                            timestamp: { $toLong: '$createdAt' },
+                            _id: 0
+                        }
+                    }
+                ],
+                as: 'comments'
+            }
+        },
+        {
+            $project: {
+                id: { $toString: '$_id' },
+                lat: 1,
+                lng: 1,
+                title: 1,
+                description: 1,
+                category: 1,
+                subCategory: 1,
+                severity: 1,
+                status: 1,
+                votes: 1,
+                aiSummary: 1,
+                organizationId: 1,
+                organizationName: 1,
+                userId: 1,
+                regionCode: 1,
+                districtId: 1,
+                comments: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                _id: 0
+            }
+        }
+    ]);
 
     res.json({
         success: true,
-        data: issuesWithComments
+        data: issues
     });
 };
 
+/**
+ * GET /api/issues/:id
+ * Single issue with comments (used for detail-on-demand)
+ */
 export const getIssue = async (req, res) => {
     const { id } = req.params;
 

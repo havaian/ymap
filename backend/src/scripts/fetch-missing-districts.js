@@ -76,26 +76,25 @@ async function apiFetch(path) {
 // ─────────────────────────────────────────────
 
 /**
- * Remove consecutive duplicate coordinates from a ring.
- * This is the fix for "may not have duplicate vertices" errors.
+ * Remove ALL duplicate coordinates from a ring (not just consecutive).
+ * Turf.js rejects any duplicate vertex in a ring except the closing point.
  */
 function deduplicateRing(ring) {
     if (!ring || ring.length < 2) return ring;
-    const deduped = [ring[0]];
-    for (let i = 1; i < ring.length; i++) {
-        const prev = deduped[deduped.length - 1];
-        const curr = ring[i];
-        if (prev[0] !== curr[0] || prev[1] !== curr[1]) {
-            deduped.push(curr);
+    const seen = new Set();
+    const deduped = [];
+    // Process all but the last point (which is the closing duplicate of first)
+    const points = ring.slice(0, -1);
+    for (const coord of points) {
+        const key = coord[0] + ',' + coord[1];
+        if (!seen.has(key)) {
+            seen.add(key);
+            deduped.push(coord);
         }
     }
-    // Ensure ring is closed
-    if (deduped.length >= 2) {
-        const first = deduped[0];
-        const last = deduped[deduped.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-            deduped.push([...first]);
-        }
+    // Close the ring
+    if (deduped.length >= 3) {
+        deduped.push([...deduped[0]]);
     }
     return deduped;
 }

@@ -1,33 +1,29 @@
 // frontend/src/App.tsx
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { MapComponent } from './components/map/MapComponent';
+import { CategoryFilter } from './components/map/CategoryFilter';
 import { DetailSidebar } from './components/issues/DetailSidebar';
 import { OrgSidebar } from './components/organizations/OrgSidebar';
-import { InfraSidebar } from './components/infrastructure/InfraSidebar';
 import { DetailPanel } from './components/layout/DetailPanel';
 import { IssueModal } from './components/issues/IssueModal';
 import { AboutModal } from './components/common/AboutModal';
 import { NotificationContainer, Toast } from './components/layout/Notification';
 import { ListView } from './components/issues/ListView';
-import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
+import { StatisticsView } from './components/analytics/StatisticsView';
 import { BurgerMenu } from './components/layout/BurgerMenu';
 import { AdminUserView } from './components/admin/AdminUserView';
 import { AdminDataView } from './components/admin/AdminDataView';
 import { AdminOrgModal } from './components/admin/AdminOrgModal';
 import { AppHeader } from './components/layout/AppHeader';
-import { LayerPickerModal, hasSeenLayerPicker } from './components/common/LayerPickerModal';
-import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, User, UserRole } from '../types';
-import { TASHKENT_CENTER, CATEGORY_COLORS } from './constants';
+import { DistrictDrilldown } from './components/analytics/DistrictDrilldown';
+import { LayerState } from './components/map/LayerPicker';
+import { Issue, Coordinates, IssueCategory, Organization, User, UserRole } from '../types';
+import { TASHKENT_CENTER } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { useInfrastructure } from './hooks/useInfrastructure';
-import { DistrictDrilldown } from './components/analytics/DistrictDrilldown';
-import { 
-  Plus, Navigation, Locate, Layers,
-  ChevronDown, Car, Droplets, Zap, GraduationCap, 
-  Stethoscope, Trash2, HelpCircle
-} from 'lucide-react';
+import { Plus, Navigation, Locate } from 'lucide-react';
 
 interface AppProps {
   currentUser: User;
@@ -37,7 +33,7 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const location = useLocation();
-  const params = useParams<{ issueId?: string; orgId?: string; infraId?: string }>();
+  const params = useParams<{ issueId?: string; orgId?: string }>();
   const navigate = useNavigate();
   
   // activeView is now derived from props, not state
@@ -79,38 +75,33 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     ? organizations.find(o => o.id === params.orgId) || null 
     : null;
 
-  const viewingInfra = params.infraId
-    ? infrastructure.find(i => i.id === params.infraId) || null
-    : null;
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminOrgModalOpen, setIsAdminOrgModalOpen] = useState(false);
-  const [showLayerPicker, setShowLayerPicker] = useState(() => !hasSeenLayerPicker());
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [isAdminOrgAddingMode, setIsAdminOrgAddingMode] = useState(false);
-  const [showOrgs, setShowOrgs] = useState(() => localStorage.getItem('ymap_show_orgs') === '1');
-  const [showInfrastructure, setShowInfrastructure] = useState(() => localStorage.getItem('ymap_show_infra') === '1');
-  const [showStandaloneIssues, setShowStandaloneIssues] = useState(() => localStorage.getItem('ymap_show_issues') === '1');
-  const [showHeatmap, setShowHeatmap] = useState(() => localStorage.getItem('ymap_show_heatmap') === '1');
+
+  // Layer toggles
+  const [showOrgs, setShowOrgs] = useState(false);
+  const [showInfrastructure, setShowInfrastructure] = useState(false);
+  const [showStandaloneIssues, setShowStandaloneIssues] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showChoropleth, setShowChoropleth] = useState(false);
+  const [choroplethMetric, setChoroplethMetric] = useState('composite');
   
+  // District drilldown (triggered by choropleth click)
+  const [drilldownDistrictId, setDrilldownDistrictId] = useState<string | null>(null);
+  const [drilldownDistrictName, setDrilldownDistrictName] = useState<any>(null);
+  const [drilldownDistrictScores, setDrilldownDistrictScores] = useState<any>(null);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
   const [activeFilter, setActiveFilter] = useState<IssueCategory | 'ALL'>('ALL');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
 
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [triggerLocate, setTriggerLocate] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const [showChoropleth, setShowChoropleth] = useState(false);
-  const [choroplethMetric, setChoroplethMetric] = useState('composite');
-  const [drilldownDistrictId, setDrilldownDistrictId] = useState<string | null>(null);
-  const [drilldownDistrictName, setDrilldownDistrictName] = useState<any>(null);
-  const [drilldownDistrictScores, setDrilldownDistrictScores] = useState<any>(null);
 
   // Settings state
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
@@ -125,6 +116,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // ── Theme effect ──────────────────────────────────────
   useEffect(() => {
     const applyTheme = () => {
       const root = window.document.documentElement;
@@ -150,6 +142,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     return () => mediaQuery.removeEventListener('change', handleSystemChange);
   }, [theme]);
 
+  // ── Font size effect ──────────────────────────────────
   useEffect(() => {
     localStorage.setItem('fontSize', fontSize);
     const root = window.document.documentElement;
@@ -157,6 +150,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     root.style.fontSize = sizes[fontSize];
   }, [fontSize]);
 
+  // ── Toast helpers ─────────────────────────────────────
   const addToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -166,16 +160,17 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setIsFilterOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // ── Derived: layers object for AppHeader ──────────────
+  const layers: LayerState = {
+    showHeatmap,
+    showChoropleth,
+    showOrgs,
+    showInfrastructure,
+    showStandaloneIssues,
+    choroplethMetric,
+  };
 
+  // ── Derived: map issues (filtered) ────────────────────
   // selectedIssue intentionally removed from deps.
   // Previously it caused mapIssues to recalculate (and MapComponent to re-render)
   // every time a panel was opened or closed. The resolved-issue edge case is handled
@@ -201,6 +196,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     return filtered;
   }, [issues, activeFilter, showStandaloneIssues]);
 
+  const canShowOrgs = showOrgs && !showHeatmap;
+  const canShowInfrastructure = showInfrastructure && !showHeatmap;
+
+  // ── Handlers ──────────────────────────────────────────
   // useCallback so MapComponent and MapController don't re-run effects when
   // unrelated App state changes (e.g. toasts, modal open/close)
   const handleMapClick = useCallback((coords: Coordinates) => {
@@ -223,25 +222,21 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     }
   }, [isAddingMode, isAdminOrgAddingMode, params.issueId, params.orgId, navigate, activeView]);
 
-  const handleDistrictClick = useCallback((districtId: string, name: any, scores: any) => {
-    setDrilldownDistrictId(districtId);
-    setDrilldownDistrictName(name);
-    setDrilldownDistrictScores(scores);
-  }, []);
-
   const handleOrgClick = useCallback((org: Organization) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
     navigate(`${basePath}/organizations/${org.id}`);
   }, [activeView, navigate]);
 
-  const handleInfraClick = useCallback((infra: Infrastructure) => {
-    navigate(`/map/infrastructure/${infra.id}`);
-  }, [navigate]);
-
   const handleSelectIssue = useCallback((issue: Issue) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
     navigate(`${basePath}/issues/${issue.id}`);
   }, [activeView, navigate]);
+
+  const handleDistrictClick = useCallback((districtId: string, name: any, scores: any) => {
+    setDrilldownDistrictId(districtId);
+    setDrilldownDistrictName(name);
+    setDrilldownDistrictScores(scores);
+  }, []);
 
   const handleUpdateStatus = async (issueId: string, status: 'Open' | 'In Progress' | 'Resolved') => {
     const result = await updateIssueStatus(issueId, status);
@@ -367,20 +362,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     }
   };
 
-  const getCategoryIcon = (category: IssueCategory | 'ALL') => {
-    switch (category) {
-      case 'ALL': return <Layers size={18} />;
-      case IssueCategory.ROADS: return <Car size={18} />;
-      case IssueCategory.WATER: return <Droplets size={18} />;
-      case IssueCategory.ELECTRICITY: return <Zap size={18} />;
-      case IssueCategory.EDUCATION: return <GraduationCap size={18} />;
-      case IssueCategory.HEALTH: return <Stethoscope size={18} />;
-      case IssueCategory.WASTE: return <Trash2 size={18} />;
-      default: return <HelpCircle size={18} />;
-    }
-  };
-
-  // Show loading state
+  // ── Loading state ─────────────────────────────────────
   if (issuesLoading || orgsLoading || infraLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -392,9 +374,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     );
   }
 
-  const canShowOrgs = showOrgs && !showHeatmap;
-  const canShowInfrastructure = showInfrastructure && !showHeatmap;
-
+  // ── Render ────────────────────────────────────────────
   return (
     <div className="h-screen w-screen flex flex-col relative overflow-hidden bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
       <NotificationContainer toasts={toasts} removeToast={removeToast} />
@@ -404,7 +384,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onClose={() => setIsMenuOpen(false)} 
         activeView={activeView}
         onSelectView={(view) => {
-          // Navigate to appropriate route
           const routes = {
             'MAP': '/map',
             'LIST': '/list',
@@ -424,55 +403,28 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onLogout={onLogout}
       />
 
-      {/* Header extracted into its own component */}
       <AppHeader
         currentUser={currentUser}
         onMenuOpen={() => setIsMenuOpen(true)}
-        showHeatmap={showHeatmap}
         activeView={activeView}
-        onToggleHeatmap={() => { const v = !showHeatmap; setShowHeatmap(v); localStorage.setItem('ymap_show_heatmap', v ? '1' : '0'); }}
-        showOrgs={showOrgs}
-        onToggleOrgs={() => { const v = !showOrgs; setShowOrgs(v); localStorage.setItem('ymap_show_orgs', v ? '1' : '0'); }}
-        showInfrastructure={showInfrastructure}
-        onToggleInfrastructure={() => { const v = !showInfrastructure; setShowInfrastructure(v); localStorage.setItem('ymap_show_infra', v ? '1' : '0'); }}
-        showStandaloneIssues={showStandaloneIssues}
-        onToggleStandaloneIssues={() => { const v = !showStandaloneIssues; setShowStandaloneIssues(v); localStorage.setItem('ymap_show_issues', v ? '1' : '0'); }}
+        layers={layers}
+        onToggleHeatmap={() => setShowHeatmap(p => !p)}
+        onToggleChoropleth={() => setShowChoropleth(p => !p)}
+        onToggleOrgs={() => setShowOrgs(p => !p)}
+        onToggleInfrastructure={() => setShowInfrastructure(p => !p)}
+        onToggleStandaloneIssues={() => setShowStandaloneIssues(p => !p)}
+        onChoroplethMetricChange={setChoroplethMetric}
         isAdminOrgAddingMode={isAdminOrgAddingMode}
         onStartAdminOrgAdd={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }}
-        showChoropleth={showChoropleth}
-        onToggleChoropleth={() => setShowChoropleth(p => !p)}
-        choroplethMetric={choroplethMetric}
-        onChoroplethMetricChange={setChoroplethMetric}
       />
 
       <main className="flex-1 min-h-0 relative z-0">
         {activeView === 'MAP' ? (
           <>
-            <div className="absolute top-6 left-6 z-[399] flex flex-col" ref={filterRef}>
-              <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl font-black text-sm shadow-2xl transition-all border-2 outline-none ${isFilterOpen ? 'bg-white dark:bg-slate-800 border-blue-500 text-blue-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600 border-transparent text-white hover:shadow-blue-500/20'}`}>
-                <div className={`${isFilterOpen ? 'text-blue-600' : 'text-white'}`}>{getCategoryIcon(activeFilter)}</div>
-                <span className="whitespace-nowrap uppercase tracking-wider">{activeFilter === 'ALL' ? 'Все проблемы' : activeFilter}</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isFilterOpen ? 'rotate-180 text-blue-600' : 'text-white/80'}`} />
-              </button>
-              {isFilterOpen && (
-                <div className="mt-3 w-72 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_20px_60px_-15px_rgba(37,99,235,0.3)] border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 origin-top-left">
-                  <div className="p-3 max-h-[75vh] overflow-y-auto custom-scrollbar">
-                    <div className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Категории</div>
-                    <button onClick={() => { setActiveFilter('ALL'); setIsFilterOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all text-sm font-bold mb-1 ${activeFilter === 'ALL' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${activeFilter === 'ALL' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}><Layers size={18} /></div>
-                      <span className="flex-1 text-left">Все проблемы</span>
-                    </button>
-                    <div className="w-full h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
-                    {Object.values(IssueCategory).map((cat) => (
-                      <button key={cat} onClick={() => { setActiveFilter(cat); setIsFilterOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all text-sm font-bold mb-1 ${activeFilter === cat ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${activeFilter === cat ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'}`} style={activeFilter !== cat ? { color: CATEGORY_COLORS[cat] } : {}}>{getCategoryIcon(cat)}</div>
-                        <span className="flex-1 text-left">{cat}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <CategoryFilter
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+            />
             <MapComponent 
                 issues={mapIssues}
                 organizations={organizations}
@@ -481,17 +433,16 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 onIssueClick={handleSelectIssue}
                 onMapClick={handleMapClick}
                 onOrgClick={handleOrgClick}
-                onInfraClick={handleInfraClick}
                 isAdding={isAddingMode || isAdminOrgAddingMode}
                 showOrgs={canShowOrgs}
                 showInfrastructure={canShowInfrastructure}
                 showHeatmap={showHeatmap}
-                userLocation={userLocation}
-                triggerLocate={triggerLocate}
-                isDark={isDarkMode}
                 showChoropleth={showChoropleth}
                 choroplethMetric={choroplethMetric}
                 onDistrictClick={handleDistrictClick}
+                userLocation={userLocation}
+                triggerLocate={triggerLocate}
+                isDark={isDarkMode}
             />
             <div className="absolute bottom-8 right-6 z-[400] flex flex-col items-end gap-4">
                 <button onClick={handleLocateMe} className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-300 border border-slate-100 dark:border-slate-700"><Locate className="w-6 h-6" /></button>
@@ -521,9 +472,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         ) : activeView === 'USERS' ? (
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
         ) : activeView === 'DATA' ? (
-          <AdminDataView onDataImported={() => addToast('Данные успешно обновлены')} />
+          <AdminDataView onDataImported={() => window.location.reload()} />
         ) : (
-          <AnalyticsDashboard issues={issues} organizations={organizations} />
+          <StatisticsView issues={issues} organizations={organizations} />
         )}
       </main>
 
@@ -544,44 +495,24 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       <DetailPanel type="organization" isOpen={!!viewingOrg}>
         <OrgSidebar 
           org={viewingOrg} 
-          issues={issues}
-          currentUser={currentUser}
+          issues={issues} 
           onClose={() => navigate('/map')} 
           onIssueClick={handleSelectIssue} 
           onReportIssue={handleReportAtOrg} 
         />
       </DetailPanel>
 
-      {/* Infrastructure Detail Panel */}
-      <DetailPanel type="organization" isOpen={!!viewingInfra}>
-        <InfraSidebar
-          infra={viewingInfra}
-          currentUser={currentUser}
-          onClose={() => navigate('/map')}
-        />
-      </DetailPanel>
-
-      <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} />
-      <AdminOrgModal isOpen={isAdminOrgModalOpen} onClose={() => { setIsAdminOrgModalOpen(false); setIsAdminOrgAddingMode(false); }} onSubmit={handleAddOrg} selectedLocation={selectedLocation} />
-      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-      <LayerPickerModal
-        isOpen={showLayerPicker}
-        onConfirm={({ orgs, infrastructure, issues }) => {
-          setShowOrgs(orgs);
-          setShowInfrastructure(infrastructure);
-          setShowStandaloneIssues(issues);
-          localStorage.setItem('ymap_show_orgs', orgs ? '1' : '0');
-          localStorage.setItem('ymap_show_infra', infrastructure ? '1' : '0');
-          localStorage.setItem('ymap_show_issues', issues ? '1' : '0');
-          setShowLayerPicker(false);
-        }}
-      />
+      {/* District Drilldown (triggered by choropleth click) */}
       <DistrictDrilldown
         districtId={drilldownDistrictId}
         districtName={drilldownDistrictName}
         scores={drilldownDistrictScores}
         onClose={() => setDrilldownDistrictId(null)}
       />
+
+      <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} />
+      <AdminOrgModal isOpen={isAdminOrgModalOpen} onClose={() => { setIsAdminOrgModalOpen(false); setIsAdminOrgAddingMode(false); }} onSubmit={handleAddOrg} selectedLocation={selectedLocation} />
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </div>
   );
 };

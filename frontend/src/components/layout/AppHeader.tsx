@@ -1,54 +1,42 @@
-// frontend/src/components/AppHeader.tsx
+// frontend/src/components/layout/AppHeader.tsx
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Building2, Flame, Plus, Layers, ShieldCheck, Map as MapIcon } from 'lucide-react';
+import { Menu, Building2, ShieldCheck } from 'lucide-react';
 import { MapPlusIcon } from '../map/MapPlusIcon';
+import { LayerPicker, LayerState } from '../map/LayerPicker';
 import { User, UserRole } from '../../../types';
 
 interface AppHeaderProps {
   currentUser: User;
   onMenuOpen: () => void;
   activeView: string;
-  showHeatmap: boolean;
+  // Layer state — passed straight through to LayerPicker
+  layers: LayerState;
   onToggleHeatmap: () => void;
-  showOrgs: boolean;
+  onToggleChoropleth: () => void;
   onToggleOrgs: () => void;
-  showInfrastructure: boolean;
   onToggleInfrastructure: () => void;
-  showStandaloneIssues: boolean;
   onToggleStandaloneIssues: () => void;
+  onChoroplethMetricChange: (metric: string) => void;
+  // Admin
   isAdminOrgAddingMode: boolean;
   onStartAdminOrgAdd: () => void;
-  showChoropleth: boolean;
-  onToggleChoropleth: () => void;
-  choroplethMetric: string;
-  onChoroplethMetricChange: (metric: string) => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  currentUser,
-  onMenuOpen,
-  activeView,
-  showHeatmap,
-  onToggleHeatmap,
-  showOrgs,
-  onToggleOrgs,
-  showInfrastructure,
-  onToggleInfrastructure,
-  showStandaloneIssues,
-  onToggleStandaloneIssues,
-  isAdminOrgAddingMode,
-  onStartAdminOrgAdd,
-  showChoropleth,
-  onToggleChoropleth,
-  choroplethMetric,
+  currentUser, onMenuOpen, activeView,
+  layers,
+  onToggleHeatmap, onToggleChoropleth, onToggleOrgs,
+  onToggleInfrastructure, onToggleStandaloneIssues,
   onChoroplethMetricChange,
+  isAdminOrgAddingMode, onStartAdminOrgAdd,
 }) => {
   const navigate = useNavigate();
 
   return (
     <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 shadow-sm z-[400] px-6 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
+      {/* Left: burger + logo */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuOpen}
@@ -74,8 +62,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
       </div>
 
+      {/* Right: map controls */}
       {activeView === 'MAP' && (
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-2">
           {currentUser.role === UserRole.ADMIN && (
             <button
               onClick={onStartAdminOrgAdd}
@@ -90,79 +79,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
           )}
 
-          <button
-            onClick={onToggleHeatmap}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
-              showHeatmap
-                ? 'bg-orange-600 text-white shadow-lg'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Тепловая карта</span>
-          </button>
-
-          <button
-            onClick={onToggleChoropleth}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
-              showChoropleth
-                ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Районы</span>
-          </button>
-
-          {showChoropleth && (
-            <select
-              value={choroplethMetric}
-              onChange={(e) => onChoroplethMetricChange(e.target.value)}
-              className="appearance-none bg-teal-600 text-white border border-teal-500 rounded-full px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
-            >
-              <option value="composite">Общий</option>
-              <option value="infrastructure">Инфра</option>
-              <option value="issues">Обращения</option>
-              <option value="budget">Бюджет</option>
-              <option value="crops">Агро</option>
-            </select>
-          )}
-
-          <button
-            onClick={onToggleOrgs}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
-              showOrgs
-                ? 'bg-indigo-600 text-white shadow-lg'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Учреждения</span>
-          </button>
-
-          <button
-            onClick={onToggleInfrastructure}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
-              showInfrastructure
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Объекты инфраструктуры</span>
-          </button>
-
-          <button
-            onClick={onToggleStandaloneIssues}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
-              showStandaloneIssues
-                ? 'bg-purple-600 text-white shadow-lg'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Обращения</span>
-          </button>
+          <LayerPicker
+            layers={layers}
+            onToggleHeatmap={onToggleHeatmap}
+            onToggleChoropleth={onToggleChoropleth}
+            onToggleOrgs={onToggleOrgs}
+            onToggleInfrastructure={onToggleInfrastructure}
+            onToggleStandaloneIssues={onToggleStandaloneIssues}
+            onChoroplethMetricChange={onChoroplethMetricChange}
+          />
         </div>
       )}
     </header>

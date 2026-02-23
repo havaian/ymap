@@ -11,7 +11,7 @@ import { IssueModal } from './components/IssueModal';
 import { AboutModal } from './components/AboutModal';
 import { NotificationContainer, Toast } from './components/Notification';
 import { ListView } from './components/ListView';
-import { StatisticsView } from './components/StatisticsView';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { BurgerMenu } from './components/BurgerMenu';
 import { AdminUserView } from './components/AdminUserView';
 import { AdminDataView } from './components/AdminDataView';
@@ -502,7 +502,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         ) : activeView === 'DATA' ? (
           <AdminDataView onDataImported={() => addToast('Данные успешно обновлены')} />
         ) : (
-          <StatisticsView issues={issues} organizations={organizations} />
+          <AnalyticsDashboard issues={issues} organizations={organizations} />
         )}
       </main>
 

@@ -416,6 +416,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         currentUser={currentUser}
         onMenuOpen={() => setIsMenuOpen(true)}
         showHeatmap={showHeatmap}
+        activeView={activeView}
         onToggleHeatmap={() => { const v = !showHeatmap; setShowHeatmap(v); localStorage.setItem('ymap_show_heatmap', v ? '1' : '0'); }}
         showOrgs={showOrgs}
         onToggleOrgs={() => { const v = !showOrgs; setShowOrgs(v); localStorage.setItem('ymap_show_orgs', v ? '1' : '0'); }}

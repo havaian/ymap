@@ -106,7 +106,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onClick={onToggleChoropleth}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition duration-300 ${
               showChoropleth
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -118,7 +118,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <select
               value={choroplethMetric}
               onChange={(e) => onChoroplethMetricChange(e.target.value)}
-              className="appearance-none bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-full px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 focus:outline-none cursor-pointer"
+              className="appearance-none bg-teal-600 text-white border border-teal-500 rounded-full px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
             >
               <option value="composite">Общий</option>
               <option value="infrastructure">Инфра</option>

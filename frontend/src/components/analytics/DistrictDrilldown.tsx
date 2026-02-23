@@ -225,25 +225,25 @@ export const DistrictDrilldown: React.FC<DistrictDrilldownProps> = ({
                                     </h3>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Орг. выделено</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Организацией выделено</p>
                                             <p className="text-sm font-black text-slate-800 dark:text-slate-100">
                                                 {formatNum(detail.organizations?.totalBudget?.committedUZS)} UZS
                                             </p>
                                         </div>
                                         <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Орг. освоено</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Организацией освоено</p>
                                             <p className="text-sm font-black text-emerald-600">
                                                 {formatNum(detail.organizations?.totalBudget?.spentUZS)} UZS
                                             </p>
                                         </div>
                                         <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Инфра выделено</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Объектом инф-ры выделено</p>
                                             <p className="text-sm font-black text-slate-800 dark:text-slate-100">
                                                 {formatNum(detail.infrastructure?.totalBudget?.committedUZS)} UZS
                                             </p>
                                         </div>
                                         <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Инфра освоено</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Объектом инф-ры освоено</p>
                                             <p className="text-sm font-black text-emerald-600">
                                                 {formatNum(detail.infrastructure?.totalBudget?.spentUZS)} UZS
                                             </p>

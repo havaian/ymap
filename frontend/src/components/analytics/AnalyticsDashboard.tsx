@@ -170,7 +170,7 @@ const DistrictTable: React.FC<{ districts: DistrictScore[]; limit?: number }> = 
                         <th className="text-left py-2 px-2 font-bold">#</th>
                         <th className="text-left py-2 px-2 font-bold">Район</th>
                         <th className="text-center py-2 px-2 font-bold">Балл</th>
-                        <th className="text-center py-2 px-2 font-bold">Инфра</th>
+                        <th className="text-center py-2 px-2 font-bold">Объекты инф-ры</th>
                         <th className="text-center py-2 px-2 font-bold">Обращения</th>
                         <th className="text-center py-2 px-2 font-bold">Бюджет</th>
                         <th className="text-right py-2 px-2 font-bold">Объектов</th>
@@ -291,7 +291,7 @@ export const AnalyticsDashboard: React.FC = () => {
         const top5 = districtScoring.slice(0, 5);
         if (top5.length === 0) return [];
         return ['infrastructure', 'issues', 'budget', 'crops'].map(key => {
-            const entry: Record<string, any> = { metric: key === 'infrastructure' ? 'Инфра' : key === 'issues' ? 'Обращения' : key === 'budget' ? 'Бюджет' : 'Агро' };
+            const entry: Record<string, any> = { metric: key === 'infrastructure' ? 'Объекты инф-ры' : key === 'issues' ? 'Обращения' : key === 'budget' ? 'Бюджет' : 'Агро' };
             top5.forEach(d => {
                 entry[d.districtName?.en || d.districtId] = d.scores[key as keyof typeof d.scores];
             });

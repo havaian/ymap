@@ -68,6 +68,16 @@ const infrastructureSchema = new mongoose.Schema({
         spentUZS: Number,
         committedUSD: Number,
         spentUSD: Number
+    },
+    // Geo assignment (set by assign-districts.js)
+    regionCode: {
+        type: Number,
+        index: true
+    },
+    districtId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'District',
+        index: true
     }
 }, {
     timestamps: true

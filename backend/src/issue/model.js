@@ -72,6 +72,16 @@ const issueSchema = new mongoose.Schema({
     isSeeded: {
         type: Boolean,
         default: false
+    },
+    // Geo assignment (set by assign-districts.js)
+    regionCode: {
+        type: Number,
+        index: true
+    },
+    districtId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'District',
+        index: true
     }
 }, {
     timestamps: true,

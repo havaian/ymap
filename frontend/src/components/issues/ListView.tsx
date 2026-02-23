@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { Issue, IssueCategory, Severity } from '../../types';
-import { CATEGORY_COLORS } from '../constants';
+import { Issue, IssueCategory, Severity } from '../../../types';
+import { CATEGORY_COLORS } from '../../constants';
 import { Search, ChevronRight, Star, Building2 } from 'lucide-react';
 
 interface ListViewProps {

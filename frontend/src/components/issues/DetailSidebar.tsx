@@ -1,8 +1,8 @@
 // frontend/src/components/DetailSidebar.tsx
 
 import React, { useState } from 'react';
-import { Issue, Comment, IssueSubCategory, UserRole, User as UserType } from '../../types';
-import { CATEGORY_COLORS } from '../constants';
+import { Issue, Comment, IssueSubCategory, UserRole, User as UserType } from '../../../types';
+import { CATEGORY_COLORS } from '../../constants';
 import { Send, MessageSquare, Clock, ShieldAlert, ChevronUp, User, Building2, Droplets, Zap, MoreHorizontal, Trash2, CheckCircle, RotateCcw, Play } from 'lucide-react';
 
 interface DetailSidebarProps {

@@ -3,8 +3,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Building2, Flame, Plus, Layers, ShieldCheck } from 'lucide-react';
-import { MapPlusIcon } from './MapPlusIcon';
-import { User, UserRole } from '../../types';
+import { MapPlusIcon } from '../map/MapPlusIcon';
+import { User, UserRole } from '../../../types';
 
 interface AppHeaderProps {
   currentUser: User;

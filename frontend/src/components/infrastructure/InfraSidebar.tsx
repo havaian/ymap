@@ -1,7 +1,7 @@
 // frontend/src/components/InfraSidebar.tsx
 
 import React from 'react';
-import { Infrastructure, User, UserRole } from '../../types';
+import { Infrastructure, User, UserRole } from '../../../types';
 import {
   Construction, Waves, Building2, MapPin, Calendar,
   Wallet, TrendingUp, Globe, Tag, Hash
@@ -9,7 +9,7 @@ import {
 import {
   formatUZS, formatUSD, budgetPercent,
   translateSourceType, translateStatus, statusColor
-} from '../utils/detailFormatters';
+} from '../../utils/detailFormatters';
 
 interface InfraSidebarProps {
   infra: Infrastructure | null;

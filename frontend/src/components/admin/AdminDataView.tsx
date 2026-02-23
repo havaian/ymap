@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Database, Trash2, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, BarChart3, Clock, Layers, Building2 } from 'lucide-react';
-import { adminAPI } from '../services/api';
+import { adminAPI } from '../../services/api';
 
 interface AdminDataViewProps {
   onDataImported?: () => void;

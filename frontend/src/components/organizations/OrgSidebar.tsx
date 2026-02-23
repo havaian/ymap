@@ -1,8 +1,8 @@
 // frontend/src/components/OrgSidebar.tsx
 
 import React, { useMemo } from 'react';
-import { Organization, Issue, Severity, User, UserRole } from '../../types';
-import { CATEGORY_COLORS } from '../constants';
+import { Organization, Issue, Severity, User, UserRole } from '../../../types';
+import { CATEGORY_COLORS } from '../../constants';
 import {
   Building2, MapPin, CheckCircle2, Star, ChevronRight, Plus,
   Info, Calendar, Wallet, TrendingUp, Globe, Tag, Hash
@@ -10,7 +10,7 @@ import {
 import {
   formatUZS, formatUSD, budgetPercent,
   translateSourceType, translateStatus, statusColor
-} from '../utils/detailFormatters';
+} from '../../utils/detailFormatters';
 
 interface OrgSidebarProps {
   org: Organization | null;

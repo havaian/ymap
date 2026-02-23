@@ -10,7 +10,7 @@ import {
     CheckCircle2, AlertCircle, DollarSign, Wheat, ChevronDown,
     BarChart3, Activity, Award, Layers
 } from 'lucide-react';
-import { useAnalytics, DistrictScore, RegionSummary } from '../hooks/useAnalytics';
+import { useAnalytics, DistrictScore, RegionSummary } from '../../hooks/useAnalytics';
 import { DistrictDrilldown } from './DistrictDrilldown';
 
 // ─────────────────────────────────────────────

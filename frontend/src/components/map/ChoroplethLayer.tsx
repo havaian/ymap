@@ -10,7 +10,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { analyticsAPI } from '../services/analyticsApi';
+import { analyticsAPI } from '../../services/analyticsApi';
 
 interface ChoroplethLayerProps {
     show: boolean;

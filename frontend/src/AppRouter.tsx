@@ -7,7 +7,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import App from './App';
-import { LoginView } from './components/LoginView';
+import { LoginView } from './components/auth/LoginView';
 import { User } from '../types';
 import '../public/assets/styles/index.css';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { analyticsAPI } from '../services/analyticsApi';
+import { analyticsAPI } from '../../services/analyticsApi';
 import {
     X, MapPin, AlertCircle, Building2, Construction, DollarSign,
     CheckCircle2, TrendingUp, Sprout, BarChart3

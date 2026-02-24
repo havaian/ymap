@@ -8,7 +8,11 @@ import {
     getDistrictDetail,
     getRegionSummary,
     getBudgetAnalytics,
-    getChoropleth
+    getChoropleth,
+    getTrends,
+    getResolution,
+    getEfficiency,
+    getDistrictProfile
 } from './controller.js';
 import { cacheMiddleware } from '../middleware/cache.js';
 
@@ -25,5 +29,9 @@ router.get('/districts/:id', cacheMiddleware(120, 'analytics'), getDistrictDetai
 router.get('/regions/summary', cacheMiddleware(300, 'analytics'), getRegionSummary);
 router.get('/budget', cacheMiddleware(300, 'analytics'), getBudgetAnalytics);
 router.get('/choropleth', cacheMiddleware(600, 'analytics'), getChoropleth);
+router.get('/trends', cacheMiddleware('analytics', 300), getTrends);
+router.get('/resolution', cacheMiddleware('analytics', 300), getResolution);
+router.get('/efficiency', cacheMiddleware('analytics', 300), getEfficiency);
+router.get('/district/:name', cacheMiddleware('analytics', 120), getDistrictProfile);
 
 export default router;

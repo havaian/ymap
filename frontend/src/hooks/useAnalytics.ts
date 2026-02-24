@@ -10,6 +10,8 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// ── Existing types ──────────────────────────────────────
+
 export interface OverviewData {
     counts: { organizations: number; infrastructure: number; issues: number; regions: number; districts: number };
     issues: { byStatus: Record<string, number>; bySeverity: Record<string, number>; resolutionRate: number };
@@ -77,23 +79,123 @@ export interface CropAnalytics {
     byDistrict: any[];
 }
 
-export interface BudgetAnalytics {
-    totals: {
-        committedUZS: number; spentUZS: number;
-        committedUSD: number; spentUSD: number;
-        executionRate: number; costPerResolved: number | null;
-        resolvedCount: number;
-    };
-    byDistrict: {
-        districtId: string; districtName: { en: string; ru: string; uz: string };
-        regionCode: number; areaKm2: number;
-        totalCommittedUZS: number; totalSpentUZS: number;
-        totalCommittedUSD: number; totalSpentUSD: number;
-        orgCount: number; infraCount: number;
-        resolvedCount: number; executionRate: number;
-        costPerResolved: number | null; budgetPerKm2: number;
-    }[];
+// ── New types (trends, resolution, efficiency, district profile) ────────
+
+export interface TrendPoint {
+    label: string;
+    year: number;
+    month: number;
+    total: number;
+    open: number;
+    inProgress: number;
+    resolved: number;
+    resolutionRate: number;
+    avgResolutionDays: number | null;
+    totalVotes: number;
+    severity: Record<string, number>;
 }
+
+export interface TrendCategoryStat {
+    category: string;
+    total: number;
+    resolved: number;
+    resolutionRate: number;
+    avgResolutionDays: number | null;
+    totalVotes: number;
+}
+
+export interface TrendsData {
+    period: { months: number; from: string };
+    summary: {
+        totalIssues: number;
+        totalResolved: number;
+        overallResolutionRate: number;
+        avgResolutionDays: number | null;
+        totalVotes: number;
+    };
+    trend: TrendPoint[];
+    categories: TrendCategoryStat[];
+}
+
+export interface ResolutionData {
+    overall: { count: number; avgDays: number | null; medianDays: number | null };
+    byCategory: Array<{ category: string; count: number; avgDays: number | null; minDays: number | null; maxDays: number | null }>;
+    bySeverity: Array<{ severity: string; count: number; avgDays: number | null }>;
+    byDistrict: Array<{ district: string; count: number; avgDays: number | null }>;
+}
+
+export interface EfficiencyOrg {
+    id: string;
+    name: string;
+    type: string;
+    region: string;
+    budget: { committed: number; spent: number; executionRate: number };
+    issues: { total: number; resolved: number; open: number; votes: number; resolutionRate: number; avgResolutionDays: number | null };
+    costPerResolved: number | null;
+    inefficiencyScore: number;
+}
+
+export interface EfficiencyDistrict {
+    district: string;
+    totalBudget: number;
+    totalSpent: number;
+    totalIssues: number;
+    totalResolved: number;
+    orgCount: number;
+    executionRate: number;
+    resolutionRate: number;
+    costPerResolved: number | null;
+}
+
+export interface EfficiencyAnomaly extends EfficiencyOrg {
+    flag: 'critical' | 'warning';
+}
+
+export interface EfficiencyData {
+    summary: {
+        totalOrgs: number;
+        totalBudget: number;
+        totalSpent: number;
+        avgExecutionRate: number;
+        totalIssues: number;
+        totalResolved: number;
+        avgResolutionRate: number;
+        avgCostPerResolved: number | null;
+        anomalyCount: number;
+    };
+    districts: EfficiencyDistrict[];
+    anomalies: EfficiencyAnomaly[];
+    orgs: EfficiencyOrg[];
+}
+
+export interface DistrictProfile {
+    district: string;
+    organizations: {
+        total: number;
+        byType: Record<string, number>;
+        budget: { committedUZS: number; spentUZS: number; executionRate: number };
+    };
+    infrastructure: {
+        total: number;
+        byType: Record<string, number>;
+        budget: { committedUZS: number; spentUZS: number; executionRate: number };
+    };
+    issues: {
+        total: number;
+        open: number;
+        inProgress: number;
+        resolved: number;
+        resolutionRate: number;
+        avgResolutionDays: number | null;
+        totalVotes: number;
+        bySeverity: Record<string, number>;
+        byCategory: Array<{ category: string; total: number; resolved: number; resolutionRate: number; votes: number }>;
+    };
+    monthlyTrend: Array<{ label: string; total: number; resolved: number }>;
+    topIssues: Array<{ id: string; title: string; category: string; severity: string; status: string; votes: number; organizationName: string }>;
+}
+
+// ── Existing hook (unchanged) ───────────────────────────
 
 export const useAnalytics = () => {
     const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -101,60 +203,40 @@ export const useAnalytics = () => {
     const [regionSummary, setRegionSummary] = useState<RegionSummary[]>([]);
     const [issueAnalytics, setIssueAnalytics] = useState<IssueAnalytics | null>(null);
     const [cropAnalytics, setCropAnalytics] = useState<CropAnalytics | null>(null);
-    const [budgetAnalytics, setBudgetAnalytics] = useState<BudgetAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Filters
-    const [regionCode, setRegionCode] = useState<number | null>(null);
-    const [period, setPeriod] = useState<number | null>(null); // days
-
-    const fetchAll = useCallback(async () => {
+    const fetchAll = useCallback(async (regionCode?: number) => {
         try {
             setLoading(true);
             setError(null);
 
-            const params: any = {};
-            if (regionCode) params.regionCode = regionCode;
-            if (period) params.period = period;
+            const params = regionCode ? { regionCode } : {};
 
-            const [overviewRes, scoringRes, regionsRes, issuesRes, cropsRes, budgetRes] = await Promise.all([
+            const [overviewRes, scoringRes, regionsRes, issuesRes, cropsRes] = await Promise.all([
                 api.get('/analytics/overview'),
                 api.get('/analytics/districts/scoring', { params }),
                 api.get('/analytics/regions/summary'),
                 api.get('/analytics/issues', { params }),
-                api.get('/analytics/crops', { params }),
-                api.get('/analytics/budget', { params })
+                api.get('/analytics/crops', { params })
             ]);
 
             setOverview(overviewRes.data.data);
-            setDistrictScoring(scoringRes.data.data.districts || scoringRes.data.data);
+            setDistrictScoring(scoringRes.data.data.districts);
             setRegionSummary(regionsRes.data.data);
             setIssueAnalytics(issuesRes.data.data);
             setCropAnalytics(cropsRes.data.data);
-            setBudgetAnalytics(budgetRes.data.data);
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Failed to fetch analytics');
             console.error('Analytics fetch error:', err);
         } finally {
             setLoading(false);
         }
-    }, [regionCode, period]);
+    }, []);
 
     useEffect(() => {
         fetchAll();
     }, [fetchAll]);
-
-    // District detail (on demand)
-    const fetchDistrictDetail = useCallback(async (id: string) => {
-        try {
-            const res = await api.get(`/analytics/districts/${id}`);
-            return res.data.data;
-        } catch (err) {
-            console.error('District detail error:', err);
-            return null;
-        }
-    }, []);
 
     return {
         overview,
@@ -162,15 +244,72 @@ export const useAnalytics = () => {
         regionSummary,
         issueAnalytics,
         cropAnalytics,
-        budgetAnalytics,
         loading,
         error,
-        refetch: fetchAll,
-        fetchDistrictDetail,
-        // Filters
-        regionCode,
-        setRegionCode,
-        period,
-        setPeriod,
+        refetch: fetchAll
     };
 };
+
+// ── New hooks (added below existing code) ───────────────
+
+export function useTrends(months = 12) {
+    const [data, setData] = useState<TrendsData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        api.get(`/analytics/trends`, { params: { months } })
+            .then(res => setData(res.data))
+            .catch(err => console.error('Trends fetch error:', err))
+            .finally(() => setLoading(false));
+    }, [months]);
+
+    return { data, loading };
+}
+
+export function useResolution() {
+    const [data, setData] = useState<ResolutionData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        api.get('/analytics/resolution')
+            .then(res => setData(res.data))
+            .catch(err => console.error('Resolution fetch error:', err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    return { data, loading };
+}
+
+export function useEfficiency(regionName?: string) {
+    const [data, setData] = useState<EfficiencyData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        const params = regionName ? { regionName } : {};
+        api.get('/analytics/efficiency', { params })
+            .then(res => setData(res.data))
+            .catch(err => console.error('Efficiency fetch error:', err))
+            .finally(() => setLoading(false));
+    }, [regionName]);
+
+    return { data, loading };
+}
+
+export function useDistrictProfile(name: string | null) {
+    const [data, setData] = useState<DistrictProfile | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!name) { setData(null); return; }
+        setLoading(true);
+        api.get(`/analytics/district/${encodeURIComponent(name)}`)
+            .then(res => setData(res.data))
+            .catch(err => console.error('District profile fetch error:', err))
+            .finally(() => setLoading(false));
+    }, [name]);
+
+    return { data, loading };
+}

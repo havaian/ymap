@@ -1262,3 +1262,590 @@ export const getChoropleth = async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to generate choropleth' });
     }
 };
+
+// backend/src/analytics/controller.js
+//
+// Comprehensive analytics endpoints using existing data:
+//   GET /api/analytics/trends         — monthly issue counts, resolution rates, avg resolution time
+//   GET /api/analytics/resolution     — resolution time stats (overall, per district, per category)
+//   GET /api/analytics/efficiency     — budget vs resolution scatter + anomaly detection
+//   GET /api/analytics/district/:name — full district profile card with all available metrics
+
+import Issue from '../issue/model.js';
+import Organization from '../organization/model.js';
+import Infrastructure from '../infrastructure/model.js';
+
+// ── Helper: parse "regionName" from org data ────────────────────────────
+function getDistrictFromOrg(org) {
+  return org?.region?.name || 'Без района';
+}
+
+// ── GET /api/analytics/trends ───────────────────────────────────────────
+// Monthly time-series: issue counts, resolution rate, avg resolution time
+// Query params: ?months=12&category=Roads
+export async function getTrends(req, res) {
+  try {
+    const months = Math.min(parseInt(req.query.months) || 12, 36);
+    const category = req.query.category;
+
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+
+    const matchStage = { createdAt: { $gte: startDate } };
+    if (category) matchStage.category = category;
+
+    // Monthly aggregation
+    const monthlyPipeline = [
+      { $match: matchStage },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          total: { $sum: 1 },
+          open: { $sum: { $cond: [{ $eq: ['$status', 'Open'] }, 1, 0] } },
+          inProgress: { $sum: { $cond: [{ $eq: ['$status', 'In Progress'] }, 1, 0] } },
+          resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+          totalVotes: { $sum: '$votes' },
+          // Avg resolution time for resolved issues (updatedAt - createdAt)
+          avgResolutionMs: {
+            $avg: {
+              $cond: [
+                { $eq: ['$status', 'Resolved'] },
+                { $subtract: ['$updatedAt', '$createdAt'] },
+                null
+              ]
+            }
+          },
+          bySeverity: {
+            $push: '$severity'
+          }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ];
+
+    const monthly = await Issue.aggregate(monthlyPipeline);
+
+    // Category breakdown for period
+    const categoryPipeline = [
+      { $match: matchStage },
+      {
+        $group: {
+          _id: '$category',
+          total: { $sum: 1 },
+          resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+          totalVotes: { $sum: '$votes' },
+          avgResolutionMs: {
+            $avg: {
+              $cond: [
+                { $eq: ['$status', 'Resolved'] },
+                { $subtract: ['$updatedAt', '$createdAt'] },
+                null
+              ]
+            }
+          }
+        }
+      },
+      { $sort: { total: -1 } }
+    ];
+
+    const byCategory = await Issue.aggregate(categoryPipeline);
+
+    // Format response
+    const trend = monthly.map(m => {
+      const severityCounts = {};
+      m.bySeverity.forEach(s => { severityCounts[s] = (severityCounts[s] || 0) + 1; });
+
+      return {
+        year: m._id.year,
+        month: m._id.month,
+        label: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+        total: m.total,
+        open: m.open,
+        inProgress: m.inProgress,
+        resolved: m.resolved,
+        resolutionRate: m.total > 0 ? Math.round((m.resolved / m.total) * 100) : 0,
+        avgResolutionDays: m.avgResolutionMs ? Math.round(m.avgResolutionMs / (1000 * 60 * 60 * 24) * 10) / 10 : null,
+        totalVotes: m.totalVotes,
+        severity: severityCounts
+      };
+    });
+
+    const categories = byCategory.map(c => ({
+      category: c._id,
+      total: c.total,
+      resolved: c.resolved,
+      resolutionRate: c.total > 0 ? Math.round((c.resolved / c.total) * 100) : 0,
+      avgResolutionDays: c.avgResolutionMs ? Math.round(c.avgResolutionMs / (1000 * 60 * 60 * 24) * 10) / 10 : null,
+      totalVotes: c.totalVotes
+    }));
+
+    // Overall stats for the period
+    const totalIssues = trend.reduce((s, t) => s + t.total, 0);
+    const totalResolved = trend.reduce((s, t) => s + t.resolved, 0);
+    const allResolutionDays = trend.filter(t => t.avgResolutionDays !== null).map(t => t.avgResolutionDays);
+
+    res.json({
+      period: { months, from: startDate.toISOString() },
+      summary: {
+        totalIssues,
+        totalResolved,
+        overallResolutionRate: totalIssues > 0 ? Math.round((totalResolved / totalIssues) * 100) : 0,
+        avgResolutionDays: allResolutionDays.length > 0
+          ? Math.round(allResolutionDays.reduce((s, d) => s + d, 0) / allResolutionDays.length * 10) / 10
+          : null,
+        totalVotes: trend.reduce((s, t) => s + t.totalVotes, 0)
+      },
+      trend,
+      categories
+    });
+  } catch (err) {
+    console.error('Analytics trends error:', err);
+    res.status(500).json({ error: 'Failed to compute trends' });
+  }
+}
+
+// ── GET /api/analytics/resolution ───────────────────────────────────────
+// Resolution time breakdown: overall, per district, per category, per severity
+export async function getResolution(req, res) {
+  try {
+    // Only resolved issues have meaningful resolution time
+    const resolvedMatch = { status: 'Resolved' };
+
+    // Per category
+    const byCategoryPipeline = [
+      { $match: resolvedMatch },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          avgMs: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } },
+          minMs: { $min: { $subtract: ['$updatedAt', '$createdAt'] } },
+          maxMs: { $max: { $subtract: ['$updatedAt', '$createdAt'] } }
+        }
+      },
+      { $sort: { avgMs: -1 } }
+    ];
+
+    // Per severity
+    const bySeverityPipeline = [
+      { $match: resolvedMatch },
+      {
+        $group: {
+          _id: '$severity',
+          count: { $sum: 1 },
+          avgMs: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } }
+        }
+      },
+      { $sort: { avgMs: -1 } }
+    ];
+
+    // Per district (via organizationId → org lookup)
+    const byDistrictPipeline = [
+      { $match: { ...resolvedMatch, organizationId: { $exists: true, $ne: null } } },
+      {
+        $lookup: {
+          from: 'organizations',
+          let: { orgId: { $toObjectId: '$organizationId' } },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$orgId'] } } },
+            { $project: { 'region.name': 1 } }
+          ],
+          as: 'org'
+        }
+      },
+      { $unwind: { path: '$org', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: { $ifNull: ['$org.region.name', 'Без района'] },
+          count: { $sum: 1 },
+          avgMs: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } }
+        }
+      },
+      { $sort: { avgMs: -1 } }
+    ];
+
+    // Overall
+    const overallPipeline = [
+      { $match: resolvedMatch },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          avgMs: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } },
+          medianValues: { $push: { $subtract: ['$updatedAt', '$createdAt'] } }
+        }
+      }
+    ];
+
+    const [byCategory, bySeverity, byDistrict, overall] = await Promise.all([
+      Issue.aggregate(byCategoryPipeline),
+      Issue.aggregate(bySeverityPipeline),
+      Issue.aggregate(byDistrictPipeline),
+      Issue.aggregate(overallPipeline)
+    ]);
+
+    const msToDay = (ms) => ms ? Math.round(ms / (1000 * 60 * 60 * 24) * 10) / 10 : null;
+
+    // Compute median from overall
+    let medianDays = null;
+    if (overall[0]?.medianValues?.length > 0) {
+      const sorted = overall[0].medianValues.sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const medianMs = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      medianDays = msToDay(medianMs);
+    }
+
+    res.json({
+      overall: {
+        count: overall[0]?.count || 0,
+        avgDays: msToDay(overall[0]?.avgMs),
+        medianDays
+      },
+      byCategory: byCategory.map(c => ({
+        category: c._id,
+        count: c.count,
+        avgDays: msToDay(c.avgMs),
+        minDays: msToDay(c.minMs),
+        maxDays: msToDay(c.maxMs)
+      })),
+      bySeverity: bySeverity.map(s => ({
+        severity: s._id,
+        count: s.count,
+        avgDays: msToDay(s.avgMs)
+      })),
+      byDistrict: byDistrict.map(d => ({
+        district: d._id,
+        count: d.count,
+        avgDays: msToDay(d.avgMs)
+      }))
+    });
+  } catch (err) {
+    console.error('Analytics resolution error:', err);
+    res.status(500).json({ error: 'Failed to compute resolution stats' });
+  }
+}
+
+// ── GET /api/analytics/efficiency ───────────────────────────────────────
+// Budget vs resolution scatter data + anomaly detection
+// Returns per-org: budget spent, issues resolved, cost per resolution, flags
+export async function getEfficiency(req, res) {
+  try {
+    const regionName = req.query.regionName;
+
+    // Get all orgs with budget data
+    const orgMatch = { 'budget.committedUZS': { $gt: 0 } };
+    if (regionName) orgMatch['region.name'] = regionName;
+
+    const orgs = await Organization.find(orgMatch).lean();
+
+    if (!orgs.length) {
+      return res.json({ orgs: [], anomalies: [], summary: {} });
+    }
+
+    // Get issue stats per org
+    const orgIds = orgs.map(o => o._id.toString());
+    const issuePipeline = [
+      { $match: { organizationId: { $in: orgIds } } },
+      {
+        $group: {
+          _id: '$organizationId',
+          total: { $sum: 1 },
+          resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+          open: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } },
+          totalVotes: { $sum: '$votes' },
+          avgResolutionMs: {
+            $avg: {
+              $cond: [
+                { $eq: ['$status', 'Resolved'] },
+                { $subtract: ['$updatedAt', '$createdAt'] },
+                null
+              ]
+            }
+          }
+        }
+      }
+    ];
+
+    const issuesByOrg = await Issue.aggregate(issuePipeline);
+    const issueMap = {};
+    issuesByOrg.forEach(i => { issueMap[i._id] = i; });
+
+    // Build scatter data
+    const scatterData = orgs.map(org => {
+      const issues = issueMap[org._id.toString()] || { total: 0, resolved: 0, open: 0, totalVotes: 0, avgResolutionMs: null };
+      const committed = org.budget?.committedUZS || 0;
+      const spent = org.budget?.spentUZS || 0;
+      const executionRate = committed > 0 ? Math.round((spent / committed) * 100) : 0;
+      const resolutionRate = issues.total > 0 ? Math.round((issues.resolved / issues.total) * 100) : 0;
+      const costPerResolved = issues.resolved > 0 ? Math.round(spent / issues.resolved) : null;
+
+      return {
+        id: org._id.toString(),
+        name: org.name,
+        type: org.type,
+        region: org.region?.name || 'Без района',
+        budget: { committed, spent, executionRate },
+        issues: {
+          total: issues.total,
+          resolved: issues.resolved,
+          open: issues.open,
+          votes: issues.totalVotes,
+          resolutionRate,
+          avgResolutionDays: issues.avgResolutionMs
+            ? Math.round(issues.avgResolutionMs / (1000 * 60 * 60 * 24) * 10) / 10
+            : null
+        },
+        costPerResolved,
+        // Efficiency score: higher is worse (high spend, low resolution)
+        // Normalized: (1 - resolutionRate/100) * executionRate
+        inefficiencyScore: Math.round((1 - resolutionRate / 100) * executionRate)
+      };
+    });
+
+    // Sort by inefficiency for anomaly detection
+    const sorted = [...scatterData].sort((a, b) => b.inefficiencyScore - a.inefficiencyScore);
+
+    // Anomalies: top inefficient (high budget execution but low issue resolution)
+    const anomalies = sorted
+      .filter(o => o.budget.executionRate > 50 && o.issues.resolutionRate < 30 && o.issues.total >= 3)
+      .slice(0, 20)
+      .map(o => ({
+        ...o,
+        flag: o.budget.executionRate > 80 && o.issues.resolutionRate < 15 ? 'critical' : 'warning'
+      }));
+
+    // District-level aggregation for scatter
+    const districtMap = {};
+    scatterData.forEach(o => {
+      const d = o.region;
+      if (!districtMap[d]) {
+        districtMap[d] = { district: d, totalBudget: 0, totalSpent: 0, totalIssues: 0, totalResolved: 0, orgCount: 0 };
+      }
+      districtMap[d].totalBudget += o.budget.committed;
+      districtMap[d].totalSpent += o.budget.spent;
+      districtMap[d].totalIssues += o.issues.total;
+      districtMap[d].totalResolved += o.issues.resolved;
+      districtMap[d].orgCount++;
+    });
+
+    const districtScatter = Object.values(districtMap).map(d => ({
+      ...d,
+      executionRate: d.totalBudget > 0 ? Math.round((d.totalSpent / d.totalBudget) * 100) : 0,
+      resolutionRate: d.totalIssues > 0 ? Math.round((d.totalResolved / d.totalIssues) * 100) : 0,
+      costPerResolved: d.totalResolved > 0 ? Math.round(d.totalSpent / d.totalResolved) : null
+    }));
+
+    // Summary
+    const totalBudget = scatterData.reduce((s, o) => s + o.budget.committed, 0);
+    const totalSpent = scatterData.reduce((s, o) => s + o.budget.spent, 0);
+    const totalIssues = scatterData.reduce((s, o) => s + o.issues.total, 0);
+    const totalResolved = scatterData.reduce((s, o) => s + o.issues.resolved, 0);
+
+    res.json({
+      summary: {
+        totalOrgs: scatterData.length,
+        totalBudget,
+        totalSpent,
+        avgExecutionRate: totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0,
+        totalIssues,
+        totalResolved,
+        avgResolutionRate: totalIssues > 0 ? Math.round((totalResolved / totalIssues) * 100) : 0,
+        avgCostPerResolved: totalResolved > 0 ? Math.round(totalSpent / totalResolved) : null,
+        anomalyCount: anomalies.length
+      },
+      districts: districtScatter,
+      anomalies,
+      // Top 50 orgs for scatter plot (sorted by budget descending)
+      orgs: scatterData.sort((a, b) => b.budget.committed - a.budget.committed).slice(0, 50)
+    });
+  } catch (err) {
+    console.error('Analytics efficiency error:', err);
+    res.status(500).json({ error: 'Failed to compute efficiency' });
+  }
+}
+
+// ── GET /api/analytics/district/:name ───────────────────────────────────
+// Full district profile card — all available metrics for one district
+export async function getDistrictProfile(req, res) {
+  try {
+    const regionName = decodeURIComponent(req.params.name);
+
+    // Get all orgs in district
+    const orgs = await Organization.find({ 'region.name': regionName }).lean();
+    const infra = await Infrastructure.find({ 'region.name': regionName }).lean();
+    const orgIds = orgs.map(o => o._id.toString());
+
+    // Issue stats for district orgs
+    const issuePipeline = [
+      { $match: { organizationId: { $in: orgIds } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          open: { $sum: { $cond: [{ $eq: ['$status', 'Open'] }, 1, 0] } },
+          inProgress: { $sum: { $cond: [{ $eq: ['$status', 'In Progress'] }, 1, 0] } },
+          resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+          totalVotes: { $sum: '$votes' },
+          avgResolutionMs: {
+            $avg: {
+              $cond: [
+                { $eq: ['$status', 'Resolved'] },
+                { $subtract: ['$updatedAt', '$createdAt'] },
+                null
+              ]
+            }
+          }
+        }
+      }
+    ];
+
+    // Issues by category
+    const byCategoryPipeline = [
+      { $match: { organizationId: { $in: orgIds } } },
+      {
+        $group: {
+          _id: '$category',
+          total: { $sum: 1 },
+          resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+          votes: { $sum: '$votes' }
+        }
+      },
+      { $sort: { total: -1 } }
+    ];
+
+    // Issues by severity
+    const bySeverityPipeline = [
+      { $match: { organizationId: { $in: orgIds } } },
+      {
+        $group: {
+          _id: '$severity',
+          count: { $sum: 1 }
+        }
+      }
+    ];
+
+    // Monthly trend for this district (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const monthlyPipeline = [
+      { $match: { organizationId: { $in: orgIds }, createdAt: { $gte: sixMonthsAgo } } },
+      {
+        $group: {
+          _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+          total: { $sum: 1 },
+          resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ];
+
+    // Top issues (most voted)
+    const topIssues = await Issue.find({ organizationId: { $in: orgIds } })
+      .sort({ votes: -1 })
+      .limit(10)
+      .lean();
+
+    const [issueStats, byCategory, bySeverity, monthlyTrend] = await Promise.all([
+      Issue.aggregate(issuePipeline),
+      Issue.aggregate(byCategoryPipeline),
+      Issue.aggregate(bySeverityPipeline),
+      Issue.aggregate(monthlyPipeline)
+    ]);
+
+    const stats = issueStats[0] || { total: 0, open: 0, inProgress: 0, resolved: 0, totalVotes: 0, avgResolutionMs: null };
+
+    // Budget aggregation
+    const orgBudget = orgs.reduce((acc, o) => {
+      acc.committed += o.budget?.committedUZS || 0;
+      acc.spent += o.budget?.spentUZS || 0;
+      return acc;
+    }, { committed: 0, spent: 0 });
+
+    const infraBudget = infra.reduce((acc, i) => {
+      acc.committed += i.budget?.committedUZS || 0;
+      acc.spent += i.budget?.spentUZS || 0;
+      return acc;
+    }, { committed: 0, spent: 0 });
+
+    // Org type breakdown
+    const orgTypes = {};
+    orgs.forEach(o => {
+      const t = o.type || 'Other';
+      orgTypes[t] = (orgTypes[t] || 0) + 1;
+    });
+
+    // Infra type breakdown
+    const infraTypes = {};
+    infra.forEach(i => {
+      const t = i.type || 'Other';
+      infraTypes[t] = (infraTypes[t] || 0) + 1;
+    });
+
+    // Severity map
+    const severityMap = {};
+    bySeverity.forEach(s => { severityMap[s._id] = s.count; });
+
+    res.json({
+      district: regionName,
+      organizations: {
+        total: orgs.length,
+        byType: orgTypes,
+        budget: {
+          committedUZS: orgBudget.committed,
+          spentUZS: orgBudget.spent,
+          executionRate: orgBudget.committed > 0 ? Math.round((orgBudget.spent / orgBudget.committed) * 100) : 0
+        }
+      },
+      infrastructure: {
+        total: infra.length,
+        byType: infraTypes,
+        budget: {
+          committedUZS: infraBudget.committed,
+          spentUZS: infraBudget.spent,
+          executionRate: infraBudget.committed > 0 ? Math.round((infraBudget.spent / infraBudget.committed) * 100) : 0
+        }
+      },
+      issues: {
+        total: stats.total,
+        open: stats.open,
+        inProgress: stats.inProgress,
+        resolved: stats.resolved,
+        resolutionRate: stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0,
+        avgResolutionDays: stats.avgResolutionMs
+          ? Math.round(stats.avgResolutionMs / (1000 * 60 * 60 * 24) * 10) / 10
+          : null,
+        totalVotes: stats.totalVotes,
+        bySeverity: severityMap,
+        byCategory: byCategory.map(c => ({
+          category: c._id,
+          total: c.total,
+          resolved: c.resolved,
+          resolutionRate: c.total > 0 ? Math.round((c.resolved / c.total) * 100) : 0,
+          votes: c.votes
+        }))
+      },
+      monthlyTrend: monthlyTrend.map(m => ({
+        label: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+        total: m.total,
+        resolved: m.resolved
+      })),
+      topIssues: topIssues.map(i => ({
+        id: i._id.toString(),
+        title: i.title,
+        category: i.category,
+        severity: i.severity,
+        status: i.status,
+        votes: i.votes,
+        organizationName: i.organizationName
+      }))
+    });
+  } catch (err) {
+    console.error('District profile error:', err);
+    res.status(500).json({ error: 'Failed to load district profile' });
+  }
+}

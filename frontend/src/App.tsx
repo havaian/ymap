@@ -11,7 +11,7 @@ import { IssueModal } from './components/issues/IssueModal';
 import { AboutModal } from './components/common/AboutModal';
 import { NotificationContainer, Toast } from './components/layout/Notification';
 import { ListView } from './components/issues/ListView';
-import { StatisticsView } from './components/analytics/StatisticsView';
+import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
 import { BurgerMenu } from './components/layout/BurgerMenu';
 import { AdminUserView } from './components/admin/AdminUserView';
 import { AdminDataView } from './components/admin/AdminDataView';
@@ -474,7 +474,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         ) : activeView === 'DATA' ? (
           <AdminDataView onDataImported={() => window.location.reload()} />
         ) : (
-          <StatisticsView issues={issues} organizations={organizations} />
+          <AnalyticsDashboard />
         )}
       </main>
 

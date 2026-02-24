@@ -8,9 +8,9 @@ import {
 import {
     Building2, Construction, AlertTriangle, MapPin, TrendingUp,
     CheckCircle2, AlertCircle, DollarSign, Wheat, ChevronDown,
-    BarChart3, Activity, Award, Layers
+    BarChart3, Activity, Award, Layers, Clock
 } from 'lucide-react';
-import { useAnalytics, DistrictScore, RegionSummary } from '../../hooks/useAnalytics';
+import { useAnalytics, DistrictScore, RegionSummary, useResolution, useEfficiency } from '../../hooks/useAnalytics';
 import { DistrictDrilldown } from './DistrictDrilldown';
 
 // ─────────────────────────────────────────────
@@ -28,6 +28,7 @@ const COLORS = {
     emerald: '#10b981',
     amber: '#f59e0b',
     indigo: '#6366f1',
+    teal: '#14b8a6',
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -226,6 +227,10 @@ export const AnalyticsDashboard: React.FC = () => {
         period, setPeriod
     } = useAnalytics();
 
+    // New hooks for resolution times and efficiency/anomalies
+    const { data: resolution, loading: resLoading } = useResolution();
+    const { data: efficiency, loading: effLoading } = useEfficiency();
+
     // District drilldown
     const [drilldownId, setDrilldownId] = useState<string | null>(null);
     const [drilldownName, setDrilldownName] = useState<any>(null);
@@ -306,6 +311,32 @@ export const AnalyticsDashboard: React.FC = () => {
             color: c.color || '#94a3b8'
         })),
         [cropAnalytics]
+    );
+
+    // Resolution by category chart data
+    const resByCategoryData = useMemo(() =>
+        (resolution?.byCategory || [])
+            .filter(c => c.avgDays != null)
+            .map(c => ({
+                name: c.category || 'Другое',
+                days: c.avgDays!,
+                count: c.count,
+            })),
+        [resolution]
+    );
+
+    // Resolution by district chart data
+    const resByDistrictData = useMemo(() =>
+        (resolution?.byDistrict || [])
+            .filter(d => d.avgDays != null)
+            .sort((a, b) => (b.avgDays || 0) - (a.avgDays || 0))
+            .slice(0, 12)
+            .map(d => ({
+                name: (d.district || '').substring(0, 15),
+                days: d.avgDays!,
+                count: d.count,
+            })),
+        [resolution]
     );
 
     // Listen for district-drilldown events from the DistrictTable
@@ -453,6 +484,114 @@ export const AnalyticsDashboard: React.FC = () => {
                         </Section>
                     </div>
                 </div>
+
+                {/* ── Row 1.5: Resolution Performance (NEW) ── */}
+                {resolution && (
+                    <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <StatCard
+                                title="Ср. время решения"
+                                value={resolution.overall.avgDays != null ? `${resolution.overall.avgDays} дн` : '—'}
+                                subtitle={`${resolution.overall.count} решено`}
+                                icon={<Clock size={18} />}
+                                color={COLORS.teal}
+                            />
+                            <StatCard
+                                title="Медиана решения"
+                                value={resolution.overall.medianDays != null ? `${resolution.overall.medianDays} дн` : '—'}
+                                icon={<Clock size={18} />}
+                                color={COLORS.info}
+                            />
+                            <StatCard
+                                title="Самая быстрая категория"
+                                value={resolution.byCategory.length > 0
+                                    ? `${Math.min(...resolution.byCategory.filter(c => c.avgDays != null).map(c => c.avgDays!)) || '—'} дн`
+                                    : '—'}
+                                subtitle={resolution.byCategory.length > 0
+                                    ? resolution.byCategory.reduce((best, c) => (!best || (c.avgDays != null && c.avgDays < (best.avgDays ?? Infinity)) ? c : best), null as any)?.category
+                                    : undefined}
+                                icon={<CheckCircle2 size={18} />}
+                                color={COLORS.success}
+                            />
+                            <StatCard
+                                title="Самая медленная"
+                                value={resolution.byCategory.length > 0
+                                    ? `${Math.max(...resolution.byCategory.filter(c => c.avgDays != null).map(c => c.avgDays!)) || '—'} дн`
+                                    : '—'}
+                                subtitle={resolution.byCategory.length > 0
+                                    ? resolution.byCategory.reduce((worst, c) => (!worst || (c.avgDays != null && c.avgDays > (worst.avgDays ?? 0)) ? c : worst), null as any)?.category
+                                    : undefined}
+                                icon={<AlertTriangle size={18} />}
+                                color={COLORS.danger}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Resolution by category */}
+                            {resByCategoryData.length > 0 && (
+                                <Section title="Время решения по категориям" icon={<Clock size={16} />}>
+                                    <div className="h-56">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={resByCategoryData} layout="vertical" margin={{ left: 0, right: 10 }}>
+                                                <XAxis type="number" tick={{ fontSize: 10 }} unit=" дн" />
+                                                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 10 }} />
+                                                <Tooltip content={<ChartTooltip />} />
+                                                <Bar dataKey="days" fill={COLORS.teal} radius={[0, 4, 4, 0]} name="Ср. дней" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </Section>
+                            )}
+
+                            {/* Resolution by severity */}
+                            <Section title="Время решения по степени" icon={<AlertCircle size={16} />}>
+                                <div className="space-y-3">
+                                    {resolution.bySeverity.map(s => {
+                                        const maxDays = Math.max(...resolution.bySeverity.filter(x => x.avgDays != null).map(x => x.avgDays!), 1);
+                                        const pct = s.avgDays != null ? Math.round((s.avgDays / maxDays) * 100) : 0;
+                                        return (
+                                            <div key={s.severity} className="space-y-1.5">
+                                                <div className="flex justify-between text-xs">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SEVERITY_COLORS[s.severity] || '#94a3b8' }} />
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300">{s.severity}</span>
+                                                    </div>
+                                                    <span className="text-slate-500">
+                                                        {s.avgDays != null ? `${s.avgDays} дн` : '—'}
+                                                        <span className="text-slate-400 ml-1">({s.count})</span>
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full"
+                                                        style={{ width: `${pct}%`, backgroundColor: SEVERITY_COLORS[s.severity] || '#94a3b8' }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Resolution by district (compact) */}
+                                {resByDistrictData.length > 0 && (
+                                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">По районам (топ-12)</div>
+                                        <div className="h-48">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={resByDistrictData} layout="vertical" margin={{ left: 0, right: 10 }}>
+                                                    <XAxis type="number" tick={{ fontSize: 9 }} unit=" дн" />
+                                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 9 }} />
+                                                    <Tooltip content={<ChartTooltip />} />
+                                                    <Bar dataKey="days" fill={COLORS.info} radius={[0, 3, 3, 0]} name="Ср. дней" />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                )}
+                            </Section>
+                        </div>
+                    </>
+                )}
 
                 {/* ── Row 2: Trends + Region Comparison ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -734,6 +873,47 @@ export const AnalyticsDashboard: React.FC = () => {
                                 </table>
                             </div>
                         )}
+                    </Section>
+                )}
+
+                {/* ── Row 8: Anomaly Detection (NEW) ── */}
+                {efficiency && efficiency.anomalies.length > 0 && (
+                    <Section title={`Аномалии бюджетной эффективности (${efficiency.anomalies.length})`} icon={<AlertTriangle size={16} />}>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 -mt-3 mb-4">
+                            Учреждения с высоким исполнением бюджета (&gt;50%), но низким % решённых проблем (&lt;30%)
+                        </p>
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                            {efficiency.anomalies.map(a => (
+                                <div
+                                    key={a.id}
+                                    className={`flex items-center gap-3 p-3 rounded-xl border ${
+                                        a.flag === 'critical'
+                                            ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40'
+                                            : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40'
+                                    }`}
+                                >
+                                    <AlertTriangle size={14} className={`shrink-0 ${a.flag === 'critical' ? 'text-red-500' : 'text-amber-500'}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{a.name}</p>
+                                        <p className="text-[10px] text-slate-500">{a.region} · {a.type}</p>
+                                    </div>
+                                    <div className="flex items-center gap-4 shrink-0">
+                                        <div className="text-center">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Бюджет</p>
+                                            <p className="text-xs font-black text-emerald-600">{a.budget.executionRate}%</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Решено</p>
+                                            <p className="text-xs font-black text-red-500">{a.issues.resolutionRate}%</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Проблем</p>
+                                            <p className="text-xs font-black text-slate-600 dark:text-slate-400">{a.issues.total}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </Section>
                 )}
 

@@ -5,8 +5,8 @@ import { hashPassword } from '../utils/bcrypt.js';
 
 export const ensureAdminExists = async () => {
     try {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+        const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
         const adminName = process.env.ADMIN_NAME || 'Administrator';
 
         if (!adminEmail || !adminPassword) {

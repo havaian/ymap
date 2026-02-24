@@ -353,7 +353,8 @@ export const AnalyticsDashboard: React.FC = () => {
 
     // ── Loading / Error ──
 
-    if (loading) {
+    // Full spinner only on first load (no data yet)
+    if (loading && !overview) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -385,6 +386,14 @@ export const AnalyticsDashboard: React.FC = () => {
     return (
         <React.Fragment>
         <div className="h-full overflow-y-auto">
+            {/* Subtle refetch indicator — visible only during filter changes */}
+            {loading && (
+                <div className="sticky top-0 z-10 h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-blue-500 animate-[refetch_1.2s_ease-in-out_infinite] origin-left"
+                         style={{ animation: 'refetch 1.2s ease-in-out infinite' }} />
+                    <style>{`@keyframes refetch { 0% { width: 0%; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0%; margin-left: 100%; } }`}</style>
+                </div>
+            )}
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* ── Header ── */}

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { X, Globe, Shield, Sparkles, Map, Heart, Code2, Zap, Layout } from 'lucide-react';
 
@@ -76,13 +75,36 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                  <Code2 className="text-slate-400" size={18} />
                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Технологический стек</h4>
                </div>
-               <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4">
+
+               {/* Frontend */}
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Frontend</p>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 mb-8">
                   <TechBadge label="React 19" sub="Framework" />
-                  <TechBadge label="Gemini API" sub="AI Engine" />
+                  <TechBadge label="TypeScript" sub="Language" />
+                  <TechBadge label="Vite" sub="Build Tool" />
                   <TechBadge label="Leaflet JS" sub="Geodata" />
                   <TechBadge label="Tailwind CSS" sub="Styling" />
                   <TechBadge label="Lucide" sub="Iconography" />
                   <TechBadge label="CARTO Maps" sub="Tile Services" />
+                  <TechBadge label="Gemini API" sub="AI Engine" />
+               </div>
+
+               {/* Backend */}
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Backend</p>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 mb-8">
+                  <TechBadge label="Node.js" sub="Runtime" />
+                  <TechBadge label="Express" sub="API Framework" />
+                  <TechBadge label="MongoDB" sub="Database" />
+                  <TechBadge label="Mongoose" sub="ODM" />
+                  <TechBadge label="Redis" sub="Cache" />
+                  <TechBadge label="JWT" sub="Auth" />
+               </div>
+
+               {/* Infrastructure */}
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Infrastructure</p>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4">
+                  <TechBadge label="Docker" sub="Containers" />
+                  <TechBadge label="Nginx" sub="Reverse Proxy" />
                </div>
             </section>
 
@@ -91,14 +113,14 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100 font-black text-xl mb-1">
                     <span>By YTech team</span>
                     <Heart size={20} className="text-red-500 fill-red-500 animate-pulse" />
-                    <span>2025</span>
+                    <span>{new Date().getFullYear()}</span>
                   </div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
                     Engineering the future of Uzbekistan
                   </p>
                   <div className="mt-8 px-6 py-2 bg-slate-100 dark:bg-slate-800 rounded-full">
                     <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
-                      Hackathon social infrastructure project
+                      Social infrastructure project
                     </p>
                   </div>
                </div>

@@ -1263,17 +1263,11 @@ export const getChoropleth = async (req, res) => {
     }
 };
 
-// backend/src/analytics/controller.js
-//
 // Comprehensive analytics endpoints using existing data:
 //   GET /api/analytics/trends         — monthly issue counts, resolution rates, avg resolution time
 //   GET /api/analytics/resolution     — resolution time stats (overall, per district, per category)
 //   GET /api/analytics/efficiency     — budget vs resolution scatter + anomaly detection
 //   GET /api/analytics/district/:name — full district profile card with all available metrics
-
-import Issue from '../issue/model.js';
-import Organization from '../organization/model.js';
-import Infrastructure from '../infrastructure/model.js';
 
 // ── Helper: parse "regionName" from org data ────────────────────────────
 function getDistrictFromOrg(org) {

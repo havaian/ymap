@@ -87,32 +87,32 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
             <Map className="w-5 h-5" />
             Интерактивная карта
           </button>
-          
-          <button 
-            onClick={() => handleNavigate('/list', 'LIST')}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
-              ${activeView === 'LIST' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
-            `}
-          >
-            <List className="w-5 h-5" />
-            Список обращений
-          </button>
-          
-          <button 
-            onClick={() => handleNavigate('/dashboard', 'STATISTICS')}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
-              ${activeView === 'STATISTICS' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
-            `}
-          >
-            <BarChart3 className="w-5 h-5" />
-            Статистика ГЧП
-          </button>
 
           {isAdmin && (
             <>
               <div className="my-4 border-t border-slate-100 dark:border-slate-800 mx-4"></div>
               <p className="px-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Админ-панель</p>
               
+              <button 
+                onClick={() => handleNavigate('/list', 'LIST')}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
+                  ${activeView === 'LIST' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                `}
+              >
+                <List className="w-5 h-5" />
+                Список обращений
+              </button>
+              
+              <button 
+                onClick={() => handleNavigate('/dashboard', 'STATISTICS')}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
+                  ${activeView === 'STATISTICS' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                `}
+              >
+                <BarChart3 className="w-5 h-5" />
+                Статистика ГЧП
+              </button>
+
               <button 
                 onClick={() => handleNavigate('/users', 'USERS')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm

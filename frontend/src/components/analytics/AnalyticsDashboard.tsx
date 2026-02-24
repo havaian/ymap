@@ -227,9 +227,9 @@ export const AnalyticsDashboard: React.FC = () => {
         period, setPeriod
     } = useAnalytics();
 
-    // New hooks for resolution times and efficiency/anomalies
-    const { data: resolution, loading: resLoading } = useResolution();
-    const { data: efficiency, loading: effLoading } = useEfficiency();
+    // New hooks for resolution times and efficiency/anomalies — filtered by selected region
+    const { data: resolution, loading: resLoading } = useResolution(selectedRegion);
+    const { data: efficiency, loading: effLoading } = useEfficiency(selectedRegion);
 
     // District drilldown
     const [drilldownId, setDrilldownId] = useState<string | null>(null);

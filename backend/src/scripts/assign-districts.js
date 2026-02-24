@@ -171,7 +171,7 @@ async function main() {
     console.log('✅ Connected');
 
     // Verify districts exist
-    const districtCount = await District.countDocuments();
+    const districtCount = await District.countDocuments(regionFilter);
     if (districtCount === 0) {
         console.error('\n❌ No districts found in database. Run import-geodata.js first.');
         await mongoose.disconnect();

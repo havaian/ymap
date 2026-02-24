@@ -15,10 +15,14 @@ import Region from '../region/model.js';
 // ─────────────────────────────────────────────
 // GET /api/analytics/overview
 // System-wide summary across all collections
+// Query: ?regionCode=17
 // ─────────────────────────────────────────────
 
 export const getOverview = async (req, res) => {
     try {
+        const { regionCode } = req.query;
+        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
+
         const [
             orgCount,
             infraCount,
@@ -29,20 +33,23 @@ export const getOverview = async (req, res) => {
             issuesBySeverity,
             budgetTotals
         ] = await Promise.all([
-            Organization.countDocuments(),
-            Infrastructure.countDocuments(),
-            Issue.countDocuments(),
+            Organization.countDocuments(regionFilter),
+            Infrastructure.countDocuments(regionFilter),
+            Issue.countDocuments(regionFilter),
             Region.countDocuments(),
-            District.countDocuments(),
+            District.countDocuments(regionFilter),
             Issue.aggregate([
+                { $match: regionFilter },
                 { $group: { _id: '$status', count: { $sum: 1 } } }
             ]),
             Issue.aggregate([
+                { $match: regionFilter },
                 { $group: { _id: '$severity', count: { $sum: 1 } } }
             ]),
             // Combined budget from orgs + infra
             Promise.all([
                 Organization.aggregate([
+                    { $match: regionFilter },
                     {
                         $group: {
                             _id: null,
@@ -54,6 +61,7 @@ export const getOverview = async (req, res) => {
                     }
                 ]),
                 Infrastructure.aggregate([
+                    { $match: regionFilter },
                     {
                         $group: {
                             _id: null,
@@ -1271,16 +1279,20 @@ export const getChoropleth = async (req, res) => {
 
 // ── Helper: parse "regionName" from org data ────────────────────────────
 function getDistrictFromOrg(org) {
-  return org?.region?.name || 'Без района';
+  return org?.region?.name || '\u0411\u0435\u0437 \u0440\u0430\u0439\u043e\u043d\u0430';
 }
 
-// ── GET /api/analytics/trends ───────────────────────────────────────────
-// Monthly time-series: issue counts, resolution rate, avg resolution time
-// Query params: ?months=12&category=Roads
+// ─────────────────────────────────────────────
+// GET /api/analytics/trends
+// Monthly time-series: issue counts, resolution rates, avg resolution time
+// Query: ?months=12&category=Roads&regionCode=17
+// ─────────────────────────────────────────────
+
 export async function getTrends(req, res) {
   try {
     const months = Math.min(parseInt(req.query.months) || 12, 36);
     const category = req.query.category;
+    const regionCode = req.query.regionCode ? parseInt(req.query.regionCode) : null;
 
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
@@ -1289,6 +1301,7 @@ export async function getTrends(req, res) {
 
     const matchStage = { createdAt: { $gte: startDate } };
     if (category) matchStage.category = category;
+    if (regionCode) matchStage.regionCode = regionCode;
 
     // Monthly aggregation
     const monthlyPipeline = [
@@ -1403,12 +1416,20 @@ export async function getTrends(req, res) {
   }
 }
 
-// ── GET /api/analytics/resolution ───────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/resolution
 // Resolution time breakdown: overall, per district, per category, per severity
+// Query: ?regionCode=17
+// ─────────────────────────────────────────────
+
 export async function getResolution(req, res) {
   try {
     // Only resolved issues have meaningful resolution time
     const resolvedMatch = { status: 'Resolved' };
+
+    // Optional region filter — Issues have regionCode directly, no org lookup needed
+    const regionCode = req.query.regionCode ? parseInt(req.query.regionCode) : null;
+    if (regionCode) resolvedMatch.regionCode = regionCode;
 
     // Per category
     const byCategoryPipeline = [
@@ -1455,7 +1476,7 @@ export async function getResolution(req, res) {
       { $unwind: { path: '$org', preserveNullAndEmptyArrays: true } },
       {
         $group: {
-          _id: { $ifNull: ['$org.region.name', 'Без района'] },
+          _id: { $ifNull: ['$org.region.name', '\u0411\u0435\u0437 \u0440\u0430\u0439\u043e\u043d\u0430'] },
           count: { $sum: 1 },
           avgMs: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } }
         }
@@ -1524,21 +1545,27 @@ export async function getResolution(req, res) {
   }
 }
 
-// ── GET /api/analytics/efficiency ───────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/efficiency
 // Budget vs resolution scatter data + anomaly detection
 // Returns per-org: budget spent, issues resolved, cost per resolution, flags
+// Query: ?regionCode=17  (or legacy ?regionName=...)
+// ─────────────────────────────────────────────
+
 export async function getEfficiency(req, res) {
   try {
+    const regionCode = req.query.regionCode ? parseInt(req.query.regionCode) : null;
     const regionName = req.query.regionName;
 
     // Get all orgs with budget data
     const orgMatch = { 'budget.committedUZS': { $gt: 0 } };
-    if (regionName) orgMatch['region.name'] = regionName;
+    if (regionCode) orgMatch.regionCode = regionCode;
+    else if (regionName) orgMatch['region.name'] = regionName;
 
     const orgs = await Organization.find(orgMatch).lean();
 
     if (!orgs.length) {
-      return res.json({ orgs: [], anomalies: [], summary: {} });
+      return res.json({ orgs: [], anomalies: [], districts: [], summary: { totalOrgs: 0, totalBudget: 0, totalSpent: 0, avgExecutionRate: 0, totalIssues: 0, totalResolved: 0, avgResolutionRate: 0, avgCostPerResolved: null, anomalyCount: 0 } });
     }
 
     // Get issue stats per org
@@ -1582,7 +1609,7 @@ export async function getEfficiency(req, res) {
         id: org._id.toString(),
         name: org.name,
         type: org.type,
-        region: org.region?.name || 'Без района',
+        region: org.region?.name || '\u0411\u0435\u0437 \u0440\u0430\u0439\u043e\u043d\u0430',
         budget: { committed, spent, executionRate },
         issues: {
           total: issues.total,
@@ -1663,8 +1690,11 @@ export async function getEfficiency(req, res) {
   }
 }
 
-// ── GET /api/analytics/district/:name ───────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/district/:name
 // Full district profile card — all available metrics for one district
+// ─────────────────────────────────────────────
+
 export async function getDistrictProfile(req, res) {
   try {
     const regionName = decodeURIComponent(req.params.name);

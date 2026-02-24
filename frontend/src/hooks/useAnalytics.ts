@@ -344,33 +344,36 @@ export function useTrends(months = 12) {
     return { data, loading };
 }
 
-export function useResolution() {
+export function useResolution(regionCode?: number | null) {
     const [data, setData] = useState<ResolutionData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setLoading(true);
-        api.get('/analytics/resolution')
+        const params: Record<string, any> = {};
+        if (regionCode != null) params.regionCode = regionCode;
+        api.get('/analytics/resolution', { params })
             .then(res => setData(res.data))
             .catch(err => console.error('Resolution fetch error:', err))
             .finally(() => setLoading(false));
-    }, []);
+    }, [regionCode]);
 
     return { data, loading };
 }
 
-export function useEfficiency(regionName?: string) {
+export function useEfficiency(regionCode?: number | null) {
     const [data, setData] = useState<EfficiencyData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setLoading(true);
-        const params = regionName ? { regionName } : {};
+        const params: Record<string, any> = {};
+        if (regionCode != null) params.regionCode = regionCode;
         api.get('/analytics/efficiency', { params })
             .then(res => setData(res.data))
             .catch(err => console.error('Efficiency fetch error:', err))
             .finally(() => setLoading(false));
-    }, [regionName]);
+    }, [regionCode]);
 
     return { data, loading };
 }

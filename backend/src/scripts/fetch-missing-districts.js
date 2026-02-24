@@ -296,7 +296,7 @@ async function main() {
         }
     }
 
-    const total = await District.countDocuments();
+    const total = await District.countDocuments(regionFilter);
     console.log('\n═══════════════════════════════════════');
     console.log(`  Done: ${imported} imported, ${failed} failed`);
     console.log(`  Total districts in DB: ${total}`);

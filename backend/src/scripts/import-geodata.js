@@ -555,7 +555,7 @@ async function main() {
 
         // Summary
         const regionCount = await Region.countDocuments();
-        const districtCount = await District.countDocuments();
+        const districtCount = await District.countDocuments(regionFilter);
         const cropCount = await CropType.countDocuments();
 
         console.log('\n═══════════════════════════════════════');

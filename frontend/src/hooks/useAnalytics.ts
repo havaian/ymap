@@ -79,6 +79,25 @@ export interface CropAnalytics {
     byDistrict: any[];
 }
 
+export interface BudgetAnalytics {
+    totals: {
+        committedUZS: number;
+        spentUZS: number;
+        executionRate: number;
+        costPerResolved: number | null;
+    };
+    byDistrict: Array<{
+        districtId: string;
+        districtName: { en: string; ru: string; uz: string };
+        totalCommittedUZS: number;
+        totalSpentUZS: number;
+        executionRate: number;
+        resolvedCount: number;
+        costPerResolved: number | null;
+        budgetPerKm2: number;
+    }>;
+}
+
 // ── New types (trends, resolution, efficiency, district profile) ────────
 
 export interface TrendPoint {
@@ -195,7 +214,7 @@ export interface DistrictProfile {
     topIssues: Array<{ id: string; title: string; category: string; severity: string; status: string; votes: number; organizationName: string }>;
 }
 
-// ── Existing hook (unchanged) ───────────────────────────
+// ── Main analytics hook ─────────────────────────────────
 
 export const useAnalytics = () => {
     const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -203,20 +222,27 @@ export const useAnalytics = () => {
     const [regionSummary, setRegionSummary] = useState<RegionSummary[]>([]);
     const [issueAnalytics, setIssueAnalytics] = useState<IssueAnalytics | null>(null);
     const [cropAnalytics, setCropAnalytics] = useState<CropAnalytics | null>(null);
+    const [budgetAnalytics, setBudgetAnalytics] = useState<BudgetAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchAll = useCallback(async (regionCode?: number) => {
+    // Filter state the dashboard destructures
+    const [regionCode, setRegionCode] = useState<number | null>(null);
+    const [period, setPeriod] = useState<number | null>(null);
+
+    const fetchAll = useCallback(async (rc?: number | null, p?: number | null) => {
         try {
             setLoading(true);
             setError(null);
 
-            const params = regionCode ? { regionCode } : {};
+            const params: Record<string, any> = {};
+            if (rc != null) params.regionCode = rc;
+            if (p != null) params.period = p;
 
             const [overviewRes, scoringRes, regionsRes, issuesRes, cropsRes] = await Promise.all([
-                api.get('/analytics/overview'),
+                api.get('/analytics/overview', { params }),
                 api.get('/analytics/districts/scoring', { params }),
-                api.get('/analytics/regions/summary'),
+                api.get('/analytics/regions/summary', { params }),
                 api.get('/analytics/issues', { params }),
                 api.get('/analytics/crops', { params })
             ]);
@@ -226,6 +252,40 @@ export const useAnalytics = () => {
             setRegionSummary(regionsRes.data.data);
             setIssueAnalytics(issuesRes.data.data);
             setCropAnalytics(cropsRes.data.data);
+
+            // Budget analytics — try dedicated endpoint, fall back to computing from scoring data
+            try {
+                const budgetRes = await api.get('/analytics/budget', { params });
+                setBudgetAnalytics(budgetRes.data.data);
+            } catch {
+                // Compute from district scoring data if endpoint doesn't exist
+                const districts = scoringRes.data.data.districts as DistrictScore[];
+                const withBudget = districts.filter(d => d.budgetCommittedUZS > 0);
+                const totalCommitted = withBudget.reduce((s, d) => s + d.budgetCommittedUZS, 0);
+                const totalSpent = withBudget.reduce((s, d) => s + d.budgetSpentUZS, 0);
+                const totalResolved = withBudget.reduce((s, d) => s + d.resolvedCount, 0);
+
+                setBudgetAnalytics({
+                    totals: {
+                        committedUZS: totalCommitted,
+                        spentUZS: totalSpent,
+                        executionRate: totalCommitted > 0 ? Math.round((totalSpent / totalCommitted) * 100) : 0,
+                        costPerResolved: totalResolved > 0 ? Math.round(totalSpent / totalResolved) : null,
+                    },
+                    byDistrict: withBudget
+                        .sort((a, b) => b.budgetCommittedUZS - a.budgetCommittedUZS)
+                        .map(d => ({
+                            districtId: d.districtId,
+                            districtName: d.districtName,
+                            totalCommittedUZS: d.budgetCommittedUZS,
+                            totalSpentUZS: d.budgetSpentUZS,
+                            executionRate: d.budgetExecution,
+                            resolvedCount: d.resolvedCount,
+                            costPerResolved: d.resolvedCount > 0 ? Math.round(d.budgetSpentUZS / d.resolvedCount) : null,
+                            budgetPerKm2: d.areaKm2 > 0 ? Math.round(d.budgetCommittedUZS / d.areaKm2) : 0,
+                        })),
+                });
+            }
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Failed to fetch analytics');
             console.error('Analytics fetch error:', err);
@@ -234,9 +294,20 @@ export const useAnalytics = () => {
         }
     }, []);
 
+    // Refetch when filters change
     useEffect(() => {
-        fetchAll();
-    }, [fetchAll]);
+        fetchAll(regionCode, period);
+    }, [fetchAll, regionCode, period]);
+
+    const fetchDistrictDetail = useCallback(async (districtId: string) => {
+        try {
+            const res = await api.get(`/analytics/districts/${districtId}/detail`);
+            return res.data.data;
+        } catch (err) {
+            console.error('District detail fetch error:', err);
+            return null;
+        }
+    }, []);
 
     return {
         overview,
@@ -244,9 +315,15 @@ export const useAnalytics = () => {
         regionSummary,
         issueAnalytics,
         cropAnalytics,
+        budgetAnalytics,
         loading,
         error,
-        refetch: fetchAll
+        refetch: () => fetchAll(regionCode, period),
+        fetchDistrictDetail,
+        regionCode,
+        setRegionCode,
+        period,
+        setPeriod,
     };
 };
 

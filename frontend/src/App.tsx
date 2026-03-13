@@ -36,55 +36,61 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const location = useLocation();
   const params = useParams<{ issueId?: string; orgId?: string; infraId?: string }>();
   const navigate = useNavigate();
-  
+
   // activeView is now derived from props, not state
   const activeView = view;
-  
+
   const [selectedRegionCode, setSelectedRegionCode] = useState<number | null>(null);
-  
+
   // Use backend hooks instead of mock data
-  const { 
-    issues, 
-    loading: issuesLoading, 
-    addIssue, 
-    updateIssueStatus, 
-    deleteIssue, 
-    upvoteIssue, 
-    addComment: addCommentToIssue 
+  const {
+    issues,
+    loading: issuesLoading,
+    addIssue,
+    updateIssueStatus,
+    deleteIssue,
+    upvoteIssue,
+    addComment: addCommentToIssue
   } = useIssues(selectedRegionCode);
-  
-  const { 
-    organizations, 
-    loading: orgsLoading 
+
+  const {
+    organizations,
+    loading: orgsLoading
   } = useOrganizations(selectedRegionCode);
 
-  const { 
-    infrastructure, 
+  const {
+    infrastructure,
     loading: infraLoading,
     fetchDetail: fetchInfraDetail
   } = useInfrastructure(selectedRegionCode);
 
+  const {
+    users,
+    loading: usersLoading,
+    toggleBlockUser
+  } = useUsers();
+
+  // Derive from URL params instead of state
+  const selectedIssue = params.issueId
+    ? issues.find(i => i.id === params.issueId) || null
+    : null;
+
+  const viewingOrg = params.orgId
+    ? organizations.find(o => o.id === params.orgId) || null
+    : null;
+
+  // Infrastructure detail — fetched on demand via fetchDetail (uses cache)
   const [selectedInfra, setSelectedInfra] = useState<Infrastructure | null>(null);
 
   useEffect(() => {
-    if (!params.infraId) { setSelectedInfra(null); return; }
-    fetchInfraDetail(params.infraId).then(setSelectedInfra);
+    if (!params.infraId) {
+      setSelectedInfra(null);
+      return;
+    }
+    fetchInfraDetail(params.infraId).then(detail => {
+      setSelectedInfra(detail);
+    });
   }, [params.infraId, fetchInfraDetail]);
-
-  const { 
-    users, 
-    loading: usersLoading, 
-    toggleBlockUser 
-  } = useUsers();
-  
-  // Derive from URL params instead of state
-  const selectedIssue = params.issueId 
-    ? issues.find(i => i.id === params.issueId) || null 
-    : null;
-    
-  const viewingOrg = params.orgId 
-    ? organizations.find(o => o.id === params.orgId) || null 
-    : null;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminOrgModalOpen, setIsAdminOrgModalOpen] = useState(false);
@@ -102,7 +108,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showChoropleth, setShowChoropleth] = useState(false);
   const [choroplethMetric, setChoroplethMetric] = useState('composite');
-  
+
   // District drilldown (triggered by choropleth click)
   const [drilldownDistrictId, setDrilldownDistrictId] = useState<string | null>(null);
   const [drilldownDistrictName, setDrilldownDistrictName] = useState<any>(null);
@@ -120,12 +126,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     const saved = localStorage.getItem('theme');
     return (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system';
   });
-  
+
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>(() => {
     const saved = localStorage.getItem('fontSize');
     return (saved === 'small' || saved === 'medium' || saved === 'large') ? saved : 'medium';
   });
-  
+
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // ── Theme effect ──────────────────────────────────────
@@ -134,7 +140,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       const root = window.document.documentElement;
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const shouldBeDark = theme === 'dark' || (theme === 'system' && systemPrefersDark);
-      
+
       setIsDarkMode(shouldBeDark);
       if (shouldBeDark) {
         root.classList.add('dark');
@@ -189,20 +195,20 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const mapIssues = useMemo(() => {
     // Safety guard: ensure issues is a valid array before filtering
     if (!issues || !Array.isArray(issues)) return [];
-    
+
     let filtered = issues.filter(issue => issue.status !== 'Resolved');
-    
+
     // Filter by category
     if (activeFilter !== 'ALL') {
       filtered = filtered.filter(issue => issue.category === activeFilter);
     }
-    
+
     // Filter based on toggle states
     if (!showStandaloneIssues) {
       // Hide issues without organization or infrastructure link
       filtered = filtered.filter(issue => issue.organizationId || issue.infrastructureId);
     }
-    
+
     return filtered;
   }, [issues, activeFilter, showStandaloneIssues]);
 
@@ -226,11 +232,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       // Close any open panels by navigating to the current view root.
       // Using navigate(basePath) instead of navigate(-1) to prevent returning
       // to /list when the panel was opened from the list view.
-      if (params.issueId || params.orgId) {
+      if (params.issueId || params.orgId || params.infraId) {
         navigate(activeView === 'LIST' ? '/list' : '/map');
       }
     }
-  }, [isAddingMode, isAdminOrgAddingMode, params.issueId, params.orgId, navigate, activeView]);
+  }, [isAddingMode, isAdminOrgAddingMode, params.issueId, params.orgId, params.infraId, navigate, activeView]);
 
   const handleOrgClick = useCallback((org: Organization) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
@@ -275,11 +281,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const handleToggleBlock = async (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
-    
+
     const result = await toggleBlockUser(userId, user.blocked || false);
     if (result.success) {
       addToast(
-        !user.blocked ? "Пользователь заблокирован" : "Доступ восстановлен", 
+        !user.blocked ? "Пользователь заблокирован" : "Доступ восстановлен",
         !user.blocked ? "error" : "success"
       );
     } else {
@@ -294,6 +300,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
 
   const handleReportAtOrg = (org: Organization) => {
     setSelectedOrg(org);
+    setSelectedInfraForReport(null);
     setSelectedLocation({ lat: org.lat, lng: org.lng });
     setIsModalOpen(true);
     // Close org panel
@@ -301,9 +308,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   };
 
   const handleReportAtInfra = (infra: Infrastructure) => {
-    setSelectedLocation({ lat: infra.lat, lng: infra.lng });
     setSelectedInfraForReport(infra);
+    setSelectedOrg(null);
+    setSelectedLocation({ lat: infra.lat, lng: infra.lng });
     setIsModalOpen(true);
+    // Close infra panel
     navigate(activeView === 'LIST' ? '/list' : '/map');
   };
 
@@ -325,9 +334,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     // Navigate to map view with issue.
     // Pass { from: 'list' } in state so DetailPanel can show the "Back to list" button.
     navigate(`/map/issues/${issue.id}`, { state: { from: 'list' } });
-    
+
     // Set location for map centering
-    const loc = issue.organizationId 
+    const loc = issue.organizationId
       ? organizations.find(o => o.id === issue.organizationId) || { lat: issue.lat, lng: issue.lng }
       : { lat: issue.lat, lng: issue.lng };
     setUserLocation({ lat: loc.lat, lng: loc.lng });
@@ -351,17 +360,18 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     };
 
     const result = await addIssue(issueData);
-    
+
     if (result.success) {
       setIsModalOpen(false);
       setSelectedLocation(null);
       setSelectedOrg(null);
-      
+      setSelectedInfraForReport(null);
+
       // Navigate to the new issue
       if (result.issue?.id) {
         navigate(`/map/issues/${result.issue.id}`);
       }
-      
+
       addToast("Отчет успешно отправлен!");
     } else {
       addToast(result.error || 'Ошибка создания обращения', 'error');
@@ -403,9 +413,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     <div className="h-screen w-screen flex flex-col relative overflow-hidden bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-100">
       <NotificationContainer toasts={toasts} removeToast={removeToast} />
 
-      <BurgerMenu 
-        isOpen={isMenuOpen} 
-        onClose={() => setIsMenuOpen(false)} 
+      <BurgerMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
         activeView={activeView}
         onSelectView={(view) => {
           const routes = {
@@ -453,48 +463,48 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}
             />
-            <MapComponent 
-                issues={mapIssues}
-                organizations={organizations}
-                infrastructure={infrastructure}
-                center={TASHKENT_CENTER} 
-                onIssueClick={handleSelectIssue}
-                onMapClick={handleMapClick}
-                onOrgClick={handleOrgClick}
-                onInfraClick={handleInfraClick}
-                isAdding={isAddingMode || isAdminOrgAddingMode}
-                showOrgs={canShowOrgs}
-                showInfrastructure={canShowInfrastructure}
-                showHeatmap={showHeatmap}
-                showChoropleth={showChoropleth}
-                choroplethMetric={choroplethMetric}
-                selectedRegionCode={selectedRegionCode}
-                onDistrictClick={handleDistrictClick}
-                userLocation={userLocation}
-                triggerLocate={triggerLocate}
-                isDark={isDarkMode}
+            <MapComponent
+              issues={mapIssues}
+              organizations={organizations}
+              infrastructure={infrastructure}
+              center={TASHKENT_CENTER}
+              onIssueClick={handleSelectIssue}
+              onMapClick={handleMapClick}
+              onOrgClick={handleOrgClick}
+              onInfraClick={handleInfraClick}
+              isAdding={isAddingMode || isAdminOrgAddingMode}
+              showOrgs={canShowOrgs}
+              showInfrastructure={canShowInfrastructure}
+              showHeatmap={showHeatmap}
+              showChoropleth={showChoropleth}
+              choroplethMetric={choroplethMetric}
+              selectedRegionCode={selectedRegionCode}
+              onDistrictClick={handleDistrictClick}
+              userLocation={userLocation}
+              triggerLocate={triggerLocate}
+              isDark={isDarkMode}
             />
             <div className="absolute bottom-8 right-6 z-[400] flex flex-col items-end gap-4">
-                <button onClick={handleLocateMe} className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-100 border border-slate-100 dark:border-slate-700"><Locate className="w-6 h-6" /></button>
-                {!isAddingMode && !isAdminOrgAddingMode && !selectedIssue && !viewingOrg && (
-                    <button onClick={() => setIsAddingMode(true)} className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white pl-5 pr-6 py-4 rounded-full shadow-2xl transition-all border border-blue-400/20">
-                        <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-100" />
-                        <span className="font-bold text-lg uppercase tracking-tight">Сообщить</span>
-                    </button>
-                )}
+              <button onClick={handleLocateMe} className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-100 border border-slate-100 dark:border-slate-700"><Locate className="w-6 h-6" /></button>
+              {!isAddingMode && !isAdminOrgAddingMode && !selectedIssue && !viewingOrg && !selectedInfra && (
+                <button onClick={() => setIsAddingMode(true)} className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white pl-5 pr-6 py-4 rounded-full shadow-2xl transition-all border border-blue-400/20">
+                  <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-100" />
+                  <span className="font-bold text-lg uppercase tracking-tight">Сообщить</span>
+                </button>
+              )}
             </div>
             {(isAddingMode || isAdminOrgAddingMode) && (
-                 <div className={`absolute top-6 left-1/2 transform -translate-x-1/2 z-[400] px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 border animate-in slide-in-from-top-2 backdrop-blur
-                   ${isAdminOrgAddingMode ? 'bg-indigo-600/95 border-indigo-400 text-white' : 'bg-blue-600/95 border-blue-400 text-white'}`}>
-                     <div className="flex items-center gap-2">
-                        <Navigation className="w-4 h-4 text-white animate-pulse" />
-                        <span className="font-bold text-sm tracking-tight uppercase">
-                          {isAdminOrgAddingMode ? 'Нажмите на карту для установки объекта' : 'Нажмите на карту или здание'}
-                        </span>
-                     </div>
-                     <div className="w-[1px] h-4 bg-white/30"></div>
-                     <button onClick={() => { setIsAddingMode(false); setIsAdminOrgAddingMode(false); }} className="text-white hover:text-blue-200 font-black text-xs uppercase tracking-widest">Отмена</button>
-                 </div>
+              <div className={`absolute top-6 left-1/2 transform -translate-x-1/2 z-[400] px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 border animate-in slide-in-from-top-2 backdrop-blur
+                ${isAdminOrgAddingMode ? 'bg-indigo-600/95 border-indigo-400 text-white' : 'bg-blue-600/95 border-blue-400 text-white'}`}>
+                <div className="flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-white animate-pulse" />
+                  <span className="font-bold text-sm tracking-tight uppercase">
+                    {isAdminOrgAddingMode ? 'Нажмите на карту для установки объекта' : 'Нажмите на карту или здание'}
+                  </span>
+                </div>
+                <div className="w-[1px] h-4 bg-white/30"></div>
+                <button onClick={() => { setIsAddingMode(false); setIsAdminOrgAddingMode(false); }} className="text-white hover:text-blue-200 font-black text-xs uppercase tracking-widest">Отмена</button>
+              </div>
             )}
           </>
         ) : activeView === 'LIST' ? (
@@ -508,26 +518,26 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         )}
       </main>
 
-      {/* Issue Detail Panel with gradient background */}
+      {/* Issue Detail Panel */}
       <DetailPanel type="issue" isOpen={!!selectedIssue}>
-        <DetailSidebar 
-          issue={selectedIssue} 
+        <DetailSidebar
+          issue={selectedIssue}
           currentUser={currentUser}
-          onClose={() => navigate('/map')} 
-          onAddComment={handleAddComment} 
-          onUpvote={handleUpvote} 
+          onClose={() => navigate('/map')}
+          onAddComment={handleAddComment}
+          onUpvote={handleUpvote}
           onUpdateStatus={handleUpdateStatus}
           onDeleteIssue={handleDeleteIssue}
         />
       </DetailPanel>
 
-      {/* Organization Detail Panel with gradient background */}
+      {/* Organization Detail Panel */}
       <DetailPanel type="organization" isOpen={!!viewingOrg}>
-        <OrgSidebar 
-          org={viewingOrg} 
-          issues={issues} 
-          onClose={() => navigate('/map')} 
-          onIssueClick={handleSelectIssue} 
+        <OrgSidebar
+          org={viewingOrg}
+          issues={issues}
+          onClose={() => navigate('/map')}
+          onIssueClick={handleSelectIssue}
           onReportIssue={handleReportAtOrg}
           currentUser={currentUser}
         />
@@ -553,7 +563,19 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onClose={() => setDrilldownDistrictId(null)}
       />
 
-      <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} preSelectedInfra={selectedInfraForReport} />
+      <IssueModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsAddingMode(false);
+          setSelectedOrg(null);
+          setSelectedInfraForReport(null);
+        }}
+        onSubmit={handleAddIssue}
+        selectedLocation={selectedLocation}
+        preSelectedOrg={selectedOrg}
+        preSelectedInfra={selectedInfraForReport}
+      />
       <AdminOrgModal isOpen={isAdminOrgModalOpen} onClose={() => { setIsAdminOrgModalOpen(false); setIsAdminOrgAddingMode(false); }} onSubmit={handleAddOrg} selectedLocation={selectedLocation} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </div>

@@ -376,7 +376,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
 
   // ── Render ────────────────────────────────────────────
   return (
-    <div className="h-screen w-screen flex flex-col relative overflow-hidden bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="h-screen w-screen flex flex-col relative overflow-hidden bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-100">
       <NotificationContainer toasts={toasts} removeToast={removeToast} />
 
       <BurgerMenu 
@@ -450,10 +450,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 isDark={isDarkMode}
             />
             <div className="absolute bottom-8 right-6 z-[400] flex flex-col items-end gap-4">
-                <button onClick={handleLocateMe} className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-300 border border-slate-100 dark:border-slate-700"><Locate className="w-6 h-6" /></button>
+                <button onClick={handleLocateMe} className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-100 border border-slate-100 dark:border-slate-700"><Locate className="w-6 h-6" /></button>
                 {!isAddingMode && !isAdminOrgAddingMode && !selectedIssue && !viewingOrg && (
                     <button onClick={() => setIsAddingMode(true)} className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white pl-5 pr-6 py-4 rounded-full shadow-2xl transition-all border border-blue-400/20">
-                        <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+                        <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-100" />
                         <span className="font-bold text-lg uppercase tracking-tight">Сообщить</span>
                     </button>
                 )}

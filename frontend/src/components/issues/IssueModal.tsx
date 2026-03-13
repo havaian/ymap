@@ -160,7 +160,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({ isOpen, onClose, onSubmi
                     </div>
 
                     {isEducationOrHealth && (
-                        <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+                        <div className="animate-in fade-in slide-in-from-top-1 duration-100">
                              <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                                 Уточните тип проблемы (Подкатегория)
                             </label>

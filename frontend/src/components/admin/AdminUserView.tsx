@@ -18,7 +18,7 @@ export const AdminUserView: React.FC<AdminUserViewProps> = ({ users, onToggleBlo
   );
 
   return (
-    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-300 overflow-hidden">
+    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-100 overflow-hidden">
       <div className="flex-shrink-0 p-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

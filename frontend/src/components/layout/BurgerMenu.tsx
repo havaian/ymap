@@ -35,16 +35,16 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
     <>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1001] transition-opacity duration-300 
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1001] transition-opacity duration-100 
           ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 z-[1002] shadow-2xl transform transition-transform duration-300 ease-out flex flex-col
+      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 z-[1002] shadow-2xl transform transition-transform duration-100 ease-out flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         
-        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 transition-colors duration-100">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
               <div className="bg-blue-600 p-2 rounded-lg text-white shadow-md shadow-blue-500/20">

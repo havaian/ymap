@@ -44,7 +44,7 @@ function TrendChart({ data }: { data: Array<{ label: string; total: number; reso
               <div className="w-full rounded-t relative" style={{ height: `${totalH}%`, minHeight: d.total > 0 ? '4px' : '0' }}>
                 <div className="absolute inset-0 bg-blue-200 dark:bg-blue-900/40 rounded-t" />
                 <div
-                  className="absolute bottom-0 left-0 right-0 bg-blue-500 rounded-t transition-all duration-500"
+                  className="absolute bottom-0 left-0 right-0 bg-blue-500 rounded-t transition-all duration-200"
                   style={{ height: `${d.total > 0 ? (d.resolved / d.total) * 100 : 0}%` }}
                 />
               </div>
@@ -155,7 +155,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organiza
   }, [trends]);
 
   return (
-    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-500 overflow-y-auto custom-scrollbar pb-20">
+    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-200 overflow-y-auto custom-scrollbar pb-20">
       <div className="p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
         
         {/* Header Section */}
@@ -286,7 +286,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organiza
                           </div>
                           <div className="h-2.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
                              <div 
-                               className="h-full transition-all duration-1000 ease-out rounded-full"
+                               className="h-full transition-all duration-400 ease-out rounded-full"
                                style={{ 
                                   width: `${(count / maxCategoryCount) * 100}%`,
                                   backgroundColor: CATEGORY_COLORS[cat as IssueCategory] || '#64748b'
@@ -594,7 +594,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organiza
                           </div>
                           <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full">
                             <div
-                              className="h-full bg-teal-500 rounded-full transition-all duration-700"
+                              className="h-full bg-teal-500 rounded-full transition-all duration-300"
                               style={{ width: `${Math.min(((d.avgDays || 0) / maxDays) * 100, 100)}%` }}
                             />
                           </div>
@@ -620,7 +620,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organiza
                         </div>
                         <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full">
                            <div 
-                            className="h-full bg-orange-500 rounded-full transition-all duration-700" 
+                            className="h-full bg-orange-500 rounded-full transition-all duration-300" 
                             style={{ width: `${(count / maxDistrictCount) * 100}%` }}
                            />
                         </div>
@@ -653,7 +653,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ issues, organiza
                         </div>
                         <div className="h-2.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div
-                            className="h-full transition-all duration-1000 ease-out rounded-full"
+                            className="h-full transition-all duration-400 ease-out rounded-full"
                             style={{
                               width: `${Math.min(((c.avgDays || 0) / maxDays) * 100, 100)}%`,
                               backgroundColor: CATEGORY_COLORS[c.category as IssueCategory] || '#64748b'
@@ -727,7 +727,7 @@ const StatCard = ({ title, value, icon, color, percentage, sub }: any) => (
     {percentage !== undefined && (
       <div className="mt-4 h-1.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full">
         <div 
-          className={`h-full rounded-full transition-all duration-1000 ${
+          className={`h-full rounded-full transition-all duration-400 ${
             color === 'red' ? 'bg-red-500' : 
             color === 'orange' ? 'bg-orange-500' :
             color === 'blue' ? 'bg-blue-500' : 

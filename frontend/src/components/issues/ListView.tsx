@@ -31,7 +31,7 @@ export const ListView: React.FC<ListViewProps> = ({ issues, onSelectIssue }) => 
   }, [issues, searchTerm, statusFilter, categoryFilter]);
 
   return (
-    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-300 overflow-hidden">
+    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-100 overflow-hidden">
       <div className="flex-shrink-0 p-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="relative">

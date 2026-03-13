@@ -42,7 +42,7 @@ export const AdminOrgModal: React.FC<AdminOrgModalProps> = ({ isOpen, onClose, o
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-100 border border-slate-200 dark:border-slate-800">
         
         <div className="p-6 bg-gradient-to-br from-indigo-600 to-blue-700 text-white relative">
           <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition">

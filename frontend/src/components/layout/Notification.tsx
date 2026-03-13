@@ -32,7 +32,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
   }, [toast.id, onRemove]);
 
   return (
-    <div className="pointer-events-auto flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right-full duration-300 min-w-[300px] transition-colors duration-300">
+    <div className="pointer-events-auto flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right-full duration-100 min-w-[300px] transition-colors duration-100">
       {toast.type === 'success' ? (
         <CheckCircle2 className="w-5 h-5 text-green-500" />
       ) : (

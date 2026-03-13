@@ -43,7 +43,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ children, type, isOpen
       <div className={`
         top-16 fixed inset-y-0 right-0 w-full md:w-[500px] lg:w-[600px]
         shadow-2xl z-50 overflow-y-auto
-        animate-in slide-in-from-right duration-300
+        animate-in slide-in-from-right duration-100
         bg-gradient-to-b
         ${type === 'issue'
           ? 'from-purple-50 via-pink-50 to-slate-50 dark:from-purple-950/20 dark:via-pink-950/20 dark:to-slate-950'

@@ -77,7 +77,7 @@ function ImportProgress({ job, onDone }: { job: JobState; onDone: () => void }) 
         <div className="space-y-1">
           <div className="h-2 bg-blue-200 dark:bg-blue-900/60 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-500"
+              className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-200"
               style={{ width: `${phasePct}%` }}
             />
           </div>
@@ -262,7 +262,7 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({ onDataImported }) 
   };
 
   return (
-    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-300 overflow-y-auto">
+    <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-100 overflow-y-auto">
       <div className="flex-shrink-0 p-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-2">

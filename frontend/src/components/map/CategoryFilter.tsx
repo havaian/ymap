@@ -72,14 +72,14 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <span className="whitespace-nowrap uppercase tracking-wider">
           {getCategoryLabel(activeFilter)}
         </span>
-        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${
+        <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${
           open ? 'rotate-180 text-blue-600' : 'text-white/80'
         }`} />
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div className="mt-3 w-72 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_20px_60px_-15px_rgba(37,99,235,0.3)] border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 origin-top-left">
+        <div className="mt-3 w-72 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_20px_60px_-15px_rgba(37,99,235,0.3)] border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-100 origin-top-left">
           <div className="p-3 max-h-[75vh] overflow-y-auto custom-scrollbar">
             <div className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
               Категории

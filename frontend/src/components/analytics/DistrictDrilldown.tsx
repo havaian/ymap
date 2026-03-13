@@ -29,7 +29,7 @@ function ScoreBar({ score, label, color }: { score: number; label: string; color
                 <span className="text-slate-600 dark:text-slate-300">{score}/100</span>
             </div>
             <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-700 ${c}`} style={{ width: `${score}%` }} />
+                <div className={`h-full rounded-full transition-all duration-300 ${c}`} style={{ width: `${score}%` }} />
             </div>
         </div>
     );
@@ -82,7 +82,7 @@ export const DistrictDrilldown: React.FC<DistrictDrilldownProps> = ({
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
             {/* Panel */}
-            <div className="relative w-full max-w-lg h-full bg-white dark:bg-slate-950 shadow-2xl overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
+            <div className="relative w-full max-w-lg h-full bg-white dark:bg-slate-950 shadow-2xl overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-100">
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800 px-6 py-4">
                     <div className="flex items-center justify-between">

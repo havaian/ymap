@@ -37,7 +37,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
   return (
     <div className="fixed inset-0 z-[3000] bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-500">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-200">
         
         <div className="p-8 text-center bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>

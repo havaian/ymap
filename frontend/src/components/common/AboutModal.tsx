@@ -13,7 +13,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
       <div className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md transition-opacity" onClick={onClose} />
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] relative z-10 animate-in fade-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] relative z-10 animate-in fade-in zoom-in-95 duration-100 border border-slate-200 dark:border-slate-800">
         
         {/* Decorative background */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 dark:bg-blue-400/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>

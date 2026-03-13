@@ -6,6 +6,7 @@ import { MapComponent } from './components/map/MapComponent';
 import { CategoryFilter } from './components/map/CategoryFilter';
 import { DetailSidebar } from './components/issues/DetailSidebar';
 import { OrgSidebar } from './components/organizations/OrgSidebar';
+import { InfraSidebar } from './components/infrastructure/InfraSidebar';
 import { DetailPanel } from './components/layout/DetailPanel';
 import { IssueModal } from './components/issues/IssueModal';
 import { AboutModal } from './components/common/AboutModal';
@@ -19,7 +20,7 @@ import { AdminOrgModal } from './components/admin/AdminOrgModal';
 import { AppHeader } from './components/layout/AppHeader';
 import { DistrictDrilldown } from './components/analytics/DistrictDrilldown';
 import { LayerState } from './components/map/LayerPicker';
-import { Issue, Coordinates, IssueCategory, Organization, User, UserRole } from '../types';
+import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, User, UserRole } from '../types';
 import { TASHKENT_CENTER } from './constants';
 import { useIssues, useOrganizations, useUsers } from './hooks/useBackendData';
 import { useInfrastructure } from './hooks/useInfrastructure';
@@ -33,7 +34,7 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const location = useLocation();
-  const params = useParams<{ issueId?: string; orgId?: string }>();
+  const params = useParams<{ issueId?: string; orgId?: string; infraId?: string }>();
   const navigate = useNavigate();
   
   // activeView is now derived from props, not state
@@ -59,9 +60,17 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
 
   const { 
     infrastructure, 
-    loading: infraLoading 
+    loading: infraLoading,
+    fetchDetail: fetchInfraDetail
   } = useInfrastructure(selectedRegionCode);
-  
+
+  const [selectedInfra, setSelectedInfra] = useState<Infrastructure | null>(null);
+
+  useEffect(() => {
+    if (!params.infraId) { setSelectedInfra(null); return; }
+    fetchInfraDetail(params.infraId).then(setSelectedInfra);
+  }, [params.infraId, fetchInfraDetail]);
+
   const { 
     users, 
     loading: usersLoading, 
@@ -82,6 +91,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [selectedInfraForReport, setSelectedInfraForReport] = useState<Infrastructure | null>(null);
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [isAdminOrgAddingMode, setIsAdminOrgAddingMode] = useState(false);
 
@@ -189,8 +199,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     
     // Filter based on toggle states
     if (!showStandaloneIssues) {
-      // Hide issues without organization or infrastructure
-      filtered = filtered.filter(issue => issue.organizationId);
+      // Hide issues without organization or infrastructure link
+      filtered = filtered.filter(issue => issue.organizationId || issue.infrastructureId);
     }
     
     return filtered;
@@ -225,6 +235,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const handleOrgClick = useCallback((org: Organization) => {
     const basePath = activeView === 'LIST' ? '/list' : '/map';
     navigate(`${basePath}/organizations/${org.id}`);
+  }, [activeView, navigate]);
+
+  const handleInfraClick = useCallback((infra: Infrastructure) => {
+    const basePath = activeView === 'LIST' ? '/list' : '/map';
+    navigate(`${basePath}/infrastructure/${infra.id}`);
   }, [activeView, navigate]);
 
   const handleSelectIssue = useCallback((issue: Issue) => {
@@ -285,6 +300,13 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     navigate(activeView === 'LIST' ? '/list' : '/map');
   };
 
+  const handleReportAtInfra = (infra: Infrastructure) => {
+    setSelectedLocation({ lat: infra.lat, lng: infra.lng });
+    setSelectedInfraForReport(infra);
+    setIsModalOpen(true);
+    navigate(activeView === 'LIST' ? '/list' : '/map');
+  };
+
   const handleLocateMe = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -323,7 +345,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       severity: data.severity,
       aiSummary: data.summary,
       organizationId: data.organizationId,
-      organizationName: data.organizationName
+      organizationName: data.organizationName,
+      infrastructureId: data.infrastructureId,
+      infrastructureName: data.infrastructureName,
     };
 
     const result = await addIssue(issueData);
@@ -437,6 +461,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 onIssueClick={handleSelectIssue}
                 onMapClick={handleMapClick}
                 onOrgClick={handleOrgClick}
+                onInfraClick={handleInfraClick}
                 isAdding={isAddingMode || isAdminOrgAddingMode}
                 showOrgs={canShowOrgs}
                 showInfrastructure={canShowInfrastructure}
@@ -508,6 +533,18 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         />
       </DetailPanel>
 
+      {/* Infrastructure Detail Panel */}
+      <DetailPanel type="infrastructure" isOpen={!!selectedInfra}>
+        <InfraSidebar
+          infra={selectedInfra}
+          currentUser={currentUser}
+          onClose={() => navigate('/map')}
+          issues={issues}
+          onIssueClick={handleSelectIssue}
+          onReportIssue={handleReportAtInfra}
+        />
+      </DetailPanel>
+
       {/* District Drilldown (triggered by choropleth click) */}
       <DistrictDrilldown
         districtId={drilldownDistrictId}
@@ -516,7 +553,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onClose={() => setDrilldownDistrictId(null)}
       />
 
-      <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} />
+      <IssueModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsAddingMode(false); setSelectedOrg(null); }} onSubmit={handleAddIssue} selectedLocation={selectedLocation} preSelectedOrg={selectedOrg} preSelectedInfra={selectedInfraForReport} />
       <AdminOrgModal isOpen={isAdminOrgModalOpen} onClose={() => { setIsAdminOrgModalOpen(false); setIsAdminOrgAddingMode(false); }} onSubmit={handleAddOrg} selectedLocation={selectedLocation} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </div>

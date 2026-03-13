@@ -61,6 +61,12 @@ const issueSchema = new mongoose.Schema({
     organizationName: {
         type: String
     },
+    infrastructureId: {
+        type: String
+    },
+    infrastructureName: {
+        type: String
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

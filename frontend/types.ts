@@ -60,6 +60,8 @@ export interface Issue {
   userName: string;
   organizationId?: string;
   organizationName?: string;
+  infrastructureId?: string;
+  infrastructureName?: string;
   aiSummary?: string;
   votes: number;
   comments: Comment[];

@@ -6,7 +6,7 @@ import { X, ArrowLeft } from 'lucide-react';
 
 interface DetailPanelProps {
   children: React.ReactNode;
-  type: 'issue' | 'organization';
+  type: 'issue' | 'organization' | 'infrastructure';
   isOpen: boolean;
 }
 
@@ -47,6 +47,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ children, type, isOpen
         bg-gradient-to-b
         ${type === 'issue'
           ? 'from-purple-50 via-pink-50 to-slate-50 dark:from-purple-950/20 dark:via-pink-950/20 dark:to-slate-950'
+          : type === 'infrastructure'
+          ? 'from-amber-50 via-orange-50 to-slate-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-slate-950'
           : 'from-teal-50 via-emerald-50 to-slate-50 dark:from-teal-950/20 dark:via-emerald-950/20 dark:to-slate-950'
         }
       `}>

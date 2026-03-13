@@ -91,7 +91,7 @@ function getInfraColor(type: string): string {
 // Key format:
 //   issue_{category}_{0|1}         (0 = full icon, 1 = zoomed-out dot)
 //   org_{type}_{count}             (count capped at 99)
-//   infra_{type}
+//   infra_{type}_{count}           (count capped at 99)
 // ─────────────────────────────────────────────────────────────────────────────
 const iconCache = new Map<string, L.DivIcon>();
 
@@ -152,17 +152,26 @@ function createOrgIcon(unresolvedCount: number, type: IssueCategory) {
   });
 }
 
-// Fixed-size infra icon — zoom parameter removed.
-function createInfraIcon(type: string) {
-  return getCachedIcon(`infra_${type}`, () => {
+// Fixed-size infra icon with optional unresolved badge — parallel to org icon.
+function createInfraIcon(type: string, unresolvedCount: number = 0) {
+  const countKey = unresolvedCount > 99 ? 99 : unresolvedCount;
+  return getCachedIcon(`infra_${type}_${countKey}`, () => {
     const color = getInfraColor(type);
     const baseSize = 32;
     const borderRadius = 8;
 
     const iconSvg = renderToStaticMarkup(getInfraIcon(type, 14));
+
+    const badgeSvg = unresolvedCount > 0 ? `
+      <div style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;">
+        ${countKey >= 99 ? '99+' : unresolvedCount}
+      </div>
+    ` : '';
+
     const html = `
       <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3);">
         ${iconSvg}
+        ${badgeSvg}
       </div>
     `;
     return L.divIcon({ html, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize / 2, baseSize / 2] });
@@ -201,10 +210,10 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
           case Severity.HIGH: weight = 80; break;
           case Severity.CRITICAL: weight = 200; break;
         }
-        
+
         const orgMultiplier = i.organizationId ? 2.5 : 1.0;
         const votesMultiplier = 1 + (Math.log10(Math.max(0, i.votes) + 1) * 1.5);
-        
+
         const finalWeight = Math.min(1000, weight * orgMultiplier * votesMultiplier);
         return [i.lat, i.lng, finalWeight];
       });
@@ -217,11 +226,11 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
 
     try {
       const heatLayer = heatLayerFunc(heatPoints, {
-        radius: radius,      
-        blur: blur,        
+        radius: radius,
+        blur: blur,
         maxZoom: 18,
-        max: dynamicMax, 
-        minOpacity: 0.15, 
+        max: dynamicMax,
+        minOpacity: 0.15,
         gradient: {
           0.1: '#3b82f6',
           0.3: '#10b981',
@@ -230,7 +239,7 @@ function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: bool
           1.0: '#ef4444'
         }
       });
-      
+
       heatLayer.addTo(map);
       layerRef.current = heatLayer;
 
@@ -288,12 +297,12 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
     clusterGroupRef.current = markerClusterFunc({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
-      maxClusterRadius: 80, 
+      maxClusterRadius: 80,
       disableClusteringAtZoom: 15,
       animate: true,
       iconCreateFunction: (cluster: any) => {
         const count = cluster.getChildCount();
-        let color = '#10b981'; 
+        let color = '#10b981';
         if (count >= 10 && count < 50) color = '#f59e0b';
         else if (count >= 50) color = '#ef4444';
         return L.divIcon({
@@ -336,7 +345,7 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
     const isZoomedOut = zoomLevel < 14;
     prevZoomedOutRef.current = isZoomedOut;
 
-    const freeIssues = issues.filter((i: Issue) => !i.organizationId && i.lat && i.lng);
+    const freeIssues = issues.filter((i: Issue) => !i.organizationId && !i.infrastructureId && i.lat && i.lng);
     issuesRef.current = freeIssues;
 
     const markers = freeIssues.map((issue: Issue) => {
@@ -399,7 +408,7 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
         const count = cluster.getChildCount();
         let color = '#4f46e5';
         let size = 38;
-        
+
         if (count >= 100) {
           color = '#7c3aed';
           size = 48;
@@ -519,13 +528,19 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
   return null;
 }
 
-function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, hidden }: any) {
+function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, hidden, infraUnresolvedCounts }: any) {
   const map = useMap();
   const clusterGroupRef = useRef<any>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const infrasRef = useRef<Infrastructure[]>([]);
 
   // Stable ref for optional click callback
   const onInfraClickRef = useRef(onInfraClick);
   useEffect(() => { onInfraClickRef.current = onInfraClick; }, [onInfraClick]);
+
+  // Keep counts ref current without forcing marker recreation on count changes
+  const infraCountsRef = useRef(infraUnresolvedCounts);
+  useEffect(() => { infraCountsRef.current = infraUnresolvedCounts; }, [infraUnresolvedCounts]);
 
   // Effect 1: Create cluster group once
   useEffect(() => {
@@ -542,7 +557,7 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
         const count = cluster.getChildCount();
         let color = '#f59e0b'; // Amber for infrastructure
         let size = 38;
-        
+
         if (count >= 100) {
           color = '#dc2626'; // Red
           size = 48;
@@ -579,17 +594,23 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
 
   // Effect 3: Repopulate markers only when infrastructure data changes.
   // No zoom dependency — icons are fixed size, clustering handles visual density.
+  // infraUnresolvedCounts accessed via ref — badge updates handled by effect 4.
   useEffect(() => {
     const cg = clusterGroupRef.current;
     if (!cg) return;
 
     cg.clearLayers();
+    markersRef.current = [];
+    infrasRef.current = [];
 
     if (hidden) return;
 
+    infrasRef.current = infrastructure;
+
     const markers = infrastructure.map((infra: Infrastructure) => {
+      const unresolvedCount = infraCountsRef.current[infra.id] || 0;
       const marker = L.marker([infra.lat, infra.lng], {
-        icon: createInfraIcon(infra.type)
+        icon: createInfraIcon(infra.type, unresolvedCount)
       });
 
       marker.on('click', (e) => {
@@ -625,8 +646,18 @@ function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, h
       return marker;
     });
 
+    markersRef.current = markers;
     cg.addLayers(markers);
-  }, [infrastructure, hidden]); // zoomLevel intentionally NOT here
+  }, [infrastructure, hidden]); // zoomLevel and infraUnresolvedCounts intentionally NOT here
+
+  // Effect 4: Update only badge icons when issue counts change — parallel to org Effect 4.
+  useEffect(() => {
+    if (!markersRef.current.length) return;
+    infrasRef.current.forEach((infra, i) => {
+      const marker = markersRef.current[i];
+      if (marker) marker.setIcon(createInfraIcon(infra.type, infraUnresolvedCounts[infra.id] || 0));
+    });
+  }, [infraUnresolvedCounts]);
 
   return null;
 }
@@ -647,15 +678,15 @@ function MapController({ onMapClick, setZoomLevel, userLocation, triggerLocate }
 
 function MapSizeHandler() {
   const map = useMap();
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [map]);
-  
+
   return null;
 }
 
@@ -697,7 +728,7 @@ interface MapComponentProps {
   showInfrastructure: boolean;
   showHeatmap: boolean;
   userLocation: Coordinates | null;
-  triggerLocate: number; 
+  triggerLocate: number;
   isDark: boolean;
   showChoropleth: boolean;
   choroplethMetric: string;
@@ -705,30 +736,43 @@ interface MapComponentProps {
   selectedRegionCode?: number | null;
 }
 
-export const MapComponent: React.FC<MapComponentProps> = ({ 
-  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark, showChoropleth, choroplethMetric, onDistrictClick, selectedRegionCode}) => {
+export const MapComponent: React.FC<MapComponentProps> = ({
+  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick,
+  isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark,
+  showChoropleth, choroplethMetric, onDistrictClick, selectedRegionCode
+}) => {
   const [zoomLevel, setZoomLevel] = useState(13);
 
   const orgUnresolvedCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     issues.forEach(issue => {
-        if (issue.organizationId && issue.status !== 'Resolved') {
-            counts[issue.organizationId] = (counts[issue.organizationId] || 0) + 1;
-        }
+      if (issue.organizationId && issue.status !== 'Resolved') {
+        counts[issue.organizationId] = (counts[issue.organizationId] || 0) + 1;
+      }
     });
     return counts;
   }, [issues]);
 
-  const tileUrl = isDark 
+  const infraUnresolvedCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    issues.forEach(issue => {
+      if (issue.infrastructureId && issue.status !== 'Resolved') {
+        counts[issue.infrastructureId] = (counts[issue.infrastructureId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [issues]);
+
+  const tileUrl = isDark
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 
   return (
     <div className="w-full h-full relative">
-      <MapContainer 
-        center={center} 
-        zoom={13} 
-        style={{ height: '100%', width: '100%' }} 
+      <MapContainer
+        center={center}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         markerZoomAnimation={true}
       >
@@ -738,7 +782,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           key={tileUrl}
           url={tileUrl}
         />
-        
+
         <RegionBorderLayer regionCode={selectedRegionCode ?? null} />
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />
 
@@ -748,10 +792,10 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           onDistrictClick={onDistrictClick}
         />
 
-        <MarkerClusterGroup 
-          issues={issues} 
-          onIssueClick={onIssueClick} 
-          zoomLevel={zoomLevel} 
+        <MarkerClusterGroup
+          issues={issues}
+          onIssueClick={onIssueClick}
+          zoomLevel={zoomLevel}
           hidden={showHeatmap}
         />
 
@@ -768,10 +812,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           onInfraClick={onInfraClick}
           zoomLevel={zoomLevel}
           hidden={!showInfrastructure || showHeatmap}
+          infraUnresolvedCounts={infraUnresolvedCounts}
         />
 
         {userLocation && (
-          <Marker 
+          <Marker
             position={[userLocation.lat, userLocation.lng]}
             icon={L.divIcon({
               html: `<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>`,
@@ -781,11 +826,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         )}
 
         {isAdding && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000] pointer-events-none">
-                <div className="relative">
-                   <VisualPinIcon size={48} className="text-blue-600 drop-shadow-2xl mb-4 animate-pulse" />
-                </div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000] pointer-events-none">
+            <div className="relative">
+              <VisualPinIcon size={48} className="text-blue-600 drop-shadow-2xl mb-4 animate-pulse" />
             </div>
+          </div>
         )}
 
         <MapController onMapClick={onMapClick} setZoomLevel={setZoomLevel} userLocation={userLocation} triggerLocate={triggerLocate} />

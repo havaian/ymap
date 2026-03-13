@@ -87,7 +87,7 @@ export const getIssueMarkers = async (req, res) => {
     if (regionCode) filter.regionCode = parseInt(regionCode);
 
     const docs = await Issue.find(filter)
-        .select('lat lng title category severity status votes organizationId createdAt')
+        .select('lat lng title category severity status votes organizationId infrastructureId createdAt')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -104,6 +104,7 @@ export const getIssueMarkers = async (req, res) => {
             status: d.status,
             votes: d.votes || 0,
             organizationId: d.organizationId || null,
+            infrastructureId: d.infrastructureId || null,
             createdAt: d.createdAt
         }))
     });

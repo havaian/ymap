@@ -2,6 +2,7 @@ import Issue from './model.js';
 import Comment from '../comment/model.js';
 import Vote from '../vote/model.js';
 import Organization from '../organization/model.js';
+import Infrastructure from '../infrastructure/model.js';
 import { validateCoordinates } from '../utils/validators.js';
 
 /**
@@ -58,6 +59,8 @@ export const getIssues = async (req, res) => {
                 aiSummary: 1,
                 organizationId: 1,
                 organizationName: 1,
+                infrastructureId: 1,
+                infrastructureName: 1,
                 userId: 1,
                 regionCode: 1,
                 districtId: 1,
@@ -112,7 +115,7 @@ export const getIssue = async (req, res) => {
 export const createIssue = async (req, res) => {
     const {
         lat, lng, title, description, category, subCategory,
-        severity, aiSummary, organizationId
+        severity, aiSummary, organizationId, infrastructureId
     } = req.body;
 
     if (!lat || !lng || !title || !description || !category || !severity) {
@@ -137,6 +140,14 @@ export const createIssue = async (req, res) => {
         }
     }
 
+    let infrastructureName = null;
+    if (infrastructureId) {
+        const infra = await Infrastructure.findById(infrastructureId);
+        if (infra) {
+            infrastructureName = infra.name;
+        }
+    }
+
     const issue = await Issue.create({
         lat,
         lng,
@@ -154,6 +165,8 @@ export const createIssue = async (req, res) => {
         aiSummary: aiSummary || null,
         organizationId: organizationId || null,
         organizationName,
+        infrastructureId: infrastructureId || null,
+        infrastructureName,
         userId: req.user._id
     });
 

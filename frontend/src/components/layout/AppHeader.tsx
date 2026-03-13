@@ -2,16 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Building2, ShieldCheck, MapPin, ChevronDown } from 'lucide-react';
+import { Menu, Building2, ShieldCheck, MapPin } from 'lucide-react';
 import { MapPlusIcon } from '../map/MapPlusIcon';
 import { LayerPicker, LayerState } from '../map/LayerPicker';
+import { CustomSelect } from '../common/CustomSelect';
 import { regionsAPI } from '../../services/api';
 import { User, UserRole } from '../../../types';
-
-interface Region {
-  code: number;
-  name: { en: string; ru?: string; uz: string };
-}
 
 interface AppHeaderProps {
   currentUser: User;
@@ -43,24 +39,25 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   isAdminOrgAddingMode, onStartAdminOrgAdd,
 }) => {
   const navigate = useNavigate();
-  const [regions, setRegions] = useState<Region[]>([]);
+  const [regionOptions, setRegionOptions] = useState<{ value: number; label: string }[]>([]);
 
   // Fetch region list once — lightweight call (no geometry)
   useEffect(() => {
     regionsAPI.getAll()
       .then(res => {
-        if (res.data?.success) setRegions(res.data.data);
+        if (res.data?.success) {
+          setRegionOptions(
+            res.data.data.map((r: any) => ({
+              value: r.code,
+              label: r.name?.ru || r.name?.en || `Регион ${r.code}`
+            }))
+          );
+        }
       })
       .catch(() => {
         // Non-critical — region filter just won't populate
       });
   }, []);
-
-  const selectedRegionName = selectedRegionCode != null
-    ? regions.find(r => r.code === selectedRegionCode)?.name?.ru
-      || regions.find(r => r.code === selectedRegionCode)?.name?.en
-      || `Регион ${selectedRegionCode}`
-    : null;
 
   return (
     <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 shadow-sm z-[400] px-6 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
@@ -93,29 +90,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       {/* Right: map controls */}
       {activeView === 'MAP' && (
         <div className="flex items-center gap-2">
-          {/* Region selector */}
-          <div className="relative">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full">
-              <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-              <select
-                value={selectedRegionCode ?? ''}
-                onChange={e => onRegionChange(e.target.value ? parseInt(e.target.value) : null)}
-                className="appearance-none bg-transparent text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 focus:outline-none cursor-pointer pr-4 max-w-[120px] md:max-w-[160px]"
-              >
-                <option value="">Весь Узбекистан</option>
-                {regions.map(r => (
-                  <option key={r.code} value={r.code}>
-                    {r.name.ru || r.name.en}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 dark:text-slate-500 pointer-events-none absolute right-3" />
-            </div>
-            {/* Active indicator dot */}
-            {selectedRegionCode != null && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
-            )}
-          </div>
+          <CustomSelect
+            options={regionOptions}
+            value={selectedRegionCode}
+            onChange={onRegionChange}
+            placeholder="Весь Узбекистан"
+            heading="Выберите регион"
+            icon={<MapPin size={14} />}
+            autoOpenKey="regionChosen"
+          />
 
           {currentUser.role === UserRole.ADMIN && (
             <button

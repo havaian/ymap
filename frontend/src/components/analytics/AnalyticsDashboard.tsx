@@ -10,6 +10,7 @@ import {
     CheckCircle2, AlertCircle, DollarSign, Wheat, ChevronDown,
     BarChart3, Activity, Award, Layers, Clock
 } from 'lucide-react';
+import { CustomSelect } from '../common/CustomSelect';
 import { useAnalytics, DistrictScore, RegionSummary, useResolution, useEfficiency } from '../../hooks/useAnalytics';
 import { DistrictDrilldown } from './DistrictDrilldown';
 
@@ -99,32 +100,6 @@ const Section: React.FC<{
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm uppercase tracking-wide">{title}</h3>
         </div>
         {children}
-    </div>
-);
-
-// ─────────────────────────────────────────────
-// Region selector
-// ─────────────────────────────────────────────
-
-const RegionSelector: React.FC<{
-    regions: RegionSummary[];
-    selected: number | null;
-    onSelect: (code: number | null) => void;
-}> = ({ regions, selected, onSelect }) => (
-    <div className="relative">
-        <select
-            value={selected ?? ''}
-            onChange={(e) => onSelect(e.target.value ? parseInt(e.target.value) : null)}
-            className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-        >
-            <option value="">Все регионы</option>
-            {regions.map(r => (
-                <option key={r.regionCode} value={r.regionCode}>
-                    {r.regionName?.en || r.regionName?.uz || `Region ${r.regionCode}`}
-                </option>
-            ))}
-        </select>
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
     </div>
 );
 
@@ -407,21 +382,29 @@ export const AnalyticsDashboard: React.FC = () => {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <select
-                                value={period ?? ''}
-                                onChange={(e) => setPeriod(e.target.value ? parseInt(e.target.value) : null)}
-                                className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                            >
-                                <option value="">Все время</option>
-                                <option value="30">30 дней</option>
-                                <option value="90">90 дней</option>
-                                <option value="180">6 месяцев</option>
-                                <option value="365">1 год</option>
-                            </select>
-                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
-                        <RegionSelector regions={regionSummary} selected={selectedRegion} onSelect={handleRegionChange} />
+                        <CustomSelect
+                            options={[
+                                { value: 30,  label: '30 дней' },
+                                { value: 90,  label: '90 дней' },
+                                { value: 180, label: '6 месяцев' },
+                                { value: 365, label: '1 год' },
+                            ]}
+                            value={period}
+                            onChange={setPeriod}
+                            placeholder="Все время"
+                            heading="Период"
+                        />
+                        <CustomSelect
+                            options={regionSummary.map(r => ({
+                                value: r.regionCode,
+                                label: r.regionName?.ru || r.regionName?.en || `Регион ${r.regionCode}`,
+                            }))}
+                            value={selectedRegion}
+                            onChange={handleRegionChange}
+                            placeholder="Все регионы"
+                            heading="Регион"
+                            icon={<MapPin size={14} />}
+                        />
                     </div>
                 </div>
 

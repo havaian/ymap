@@ -1,38 +1,41 @@
-import { Router } from 'express';
-import { getByOrg, createPromise, addVerification, deletePromise } from './controller.js';
+// backend/src/promise/routes.js
+import express from 'express';
+import {
+    getPromises,
+    getStats,
+    createPromise,
+    updateStatus,
+    updatePromise,
+    vote,
+    verify,
+    uploadPhoto,
+    deletePromise
+} from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
-import { photoUpload } from '../utils/photoConfig.js';
+import { upload } from '../middleware/upload.js';
 
-const router = Router();
+const router = express.Router();
 
-// Public — any visitor can read promises for an org
-router.get('/', getByOrg);
+// Public — no auth needed, used by the public dashboard widget
+router.get('/stats', getStats);
 
-// Citizen — upload a verification photo, get back the relative URL to pass into verify
-// POST /api/promises/upload-photo  (multipart/form-data, field: photo)
-// Returns: { success: true, data: { photoUrl: "photos/1234-uuid.jpg" } }
-router.post(
-    '/upload-photo',
-    authMiddleware,
-    photoUpload.single('photo'),
-    (req, res) => {
-        if (!req.file) {
-            return res.status(400).json({ success: false, error: 'No file uploaded' });
-        }
-        // Return the path relative to uploads root — stored in DB, served via /api/uploads/
-        res.json({
-            success: true,
-            data: { photoUrl: `photos/${req.file.filename}` }
-        });
-    }
-);
+// Authenticated reads — citizens and admins can view promises
+router.get('/', authMiddleware, getPromises);
 
-// Authenticated — any logged-in citizen can verify
-router.post('/:id/verify', authMiddleware, addVerification);
+// Photo upload — any authenticated user (needed before verify)
+router.post('/upload-photo', authMiddleware, upload.single('photo'), uploadPhoto);
 
-// Admin — create / delete promises
-router.post('/', authMiddleware, adminOnly, createPromise);
-router.delete('/:id', authMiddleware, adminOnly, deletePromise);
+// Admin writes
+router.post('/',              authMiddleware, adminOnly, createPromise);
+router.patch('/:id/status',   authMiddleware, adminOnly, updateStatus);
+router.patch('/:id',          authMiddleware, adminOnly, updatePromise);
+router.delete('/:id',         authMiddleware, adminOnly, deletePromise);
+
+// Citizen vote (AllocationSection vote UI)
+router.post('/:id/vote', authMiddleware, vote);
+
+// Citizen verification (PromisesSection done/problem flow)
+router.post('/:id/verify', authMiddleware, verify);
 
 export default router;

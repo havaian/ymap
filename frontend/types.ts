@@ -141,3 +141,51 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+export type PromiseStatus =
+  | 'Planned'
+  | 'In Progress'
+  | 'Pending Verification'
+  | 'Completed'
+  | 'Failed';
+ 
+export interface BudgetAllocation {
+  id: string;
+  targetType: 'organization' | 'infrastructure';
+  targetId: string;
+  amount?: number;
+  currency: 'UZS' | 'USD';
+  period?: string;
+  note?: string;
+  createdBy: string;
+  promiseCount?: number; // attached by getAllocations controller
+  createdAt: string;
+  updatedAt: string;
+}
+ 
+export interface CivicPromise {
+  id: string;
+  targetType: 'organization' | 'infrastructure';
+  targetId: string;
+  allocationId: string | null;
+  title: string;
+  description?: string;
+  deadline?: string | null;
+  status: PromiseStatus;
+  createdBy: string;
+  votes: {
+    confirmed: string[]; // array of userId strings
+    rejected: string[];
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+ 
+export interface PromiseStats {
+  total: number;
+  byStatus: Partial<Record<PromiseStatus, number>>;
+  votes: {
+    confirmed: number;
+    rejected: number;
+  };
+}

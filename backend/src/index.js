@@ -26,7 +26,8 @@ import regionRoutes from './region/routes.js';
 import districtRoutes from './district/routes.js';
 import markerRoutes from './markers/routes.js';
 import openBudgetRoutes from './openbudget/routes.js';
-import promiseRoutes from './promise/routes.js';
+import promiseRoutes     from './promise/routes.js';
+import allocationRoutes  from './budgetAllocation/routes.js';
 import { PATHS as UPLOAD_PATHS } from './utils/uploadPaths.js';
 
 validateEnv();
@@ -103,11 +104,9 @@ app.use('/api/infrastructure', apiLimiter, infrastructureRoutes);
 app.use('/api/users', apiLimiter, authMiddleware, userRoutes);
 app.use('/api/votes', apiLimiter, authMiddleware, voteRoutes);
 
-// ── Promise/commitment routes ─────────────────────────────────────────────────
-// GET is public (citizens read promises without logging in)
-// POST /:id/verify requires auth (inside routes)
-// POST / and DELETE require admin (inside routes)
-app.use('/api/promises', apiLimiter, promiseRoutes);
+// Promises & budget allocations — read: authenticated users, write: admin only
+app.use('/api/promises',    apiLimiter, promiseRoutes);
+app.use('/api/allocations', apiLimiter, allocationRoutes);
 
 // ── Admin routes ──────────────────────────────────────────────────────────────
 // strictAuthMiddleware does a DB lookup — ensures admin account still exists and isn't blocked

@@ -2,13 +2,15 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Organization, Issue, Severity, User, UserRole } from '../../../types';
+import { AllocationSection } from '../promises/AllocationSection';
+import { PromisesSection } from '../promises/PromisesSection';
 import { CATEGORY_COLORS } from '../../constants';
 import { promisesAPI } from '../../services/api';
 import {
   Building2, MapPin, CheckCircle2, Star, ChevronRight, Plus,
   Info, Calendar, Wallet, TrendingUp, Globe, Tag, Hash,
   ClipboardCheck, Camera, X, ThumbsUp, ThumbsDown, Loader2,
-  ChevronDown, ChevronUp, ImageIcon
+  ChevronDown, ChevronUp, ImageIcon, ClipboardList
 } from 'lucide-react';
 import {
   formatUZS, formatUSD, budgetPercent,
@@ -330,134 +332,6 @@ function PromiseCard({
   );
 }
 
-// ─── Promises section (fetches own data) ─────────────────────────────────────
-function PromisesSection({ org, currentUser }: { org: Organization; currentUser: User | null }) {
-  const [promises, setPromises] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [adding, setAdding] = useState(false);
-
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
-
-  const fetchPromises = async () => {
-    try {
-      setLoading(true);
-      const res = await promisesAPI.getByOrg(org.id);
-      setPromises(res.data?.data ?? []);
-    } catch {
-      // Non-critical — section just stays empty
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPromises();
-  }, [org.id]);
-
-  const handleAdd = async () => {
-    if (!newTitle.trim()) return;
-    setAdding(true);
-    try {
-      await promisesAPI.create({
-        organizationId: org.id,
-        title: newTitle.trim(),
-        description: newDesc.trim() || undefined
-      });
-      setNewTitle('');
-      setNewDesc('');
-      setShowAddForm(false);
-      await fetchPromises();
-    } catch {
-      // TODO: surface error
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  return (
-    <div className="px-6 pt-4 pb-2">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <ClipboardCheck size={11} className="text-slate-400 dark:text-slate-500" />
-          <h3 className="font-black text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Обещания властей
-          </h3>
-        </div>
-        {isAdmin && (
-          <button
-            onClick={() => setShowAddForm(p => !p)}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-black transition-colors"
-          >
-            <Plus size={11} />
-            Добавить
-          </button>
-        )}
-      </div>
-
-      {/* Admin: add promise form */}
-      {isAdmin && showAddForm && (
-        <div className="mb-3 bg-white/80 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5 space-y-2">
-          <input
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            placeholder="Что было обещано..."
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <textarea
-            value={newDesc}
-            onChange={e => setNewDesc(e.target.value)}
-            placeholder="Подробности (необязательно)..."
-            rows={2}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleAdd}
-              disabled={!newTitle.trim() || adding}
-              className="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-1"
-            >
-              {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-              Сохранить
-            </button>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-black transition-colors"
-            >
-              Отмена
-            </button>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="space-y-2">
-          {[1, 2].map(i => (
-            <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
-          ))}
-        </div>
-      ) : promises.length === 0 ? (
-        <div className="py-5 text-center text-slate-400 dark:text-slate-600 text-xs font-bold">
-          {isAdmin ? 'Нет обещаний. Нажмите «Добавить».' : 'Обещаний пока нет.'}
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          {promises.map(p => (
-            <PromiseCard
-              key={p.id}
-              promise={p}
-              currentUser={currentUser}
-              onVerified={fetchPromises}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 export const OrgSidebar: React.FC<OrgSidebarProps> = ({
   org, issues, currentUser, onClose, onIssueClick, onReportIssue
@@ -574,7 +448,24 @@ export const OrgSidebar: React.FC<OrgSidebarProps> = ({
         )}
 
         {/* ── Government promises + citizen verification ── */}
-        <PromisesSection org={org} currentUser={currentUser} />
+        <PromisesSection
+          targetType="organization"
+          targetId={org.id}
+          currentUser={currentUser}
+        />
+
+        {/* Promises & Budget Allocations */}
+        <div className="px-6 pt-4 pb-1">
+          <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <ClipboardList size={11} />
+            Обещания и выделения
+          </div>
+          <AllocationSection
+            targetType="organization"
+            targetId={org.id}
+            currentUser={currentUser}
+          />
+        </div>
 
         {/* Issues list */}
         <div className="px-6 pt-4 pb-4">

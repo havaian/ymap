@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = '/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -205,19 +205,48 @@ export const regionsAPI = {
     api.get(`/regions/${code}`),
 };
 
-// ─── Promises / Commitments API ───────────────────────
+// ─── Promises API ─────────────────────────────────────────────────────────────
 
 export const promisesAPI = {
-  // Get all promises for a specific organization
+  // ── Read (authenticated) ──────────────────────────────────────────────────
+
+  // Shorthand used by OrgSidebar's PromisesSection
   getByOrg: (orgId: string): Promise<AxiosResponse> =>
     api.get('/promises', { params: { orgId } }),
 
-  // Admin: create a promise for an org
-  create: (data: { organizationId: string; title: string; description?: string }): Promise<AxiosResponse> =>
+  // Shorthand used by InfraSidebar's PromisesSection
+  getByInfra: (infraId: string): Promise<AxiosResponse> =>
+    api.get('/promises', { params: { infraId } }),
+
+  // Generic — used by AllocationSection
+  getByTarget: (targetType: string, targetId: string): Promise<AxiosResponse> =>
+    api.get('/promises', { params: { targetType, targetId } }),
+
+  getByAllocation: (allocationId: string): Promise<AxiosResponse> =>
+    api.get('/promises', { params: { allocationId } }),
+
+  // ── Public ───────────────────────────────────────────────────────────────
+
+  getStats: (): Promise<AxiosResponse> =>
+    api.get('/promises/stats'),
+
+  // ── Admin writes ─────────────────────────────────────────────────────────
+
+  create: (data: Record<string, any>): Promise<AxiosResponse> =>
     api.post('/promises', data),
 
-  // Citizen: upload a photo first, get back photoUrl, then call verify
-  // POST /api/promises/upload-photo  field: photo (File)
+  updateStatus: (id: string, status: string): Promise<AxiosResponse> =>
+    api.patch(`/promises/${id}/status`, { status }),
+
+  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
+    api.patch(`/promises/${id}`, data),
+
+  delete: (id: string): Promise<AxiosResponse> =>
+    api.delete(`/promises/${id}`),
+
+  // ── Citizen: photo upload then verify ────────────────────────────────────
+
+  // Step 1 — upload photo, get back { photoUrl: 'filename.jpg' }
   uploadPhoto: (file: File): Promise<AxiosResponse> => {
     const formData = new FormData();
     formData.append('photo', file);
@@ -226,14 +255,29 @@ export const promisesAPI = {
     });
   },
 
-  // Citizen: submit a verification (done ✓ or problem ✗)
-  // photoUrl is the value returned by uploadPhoto, e.g. "photos/1234-uuid.jpg"
+  // Step 2 — submit done/problem verdict with optional photo + comment
   verify: (id: string, data: { status: 'done' | 'problem'; comment?: string; photoUrl?: string }): Promise<AxiosResponse> =>
     api.post(`/promises/${id}/verify`, data),
 
-  // Admin: delete a promise
+  // ── Citizen: vote (AllocationSection vote UI) ─────────────────────────────
+  vote: (id: string, verdict: 'confirmed' | 'rejected'): Promise<AxiosResponse> =>
+    api.post(`/promises/${id}/vote`, { verdict })
+};
+ 
+// ─── Budget Allocations API ───────────────────────────────────────────────────
+ 
+export const allocationsAPI = {
+  getByTarget: (targetType: string, targetId: string): Promise<AxiosResponse> =>
+    api.get('/allocations', { params: { targetType, targetId } }),
+ 
+  create: (data: Record<string, any>): Promise<AxiosResponse> =>
+    api.post('/allocations', data),
+ 
+  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
+    api.patch(`/allocations/${id}`, data),
+ 
   delete: (id: string): Promise<AxiosResponse> =>
-    api.delete(`/promises/${id}`)
+    api.delete(`/allocations/${id}`)
 };
 
 export default api;

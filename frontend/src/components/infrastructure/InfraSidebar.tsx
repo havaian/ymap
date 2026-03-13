@@ -1,10 +1,12 @@
-// frontend/src/components/InfraSidebar.tsx
+// frontend/src/components/infrastructure/InfraSidebar.tsx
 
 import React from 'react';
 import { Infrastructure, User, UserRole } from '../../../types';
+import { AllocationSection } from '../promises/AllocationSection';
+import { PromisesSection } from '../promises/PromisesSection';
 import {
   Construction, Waves, Building2, MapPin, Calendar,
-  Wallet, TrendingUp, Globe, Tag, Hash
+  Wallet, TrendingUp, Globe, Tag, Hash, ClipboardList
 } from 'lucide-react';
 import {
   formatUZS, formatUSD, budgetPercent,
@@ -98,7 +100,7 @@ function getInfraIcon(type: string) {
 export const InfraSidebar: React.FC<InfraSidebarProps> = ({ infra, currentUser, onClose }) => {
   if (!infra) return null;
 
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin    = currentUser?.role === UserRole.ADMIN;
   const isOrgAdmin = currentUser?.role === UserRole.ORG_ADMIN;
   const canSeeBudget = isAdmin || isOrgAdmin;
 
@@ -107,7 +109,7 @@ export const InfraSidebar: React.FC<InfraSidebarProps> = ({ infra, currentUser, 
     infra.budget?.committedUSD || infra.budget?.spentUSD
   );
 
-  const accent = getInfraAccentColor(infra.type);
+  const accent   = getInfraAccentColor(infra.type);
   const TypeIcon = getInfraIcon(infra.type);
 
   return (
@@ -180,16 +182,26 @@ export const InfraSidebar: React.FC<InfraSidebarProps> = ({ infra, currentUser, 
           </div>
         )}
 
-        {/* No-issues note — infra objects don't have citizen issues attached */}
-        <div className="px-6 pt-4 pb-6">
-          <div className="text-center py-8 bg-white/60 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/50 dark:border-slate-700/50">
-            <TypeIcon size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-400 dark:text-slate-500 font-bold text-sm">Обращения не привязаны</p>
-            <p className="text-slate-400 dark:text-slate-600 text-[10px] px-8 mt-1 uppercase tracking-wide">
-              Объект инфраструктурного реестра
-            </p>
+        {/* ── Government promises + citizen verification ── */}
+        <PromisesSection
+          targetType="infrastructure"
+          targetId={infra.id}
+          currentUser={currentUser}
+        />
+
+        {/* Promises & Budget Allocations */}
+        <div className="px-6 pt-4 pb-4">
+          <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <ClipboardList size={11} />
+            Обещания и выделения
           </div>
+          <AllocationSection
+            targetType="infrastructure"
+            targetId={infra.id}
+            currentUser={currentUser}
+          />
         </div>
+
       </div>
     </div>
   );

@@ -213,8 +213,18 @@ export const promisesAPI = {
   create: (data: { organizationId: string; title: string; description?: string }): Promise<AxiosResponse> =>
     api.post('/promises', data),
 
+  // Citizen: upload a photo first, get back photoUrl, then call verify
+  // POST /api/promises/upload-photo  field: photo (File)
+  uploadPhoto: (file: File): Promise<AxiosResponse> => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return api.post('/promises/upload-photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
   // Citizen: submit a verification (done ✓ or problem ✗)
-  // photoUrl is populated after the photo is uploaded separately
+  // photoUrl is the value returned by uploadPhoto, e.g. "photos/1234-uuid.jpg"
   verify: (id: string, data: { status: 'done' | 'problem'; comment?: string; photoUrl?: string }): Promise<AxiosResponse> =>
     api.post(`/promises/${id}/verify`, data),
 

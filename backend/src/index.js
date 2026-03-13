@@ -1,8 +1,6 @@
-// backend/src/app.js
+// backend/src/index.js
 
 import 'express-async-errors';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import compression from 'compression';
 import express from 'express';
 import cors from 'cors';
@@ -29,10 +27,9 @@ import districtRoutes from './district/routes.js';
 import markerRoutes from './markers/routes.js';
 import openBudgetRoutes from './openbudget/routes.js';
 import promiseRoutes from './promise/routes.js';
+import { PATHS as UPLOAD_PATHS } from './utils/uploadPaths.js';
 
 validateEnv();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.set('trust proxy', 1);
@@ -80,11 +77,11 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Static uploads — served at /api/uploads/<filename> ───────────────────────
+// ── Static uploads — served at /api/uploads/<subdir>/<filename> ──────────────
 // Docker mounts ./uploads → /app/uploads (docker-compose volume)
-// Citizens access verification photos at /api/uploads/<filename>
-const uploadsPath = path.resolve('/app/uploads');
-app.use('/api/uploads', express.static(uploadsPath));
+// uploadPaths.js pre-creates subdirs (photos/, orgs/) on startup.
+// e.g. "photos/123-uuid.jpg" stored in DB → GET /api/uploads/photos/123-uuid.jpg
+app.use('/api/uploads', express.static(UPLOAD_PATHS.root));
 
 // ── Health check (public) ─────────────────────────────────────────────────────
 app.get('/health', (req, res) => {

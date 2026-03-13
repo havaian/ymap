@@ -1,10 +1,15 @@
+// backend/src/middleware/upload.js
+// Used for admin org/infrastructure Excel imports.
+// Image types are kept here so the same middleware can handle
+// ad-hoc single-image uploads if needed outside of verifications.
+
 import multer from 'multer';
 import path from 'path';
-import { config } from '../config/env.js';
+import { PATHS, ensureDir } from '../utils/uploadPaths.js';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, config.uploadsDir);
+        cb(null, ensureDir(PATHS.orgs));
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

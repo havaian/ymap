@@ -502,7 +502,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
           issues={issues} 
           onClose={() => navigate('/map')} 
           onIssueClick={handleSelectIssue} 
-          onReportIssue={handleReportAtOrg} 
+          onReportIssue={handleReportAtOrg}
+          currentUser={currentUser}
         />
       </DetailPanel>
 

@@ -20,7 +20,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({ isOpen, onClose, onSubmi
   const [orgSearchTerm, setOrgSearchTerm] = useState('');
   
   // Get organizations from backend
-  const { organizations } = useOrganizations(selectedRegionCode);
+  const { organizations } = useOrganizations();
   
   const [analysis, setAnalysis] = useState<{
     title: string;

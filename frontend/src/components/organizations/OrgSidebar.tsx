@@ -217,10 +217,12 @@ function VerifyForm({ promiseId, onDone }: { promiseId: string; onDone: () => vo
 
 // ─── Single promise card ──────────────────────────────────────────────────────
 function PromiseCard({
+  key,
   promise,
   currentUser,
   onVerified
 }: {
+  key: any,
   promise: any;
   currentUser: User | null;
   onVerified: () => void | Promise<void>;

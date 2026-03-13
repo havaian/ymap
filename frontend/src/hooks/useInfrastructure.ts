@@ -8,18 +8,24 @@ import { markersAPI, infrastructureAPI } from '../services/api';
  * Initial load: /api/markers/infrastructure (~100KB gzipped vs 7,007KB)
  *   Returns: id, lat, lng, name, type
  *   Missing: address, region, budget, year, sector, objectType — fetched on demand
+ * 
+ * regionCode — when set, only infra from that region is loaded.
+ *   Changing regionCode clears the cache and re-fetches.
  */
-export const useInfrastructure = () => {
+export const useInfrastructure = (regionCode?: number | null) => {
   const [infrastructure, setInfrastructure] = useState<Infrastructure[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const detailCache = useRef<Map<string, Infrastructure>>(new Map());
 
-  const fetchMarkers = async (type?: string) => {
+  const fetchMarkers = useCallback(async (type?: string) => {
     try {
       setLoading(true);
-      const params: any = {};
+      detailCache.current.clear();
+
+      const params: Record<string, any> = {};
       if (type) params.type = type;
+      if (regionCode != null) params.regionCode = regionCode;
 
       const response = await markersAPI.getInfrastructure(params);
       if (response.data.success && response.data.data) {
@@ -33,11 +39,11 @@ export const useInfrastructure = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [regionCode]);
 
   useEffect(() => {
     fetchMarkers();
-  }, []);
+  }, [fetchMarkers]);
 
   const fetchDetail = useCallback(async (id: string): Promise<Infrastructure | null> => {
     if (detailCache.current.has(id)) {

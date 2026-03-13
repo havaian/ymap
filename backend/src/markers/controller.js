@@ -15,13 +15,15 @@ import Issue from '../issue/model.js';
 
 // ─────────────────────────────────────────────
 // GET /api/markers/organizations
+// Query: ?type=Schools+%26+Kindergartens&regionCode=17
 // Returns: id, lat, lng, name, type
 // ─────────────────────────────────────────────
 
 export const getOrgMarkers = async (req, res) => {
-    const { type } = req.query;
+    const { type, regionCode } = req.query;
     const filter = {};
     if (type) filter.type = type;
+    if (regionCode) filter.regionCode = parseInt(regionCode);
 
     const docs = await Organization.find(filter)
         .select('lat lng name type')
@@ -43,13 +45,15 @@ export const getOrgMarkers = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // GET /api/markers/infrastructure
+// Query: ?type=Roads&regionCode=17
 // Returns: id, lat, lng, name, type
 // ─────────────────────────────────────────────
 
 export const getInfraMarkers = async (req, res) => {
-    const { type } = req.query;
+    const { type, regionCode } = req.query;
     const filter = {};
     if (type) filter.type = type;
+    if (regionCode) filter.regionCode = parseInt(regionCode);
 
     const docs = await Infrastructure.find(filter)
         .select('lat lng name type')
@@ -70,15 +74,17 @@ export const getInfraMarkers = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // GET /api/markers/issues
+// Query: ?category=Roads&status=Open&severity=High&regionCode=17
 // Returns: id, lat, lng, title, category, severity, status, votes, organizationId
 // ─────────────────────────────────────────────
 
 export const getIssueMarkers = async (req, res) => {
-    const { category, status, severity } = req.query;
+    const { category, status, severity, regionCode } = req.query;
     const filter = {};
     if (category) filter.category = category;
     if (status) filter.status = status;
     if (severity) filter.severity = severity;
+    if (regionCode) filter.regionCode = parseInt(regionCode);
 
     const docs = await Issue.find(filter)
         .select('lat lng title category severity status votes organizationId createdAt')

@@ -51,15 +51,18 @@ interface IssueFilterParams {
   category?: string;
   status?: string;
   severity?: string;
+  regionCode?: number;
 }
 
 interface OrgFilterParams {
   type?: string;
+  regionCode?: number;
 }
 
 interface InfraFilterParams {
   type?: string;
   region?: string;
+  regionCode?: number;
 }
 
 interface NearbyParams {
@@ -158,6 +161,7 @@ export const infrastructureAPI = {
       const queryParams = new URLSearchParams();
       if (params?.type) queryParams.append('type', params.type);
       if (params?.region) queryParams.append('region', params.region);
+      if (params?.regionCode != null) queryParams.append('regionCode', String(params.regionCode));
 
       const queryString = queryParams.toString();
       const url = queryString ? `/infrastructure?${queryString}` : '/infrastructure';
@@ -190,3 +194,33 @@ export const infrastructureAPI = {
     }
   }
 };
+
+// ─── Regions API ──────────────────────────────────────
+
+export const regionsAPI = {
+  getAll: (): Promise<AxiosResponse> =>
+    api.get('/regions')
+};
+
+// ─── Promises / Commitments API ───────────────────────
+
+export const promisesAPI = {
+  // Get all promises for a specific organization
+  getByOrg: (orgId: string): Promise<AxiosResponse> =>
+    api.get('/promises', { params: { orgId } }),
+
+  // Admin: create a promise for an org
+  create: (data: { organizationId: string; title: string; description?: string }): Promise<AxiosResponse> =>
+    api.post('/promises', data),
+
+  // Citizen: submit a verification (done ✓ or problem ✗)
+  // photoUrl is populated after the photo is uploaded separately
+  verify: (id: string, data: { status: 'done' | 'problem'; comment?: string; photoUrl?: string }): Promise<AxiosResponse> =>
+    api.post(`/promises/${id}/verify`, data),
+
+  // Admin: delete a promise
+  delete: (id: string): Promise<AxiosResponse> =>
+    api.delete(`/promises/${id}`)
+};
+
+export default api;

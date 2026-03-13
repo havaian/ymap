@@ -1,6 +1,8 @@
 // backend/src/app.js
 
 import 'express-async-errors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import compression from 'compression';
 import express from 'express';
 import cors from 'cors';
@@ -26,8 +28,11 @@ import regionRoutes from './region/routes.js';
 import districtRoutes from './district/routes.js';
 import markerRoutes from './markers/routes.js';
 import openBudgetRoutes from './openbudget/routes.js';
+import promiseRoutes from './promise/routes.js';
 
 validateEnv();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.set('trust proxy', 1);
@@ -71,12 +76,15 @@ const adminLimiter = rateLimit({
 // Gzip — cuts response size by 70-80%
 app.use(compression());
 
-// Body parsing (existing)
-app.use(express.json({ limit: '10mb' }));
-
 // ── Body parsing ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── Static uploads — served at /api/uploads/<filename> ───────────────────────
+// Docker mounts ./uploads → /app/uploads (docker-compose volume)
+// Citizens access verification photos at /api/uploads/<filename>
+const uploadsPath = path.resolve('/app/uploads');
+app.use('/api/uploads', express.static(uploadsPath));
 
 // ── Health check (public) ─────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -97,6 +105,12 @@ app.use('/api/infrastructure', apiLimiter, infrastructureRoutes);
 // All /api/users and /api/votes require a valid JWT
 app.use('/api/users', apiLimiter, authMiddleware, userRoutes);
 app.use('/api/votes', apiLimiter, authMiddleware, voteRoutes);
+
+// ── Promise/commitment routes ─────────────────────────────────────────────────
+// GET is public (citizens read promises without logging in)
+// POST /:id/verify requires auth (inside routes)
+// POST / and DELETE require admin (inside routes)
+app.use('/api/promises', apiLimiter, promiseRoutes);
 
 // ── Admin routes ──────────────────────────────────────────────────────────────
 // strictAuthMiddleware does a DB lookup — ensures admin account still exists and isn't blocked
@@ -148,4 +162,4 @@ const startServer = async () => {
 startServer();
 
 process.on('SIGTERM', () => { console.log('SIGTERM received'); process.exit(0); });
-process.on('SIGINT',  () => { console.log('SIGINT received');  process.exit(0); });
+process.on('SIGINT', () => { console.log('SIGINT received'); process.exit(0); });

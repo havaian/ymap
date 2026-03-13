@@ -39,6 +39,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   // activeView is now derived from props, not state
   const activeView = view;
   
+  const [selectedRegionCode, setSelectedRegionCode] = useState<number | null>(null);
+  
   // Use backend hooks instead of mock data
   const { 
     issues, 
@@ -48,17 +50,17 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     deleteIssue, 
     upvoteIssue, 
     addComment: addCommentToIssue 
-  } = useIssues();
+  } = useIssues(selectedRegionCode);
   
   const { 
     organizations, 
     loading: orgsLoading 
-  } = useOrganizations();
+  } = useOrganizations(selectedRegionCode);
 
   const { 
     infrastructure, 
     loading: infraLoading 
-  } = useInfrastructure();
+  } = useInfrastructure(selectedRegionCode);
   
   const { 
     users, 
@@ -414,6 +416,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onToggleInfrastructure={() => setShowInfrastructure(p => !p)}
         onToggleStandaloneIssues={() => setShowStandaloneIssues(p => !p)}
         onChoroplethMetricChange={setChoroplethMetric}
+        selectedRegionCode={selectedRegionCode}
+        onRegionChange={setSelectedRegionCode}
         isAdminOrgAddingMode={isAdminOrgAddingMode}
         onStartAdminOrgAdd={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }}
       />

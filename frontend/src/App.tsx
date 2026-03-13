@@ -165,11 +165,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   // ── Derived: layers object for AppHeader ──────────────
   const layers: LayerState = {
     showHeatmap,
-    showChoropleth,
     showOrgs,
     showInfrastructure,
     showStandaloneIssues,
-    choroplethMetric,
   };
 
   // ── Derived: map issues (filtered) ────────────────────
@@ -411,15 +409,17 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         activeView={activeView}
         layers={layers}
         onToggleHeatmap={() => setShowHeatmap(p => !p)}
-        onToggleChoropleth={() => setShowChoropleth(p => !p)}
         onToggleOrgs={() => setShowOrgs(p => !p)}
         onToggleInfrastructure={() => setShowInfrastructure(p => !p)}
         onToggleStandaloneIssues={() => setShowStandaloneIssues(p => !p)}
+        showChoropleth={showChoropleth}
+        choroplethMetric={choroplethMetric}
+        onToggleChoropleth={() => setShowChoropleth(p => !p)}
         onChoroplethMetricChange={setChoroplethMetric}
         selectedRegionCode={selectedRegionCode}
         onRegionChange={setSelectedRegionCode}
         isAdminOrgAddingMode={isAdminOrgAddingMode}
-        onStartAdminOrgAdd={() => { setIsAdminOrgAddingMode(true); navigate('/map'); }}
+        onStartAdminOrgAdd={() => setIsAdminOrgAddingMode(true)}
       />
 
       <main className="flex-1 min-h-0 relative z-0">
@@ -443,6 +443,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 showHeatmap={showHeatmap}
                 showChoropleth={showChoropleth}
                 choroplethMetric={choroplethMetric}
+                selectedRegionCode={selectedRegionCode}
                 onDistrictClick={handleDistrictClick}
                 userLocation={userLocation}
                 triggerLocate={triggerLocate}

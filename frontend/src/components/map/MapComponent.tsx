@@ -10,6 +10,7 @@ import { CATEGORY_COLORS } from '../../constants';
 import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, Construction, Waves, ArrowRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ChoroplethLayer, ChoroplethLegend } from '../analytics/ChoroplethLayer';
+import { RegionBorderLayer } from './RegionBorderLayer';
 
 // Fix for Leaflet default icons in ESM environment
 if (L.Icon && L.Icon.Default) {
@@ -701,11 +702,11 @@ interface MapComponentProps {
   showChoropleth: boolean;
   choroplethMetric: string;
   onDistrictClick?: (districtId: string, name: any, scores: any) => void;
+  selectedRegionCode?: number | null;
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({ 
-  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark, showChoropleth, choroplethMetric, onDistrictClick
-}) => {
+  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick, isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark, showChoropleth, choroplethMetric, onDistrictClick, selectedRegionCode}) => {
   const [zoomLevel, setZoomLevel] = useState(13);
 
   const orgUnresolvedCounts = useMemo(() => {
@@ -738,6 +739,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           url={tileUrl}
         />
         
+        <RegionBorderLayer regionCode={selectedRegionCode ?? null} />
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />
 
         <ChoroplethLayer

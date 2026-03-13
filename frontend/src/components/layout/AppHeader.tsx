@@ -1,25 +1,135 @@
 // frontend/src/components/layout/AppHeader.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Building2, ShieldCheck, MapPin } from 'lucide-react';
+import { Menu, Building2, ShieldCheck, MapPin, BarChart2, ChevronDown, X } from 'lucide-react';
 import { MapPlusIcon } from '../map/MapPlusIcon';
 import { LayerPicker, LayerState } from '../map/LayerPicker';
 import { CustomSelect } from '../common/CustomSelect';
 import { regionsAPI } from '../../services/api';
 import { User, UserRole } from '../../../types';
 
+const SCORE_METRICS = [
+  { value: 'composite',      label: 'Общий' },
+  { value: 'infrastructure', label: 'Инфраструктура' },
+  { value: 'issues',         label: 'Обращения' },
+  { value: 'budget',         label: 'Бюджет' },
+  { value: 'crops',          label: 'Агро' },
+];
+
+// ── ScorePicker ─────────────────────────────────────────
+// Dedicated choropleth toggle — kept separate from LayerPicker
+// so district scoring overlay can be combined with any layer.
+function ScorePicker({ show, metric, onToggle, onMetricChange }: {
+  show: boolean;
+  metric: string;
+  onToggle: () => void;
+  onMetricChange: (m: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const activeLabel = SCORE_METRICS.find(m => m.value === metric)?.label ?? 'Скоринг';
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(p => !p)}
+        className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition duration-300 ${
+          open || show
+            ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+        }`}
+      >
+        <BarChart2 className="w-4 h-4" />
+        <span className="hidden sm:inline">{show ? activeLabel : 'Скоринг'}</span>
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[500]">
+          <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Районный скоринг</p>
+            <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+              <X size={14} className="text-slate-400" />
+            </button>
+          </div>
+
+          <div className="p-3 space-y-3">
+            {/* Toggle row */}
+            <button
+              onClick={onToggle}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                show ? 'text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+              style={show ? { backgroundColor: '#0d9488' } : undefined}
+            >
+              <div
+                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${show ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800'}`}
+                style={!show ? { color: '#0d9488' } : undefined}
+              >
+                <BarChart2 size={16} />
+              </div>
+              <span className="flex-1 text-left">Показать на карте</span>
+              <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${show ? 'bg-white/30' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${show ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+            </button>
+
+            {/* Metric chips — always visible so user can pre-pick */}
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Метрика</p>
+              <div className="flex flex-wrap gap-1.5">
+                {SCORE_METRICS.map(m => (
+                  <button
+                    key={m.value}
+                    onClick={() => {
+                      onMetricChange(m.value);
+                      if (!show) onToggle(); // auto-enable on metric pick
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${
+                      metric === m.value
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AppHeader ───────────────────────────────────────────
+
 interface AppHeaderProps {
   currentUser: User;
   onMenuOpen: () => void;
   activeView: string;
-  // Layer state — passed straight through to LayerPicker
+  // Map layers (choropleth excluded — handled by ScorePicker)
   layers: LayerState;
   onToggleHeatmap: () => void;
-  onToggleChoropleth: () => void;
   onToggleOrgs: () => void;
   onToggleInfrastructure: () => void;
   onToggleStandaloneIssues: () => void;
+  // Choropleth — separate from layers
+  showChoropleth: boolean;
+  choroplethMetric: string;
+  onToggleChoropleth: () => void;
   onChoroplethMetricChange: (metric: string) => void;
   // Region filter
   selectedRegionCode: number | null;
@@ -31,17 +141,14 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   currentUser, onMenuOpen, activeView,
-  layers,
-  onToggleHeatmap, onToggleChoropleth, onToggleOrgs,
-  onToggleInfrastructure, onToggleStandaloneIssues,
-  onChoroplethMetricChange,
+  layers, onToggleHeatmap, onToggleOrgs, onToggleInfrastructure, onToggleStandaloneIssues,
+  showChoropleth, choroplethMetric, onToggleChoropleth, onChoroplethMetricChange,
   selectedRegionCode, onRegionChange,
   isAdminOrgAddingMode, onStartAdminOrgAdd,
 }) => {
   const navigate = useNavigate();
   const [regionOptions, setRegionOptions] = useState<{ value: number; label: string }[]>([]);
 
-  // Fetch region list once — lightweight call (no geometry)
   useEffect(() => {
     regionsAPI.getAll()
       .then(res => {
@@ -49,19 +156,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           setRegionOptions(
             res.data.data.map((r: any) => ({
               value: r.code,
-              label: r.name?.ru || r.name?.en || `Регион ${r.code}`
+              label: r.name?.ru || r.name?.en || `Регион ${r.code}`,
             }))
           );
         }
       })
-      .catch(() => {
-        // Non-critical — region filter just won't populate
-      });
+      .catch(() => {});
   }, []);
 
   return (
     <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 shadow-sm z-[400] px-6 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
-      {/* Left: burger + logo */}
+      {/* Left */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuOpen}
@@ -87,7 +192,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: map controls */}
+      {/* Right — only on map view */}
       {activeView === 'MAP' && (
         <div className="flex items-center gap-2">
           <CustomSelect
@@ -98,6 +203,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             heading="Выберите регион"
             icon={<MapPin size={14} />}
             autoOpenKey="regionChosen"
+          />
+
+          <ScorePicker
+            show={showChoropleth}
+            metric={choroplethMetric}
+            onToggle={onToggleChoropleth}
+            onMetricChange={onChoroplethMetricChange}
           />
 
           {currentUser.role === UserRole.ADMIN && (
@@ -117,11 +229,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <LayerPicker
             layers={layers}
             onToggleHeatmap={onToggleHeatmap}
-            onToggleChoropleth={onToggleChoropleth}
             onToggleOrgs={onToggleOrgs}
             onToggleInfrastructure={onToggleInfrastructure}
             onToggleStandaloneIssues={onToggleStandaloneIssues}
-            onChoroplethMetricChange={onChoroplethMetricChange}
           />
         </div>
       )}

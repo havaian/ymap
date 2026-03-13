@@ -199,7 +199,10 @@ export const infrastructureAPI = {
 
 export const regionsAPI = {
   getAll: (): Promise<AxiosResponse> =>
-    api.get('/regions')
+    api.get('/regions'),
+  // Fetches a single region including its geometry — used by RegionBorderLayer
+  getByCode: (code: number): Promise<AxiosResponse> =>
+    api.get(`/regions/${code}`),
 };
 
 // ─── Promises / Commitments API ───────────────────────

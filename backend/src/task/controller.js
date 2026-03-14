@@ -10,25 +10,21 @@ const VOTE_ALLOWED_STATUS = 'Pending Verification';
 export const getTasks = async (req, res) => {
     try {
         const { targetId, programId, allocationId, status } = req.query;
-
         const filter = {};
 
         if (targetId) {
-            if (!mongoose.isValidObjectId(targetId)) {
+            if (!mongoose.isValidObjectId(targetId))
                 return res.status(400).json({ success: false, message: 'Invalid targetId' });
-            }
             filter.targetId = targetId;
         }
         if (programId) {
-            if (!mongoose.isValidObjectId(programId)) {
+            if (!mongoose.isValidObjectId(programId))
                 return res.status(400).json({ success: false, message: 'Invalid programId' });
-            }
             filter.programId = programId;
         }
         if (allocationId) {
-            if (!mongoose.isValidObjectId(allocationId)) {
+            if (!mongoose.isValidObjectId(allocationId))
                 return res.status(400).json({ success: false, message: 'Invalid allocationId' });
-            }
             filter.allocationId = allocationId;
         }
         if (status) filter.status = status;
@@ -51,13 +47,10 @@ export const getTasks = async (req, res) => {
 };
 
 // ── GET /api/tasks/stats ──────────────────────────────────────────────────────
-// Public — used by the public dashboard
 export const getStats = async (req, res) => {
     try {
         const [statusStats, voteStats, verificationStats] = await Promise.all([
-            Task.aggregate([
-                { $group: { _id: '$status', count: { $sum: 1 } } }
-            ]),
+            Task.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
             Task.aggregate([
                 {
                     $project: {
@@ -75,21 +68,14 @@ export const getStats = async (req, res) => {
             ]),
             Task.aggregate([
                 { $unwind: { path: '$verifications', preserveNullAndEmptyArrays: false } },
-                {
-                    $group: {
-                        _id: '$verifications.status',
-                        count: { $sum: 1 }
-                    }
-                }
+                { $group: { _id: '$verifications.status', count: { $sum: 1 } } }
             ])
         ]);
 
         const byStatus = {};
         statusStats.forEach(s => { byStatus[s._id] = s.count; });
-
         const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
         const votes = voteStats[0] || { totalConfirmed: 0, totalRejected: 0 };
-
         const verifications = { done: 0, problem: 0 };
         verificationStats.forEach(v => { verifications[v._id] = v.count; });
 
@@ -98,10 +84,7 @@ export const getStats = async (req, res) => {
             data: {
                 total,
                 byStatus,
-                votes: {
-                    confirmed: votes.totalConfirmed,
-                    rejected: votes.totalRejected
-                },
+                votes: { confirmed: votes.totalConfirmed, rejected: votes.totalRejected },
                 verifications
             }
         });
@@ -116,18 +99,14 @@ export const createTask = async (req, res) => {
     try {
         const { targetId, programId, allocationId, title, description, deadline, status } = req.body;
 
-        if (!targetId || !title) {
+        if (!targetId || !title)
             return res.status(400).json({ success: false, message: 'targetId and title are required' });
-        }
-        if (!mongoose.isValidObjectId(targetId)) {
+        if (!mongoose.isValidObjectId(targetId))
             return res.status(400).json({ success: false, message: 'Invalid targetId' });
-        }
-        if (programId && !mongoose.isValidObjectId(programId)) {
+        if (programId && !mongoose.isValidObjectId(programId))
             return res.status(400).json({ success: false, message: 'Invalid programId' });
-        }
-        if (allocationId && !mongoose.isValidObjectId(allocationId)) {
+        if (allocationId && !mongoose.isValidObjectId(allocationId))
             return res.status(400).json({ success: false, message: 'Invalid allocationId' });
-        }
 
         const task = await Task.create({
             targetId,
@@ -155,12 +134,10 @@ export const updateStatus = async (req, res) => {
         const { status } = req.body;
 
         const VALID = ['Planned', 'In Progress', 'Pending Verification', 'Completed', 'Failed'];
-        if (!status || !VALID.includes(status)) {
+        if (!status || !VALID.includes(status))
             return res.status(400).json({ success: false, message: `status must be one of: ${VALID.join(', ')}` });
-        }
-        if (!mongoose.isValidObjectId(id)) {
+        if (!mongoose.isValidObjectId(id))
             return res.status(400).json({ success: false, message: 'Invalid id' });
-        }
 
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
@@ -178,9 +155,8 @@ export const updateStatus = async (req, res) => {
 export const updateTask = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!mongoose.isValidObjectId(id)) {
+        if (!mongoose.isValidObjectId(id))
             return res.status(400).json({ success: false, message: 'Invalid id' });
-        }
 
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
@@ -190,15 +166,13 @@ export const updateTask = async (req, res) => {
         if (description !== undefined) task.description = description;
         if (deadline !== undefined) task.deadline = deadline ? new Date(deadline) : null;
         if (allocationId !== undefined) {
-            if (allocationId && !mongoose.isValidObjectId(allocationId)) {
+            if (allocationId && !mongoose.isValidObjectId(allocationId))
                 return res.status(400).json({ success: false, message: 'Invalid allocationId' });
-            }
             task.allocationId = allocationId || null;
         }
         if (programId !== undefined) {
-            if (programId && !mongoose.isValidObjectId(programId)) {
+            if (programId && !mongoose.isValidObjectId(programId))
                 return res.status(400).json({ success: false, message: 'Invalid programId' });
-            }
             task.programId = programId || null;
         }
 
@@ -214,9 +188,8 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!mongoose.isValidObjectId(id)) {
+        if (!mongoose.isValidObjectId(id))
             return res.status(400).json({ success: false, message: 'Invalid id' });
-        }
 
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
@@ -235,12 +208,10 @@ export const vote = async (req, res) => {
         const { id } = req.params;
         const { verdict } = req.body; // 'confirmed' | 'rejected'
 
-        if (!['confirmed', 'rejected'].includes(verdict)) {
+        if (!['confirmed', 'rejected'].includes(verdict))
             return res.status(400).json({ success: false, message: "verdict must be 'confirmed' or 'rejected'" });
-        }
-        if (!mongoose.isValidObjectId(id)) {
+        if (!mongoose.isValidObjectId(id))
             return res.status(400).json({ success: false, message: 'Invalid id' });
-        }
 
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
@@ -255,10 +226,8 @@ export const vote = async (req, res) => {
         const userId = req.user._id;
         const opposite = verdict === 'confirmed' ? 'rejected' : 'confirmed';
 
-        // Remove from opposite side
         task.votes[opposite] = task.votes[opposite].filter(uid => uid.toString() !== userId.toString());
 
-        // Toggle off if already voted on this side
         const alreadyVoted = task.votes[verdict].some(uid => uid.toString() === userId.toString());
         if (alreadyVoted) {
             task.votes[verdict] = task.votes[verdict].filter(uid => uid.toString() !== userId.toString());
@@ -274,12 +243,11 @@ export const vote = async (req, res) => {
     }
 };
 
-// ── POST /api/tasks/upload-photo ──────────────────────────────────────────────
+// ── POST /api/tasks/upload-photo ─────────────────────────────────────────────
 export const uploadPhoto = async (req, res) => {
     try {
-        if (!req.file) {
+        if (!req.file)
             return res.status(400).json({ success: false, message: 'No file uploaded' });
-        }
         res.json({ success: true, data: { photoUrl: req.file.filename } });
     } catch (err) {
         console.error('uploadPhoto error:', err);
@@ -289,24 +257,22 @@ export const uploadPhoto = async (req, res) => {
 
 // ── POST /api/tasks/:id/verify ────────────────────────────────────────────────
 // Citizen submits done ✓ or problem ✗ with optional photo + comment.
+// Only userId is stored — no userName needed (authMiddleware doesn't provide name).
 export const verify = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, comment, photoUrl } = req.body;
 
-        if (!['done', 'problem'].includes(status)) {
+        if (!['done', 'problem'].includes(status))
             return res.status(400).json({ success: false, message: "status must be 'done' or 'problem'" });
-        }
-        if (!mongoose.isValidObjectId(id)) {
+        if (!mongoose.isValidObjectId(id))
             return res.status(400).json({ success: false, message: 'Invalid id' });
-        }
 
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
         task.verifications.push({
             userId: req.user._id,
-            userName: req.user.name,
             status,
             comment: comment || null,
             photoUrl: photoUrl || null

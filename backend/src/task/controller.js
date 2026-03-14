@@ -291,3 +291,36 @@ export const verify = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to record verification' });
     }
 };
+
+// ── GET /api/tasks/verification-summary ──────────────────────────────────────
+// Public. Returns per-object verification counts for map marker coloring.
+// { data: [{ targetId, doneCount, problemCount, totalCount }] }
+export const getVerificationSummary = async (req, res) => {
+    try {
+        const summary = await Task.aggregate([
+            { $match: { 'verifications.0': { $exists: true } } },
+            { $unwind: '$verifications' },
+            {
+                $group: {
+                    _id: '$targetId',
+                    totalCount: { $sum: 1 },
+                    doneCount: { $sum: { $cond: [{ $eq: ['$verifications.status', 'done'] }, 1, 0] } },
+                    problemCount: { $sum: { $cond: [{ $eq: ['$verifications.status', 'problem'] }, 1, 0] } }
+                }
+            }
+        ]);
+
+        res.json({
+            success: true,
+            data: summary.map(s => ({
+                targetId: s._id.toString(),
+                totalCount: s.totalCount,
+                doneCount: s.doneCount,
+                problemCount: s.problemCount
+            }))
+        });
+    } catch (err) {
+        console.error('getVerificationSummary error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch verification summary' });
+    }
+};

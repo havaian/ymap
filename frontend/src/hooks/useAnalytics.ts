@@ -104,7 +104,7 @@ export interface CropAnalytics {
 
 // ── Main hook ─────────────────────────────────────────────────────────────────
 
-export const useAnalytics = () => {
+export const useAnalytics = (initialRegionCode?: number | null) => {
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [issueAnalytics, setIssueAnalytics] = useState<IssueAnalytics | null>(
     null
@@ -121,7 +121,7 @@ export const useAnalytics = () => {
   const [error, setError] = useState<string | null>(null);
   const [problematicFacilities, setProblematicFacilities] = useState<any[]>([]);
 
-  const [regionCode, setRegionCode] = useState<number | null>(null);
+  const [regionCode, setRegionCode] = useState<number | null>(initialRegionCode ?? null);
 
   const fetchAll = useCallback(async (rc?: number | null) => {
     try {

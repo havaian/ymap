@@ -11,9 +11,11 @@ import {
   Layers,
   RefreshCw,
   Trash2,
+  MapPin,
   X,
 } from "lucide-react";
 import { regionsAPI, programsAPI, districtsAPI } from "../../services/api";
+import { CustomSelect } from "../common/CustomSelect";
 import { Program } from "../../../types";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -251,23 +253,14 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
         </div>
       </div>
 
-      <div>
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-          Регион (пусто = все регионы)
-        </label>
-        <select
-          value={regionCode}
-          onChange={(e) => setRegionCode(e.target.value)}
-          className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
-        >
-          <option value="">Все регионы</option>
-          {regions.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <CustomSelect
+        options={regions}
+        value={regionCode ? Number(regionCode) : null}
+        onChange={(v) => setRegionCode(v != null ? String(v) : "")}
+        placeholder="Все регионы"
+        heading="Выбор региона"
+        icon={<MapPin size={13} />}
+      />
 
       {/* Район — только если выбран регион */}
       {regionCode && (
@@ -278,19 +271,14 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
               <span className="text-indigo-400">загрузка...</span>
             )}
           </label>
-          <select
-            value={districtId}
-            onChange={(e) => setDistrictId(e.target.value)}
-            disabled={loadingDistricts}
-            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white disabled:opacity-50"
-          >
-            <option value="">Весь регион</option>
-            {districts.map((d) => (
-              <option key={d.value} value={d.value}>
-                {d.label}
-              </option>
-            ))}
-          </select>
+          <CustomSelect
+            options={districts}
+            value={districtId || null}
+            onChange={(v) => setDistrictId(v ?? "")}
+            placeholder={loadingDistricts ? "Загрузка..." : "Весь регион"}
+            heading="Выбор района"
+            clearLabel="Весь регион"
+          />
         </div>
       )}
 

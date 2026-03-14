@@ -810,24 +810,15 @@ const DistrictsTab: React.FC<{
             }
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            Регион:
-          </span>
-          <select
-            value={filterRegion ?? ""}
-            onChange={(e) =>
-              setFilterRegion(e.target.value ? Number(e.target.value) : null)
-            }
-            className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-none outline-none"
-          >
-            <option value="">Все</option>
-            {regionOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.value}
-              </option>
-            ))}
-          </select>
+        <div className="ml-auto">
+            <CustomSelect
+                options={regionOptions}
+                value={filterRegion}
+                onChange={setFilterRegion}
+                placeholder="Все регионы"
+                heading="Фильтр по региону"
+                icon={<MapPin size={13} />}
+            />
         </div>
       </div>
 
@@ -1050,7 +1041,11 @@ const ProblematicTab: React.FC<{ data: any[] }> = ({ data }) => {
 // Main Dashboard
 // ─────────────────────────────────────────────
 
-export const AnalyticsDashboard: React.FC = () => {
+interface AnalyticsDashboardProps {
+  initialRegionCode?: number | null;
+}
+
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ initialRegionCode }) => {
   const {
     overview,
     issueAnalytics,

@@ -1,3 +1,4 @@
+import User from './model.js';
 import mongoose from 'mongoose';
 import Issue from '../issue/model.js';
 import Task from '../task/model.js';
@@ -61,10 +62,6 @@ export const getUserActivity = async (req, res) => {
     }
 
     const userId = new mongoose.Types.ObjectId(id);
-
-    const Issue = (await import('../issue/model.js')).default;
-    const Task  = (await import('../task/model.js')).default;
-    const Vote  = (await import('../vote/model.js')).default;
 
     const [issueStats, recentIssues, voteCount, verificationStats] = await Promise.all([
         Issue.aggregate([

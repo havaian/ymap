@@ -381,6 +381,69 @@ function TaskCard({
             </div>
           )}
 
+          {/* Vote section — Pending Verification only */}
+          {task.status === "Pending Verification" && (
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+              {currentUser && currentUser.role !== UserRole.ADMIN ? (
+                // Citizen: interactive vote buttons
+                <>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await tasksAPI.vote(task.id, "confirmed");
+                        onRefresh();
+                      } catch {}
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
+                      task.votes?.confirmed?.includes(currentUser.id)
+                        ? "bg-emerald-500 text-white border-emerald-500"
+                        : "bg-white dark:bg-slate-800 text-emerald-600 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50"
+                    }`}
+                  >
+                    <ThumbsUp size={12} />
+                    {task.votes?.confirmed?.length > 0 && (
+                      <span>{task.votes.confirmed.length}</span>
+                    )}
+                    Сделано
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await tasksAPI.vote(task.id, "rejected");
+                        onRefresh();
+                      } catch {}
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
+                      task.votes?.rejected?.includes(currentUser.id)
+                        ? "bg-red-500 text-white border-red-500"
+                        : "bg-white dark:bg-slate-800 text-red-500 border-red-200 dark:border-red-800 hover:bg-red-50"
+                    }`}
+                  >
+                    <ThumbsDown size={12} />
+                    {task.votes?.rejected?.length > 0 && (
+                      <span>{task.votes.rejected.length}</span>
+                    )}
+                    Проблема
+                  </button>
+                </>
+              ) : currentUser?.role === UserRole.ADMIN ? (
+                // Admin: read-only vote counts
+                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <ThumbsUp size={11} /> {task.votes?.confirmed?.length ?? 0}{" "}
+                    подтвердили
+                  </span>
+                  <span className="flex items-center gap-1 text-red-500 font-bold">
+                    <ThumbsDown size={11} /> {task.votes?.rejected?.length ?? 0}{" "}
+                    отклонили
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          )}
+
           {/* Recent verifications — visible to everyone (admin sees responses, citizen sees context) */}
           {task.verifications?.slice(0, 3).map((v) => (
             <div key={v._id} className="flex items-start gap-2 text-xs">

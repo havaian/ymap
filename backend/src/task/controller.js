@@ -248,7 +248,10 @@ export const uploadPhoto = async (req, res) => {
     try {
         if (!req.file)
             return res.status(400).json({ success: false, message: 'No file uploaded' });
-        res.json({ success: true, data: { photoUrl: req.file.filename } });
+        // Prefix with subdir so the URL /api/uploads/photos/<filename> resolves correctly.
+        // Static middleware serves from UPLOAD_PATHS.root, so the returned path
+        // must include the subdirectory: "photos/filename.jpg"
+        res.json({ success: true, data: { photoUrl: `photos/${req.file.filename}` } });
     } catch (err) {
         console.error('uploadPhoto error:', err);
         res.status(500).json({ success: false, message: 'Failed to upload photo' });

@@ -1,107 +1,46 @@
-// backend/src/auth/controller.js
+import User from './model.js';
 
-import User from '../user/model.js';
-import { hashPassword, comparePassword } from '../utils/bcrypt.js';
-import { generateToken } from '../utils/jwt.js';
-import { validateEmail, validatePassword } from '../utils/validators.js';
+export const getUsers = async (req, res) => {
+    const users = await User.find().select('-password');
 
-export const register = async (req, res) => {
-    const { name, email, password, district } = req.body;
-
-    if (!name || !email || !password) {
-        return res.status(400).json({
-            success: false,
-            message: 'Name, email and password are required'
-        });
-    }
-
-    if (!validateEmail(email)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid email format'
-        });
-    }
-
-    if (!validatePassword(password)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Password must be at least 6 characters'
-        });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email already registered'
-        });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    const user = await User.create({
-        name,
-        email,
-        password: hashedPassword,
-        district: district || null,
-        role: 'CITIZEN'
-    });
-
-    const token = generateToken({ userId: user._id, role: user.role });
-
-    res.status(201).json({
+    res.json({
         success: true,
-        data: { user: user.toJSON(), token }
+        data: users.map(u => u.toJSON())
     });
 };
 
-export const login = async (req, res) => {
-    const { email, password } = req.body;
+export const blockUser = async (req, res) => {
+    const { id } = req.params;
+    const { blocked } = req.body;
 
-    if (!email || !password) {
+    if (typeof blocked !== 'boolean') {
         return res.status(400).json({
             success: false,
-            message: 'Email and password are required'
+            message: 'blocked must be boolean'
         });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findById(id);
 
     if (!user) {
-        return res.status(401).json({
+        return res.status(404).json({
             success: false,
-            message: 'Invalid credentials'
+            message: 'User not found'
         });
     }
 
-    if (user.blocked) {
-        return res.status(403).json({
+    if (user.role === 'ADMIN') {
+        return res.status(400).json({
             success: false,
-            message: 'Your account has been blocked'
+            message: 'Cannot block admin users'
         });
     }
 
-    const isValidPassword = await comparePassword(password, user.password);
-
-    if (!isValidPassword) {
-        return res.status(401).json({
-            success: false,
-            message: 'Invalid credentials'
-        });
-    }
-
-    const token = generateToken({ userId: user._id, role: user.role });
+    user.blocked = blocked;
+    await user.save();
 
     res.json({
         success: true,
-        data: { user: user.toJSON(), token }
-    });
-};
-
-export const getMe = async (req, res) => {
-    // req.user is populated by strictAuthMiddleware with a fresh DB fetch
-    res.json({
-        success: true,
-        data: req.user
+        data: user.toJSON()
     });
 };

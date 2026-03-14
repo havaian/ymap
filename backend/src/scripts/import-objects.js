@@ -2,15 +2,18 @@
  * backend/src/scripts/import-objects.js
  *
  * Reads the three local JSON files (ssv, bogcha, maktab44),
- * resolves each record's district via tuman name → DB centroid lookup,
- * jitters coordinates ±1200m, and bulk-upserts into the Object collection.
+ * resolves each record's district via parent_code → District.cadNum,
+ * jitters coordinates ±1200m around the district centroid,
+ * and bulk-upserts into the Object collection.
  *
- * Usage (run once, or whenever the JSON files are updated):
+ * parent_code (e.g. 1703) maps to cadNum (e.g. "17:03") in the District model.
+ *
+ * Usage:
  *   docker compose exec backend node src/scripts/import-objects.js
  *
  * Options:
- *   --dry-run      Print counts without writing to DB
- *   --source=ssv   Only process one source (ssv | bogcha | maktab44)
+ *   --dry-run            Print counts without writing to DB
+ *   --source=ssv         Only process one source (ssv | bogcha | maktab44)
  */
 
 import 'dotenv/config';
@@ -25,69 +28,48 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const BATCH_SIZE = 500;
 
-// ── Jitter constants (Uzbekistan latitude ~41°N) ─────────────────────────────
-// ±1200 m expressed in degrees
-const LAT_JITTER = 0.0108;  // 1200 / 111000
-const LNG_JITTER = 0.0144;  // 1200 / (111000 * cos(41°)) ≈ 1200 / 83800
+// ── Coordinate jitter ─────────────────────────────────────────────────────────
+// ±1200 m in degrees at ~41°N latitude
+const LAT_JITTER = 0.0108;   // 1200 / 111_000
+const LNG_JITTER = 0.0144;   // 1200 / (111_000 * cos(41°)) ≈ 1200 / 83_800
 
 function jitter(center, range) {
     return center + (Math.random() * 2 - 1) * range;
 }
 
-// ── Tuman name normaliser ─────────────────────────────────────────────────────
-// Strips common suffixes so "Izboskan tumani", "Izboskan t.", "Янгиқўрғон т."
-// all reduce to the same key.
-function normalizeTuman(raw) {
-    if (!raw) return '';
-    return raw
-        .toLowerCase()
-        .replace(/\s+tumani\s*$/i, '')     // "Izboskan tumani"
-        .replace(/\s+t\.\s*$/i, '')      // "Izboskan t."
-        .replace(/\s+т\.\s*$/i, '')      // "Янгиқўрғон т." (Cyrillic)
-        .replace(/\s+shahri\s*$/i, '')     // city districts
-        .replace(/\s+shaxri\s*$/i, '')
-        .replace(/\s+rayoni\s*$/i, '')
-        .replace(/[''`'']/g, "'")    // normalise apostrophes
-        .replace(/ʻ/g, "'")    // Uzbek turned comma
-        .trim();
+// ── parent_code → cadNum ──────────────────────────────────────────────────────
+// 1703 → "17:03",  1710 → "17:10",  1735 → "17:35"
+function toCadNum(parentCode) {
+    const s = String(parentCode);
+    // First 2 digits = region code, remaining = district number (zero-pad to 2)
+    const region = s.slice(0, 2);
+    const district = s.slice(2).padStart(2, '0');
+    return `${region}:${district}`;
 }
 
 // ── Build district lookup cache from DB ───────────────────────────────────────
-// Returns: Map<normalizedName, { lat, lng, regionCode, _id }>
+// Returns: Map<cadNum string, { lat, lng, regionCode, _id }>
 async function buildDistrictCache() {
-    const districts = await District.find({}, {
-        'name.uz': 1, 'name.ru': 1, 'name.en': 1,
-        centroid: 1, regionCode: 1
-    }).lean();
+    const districts = await District.find(
+        { cadNum: { $exists: true, $ne: null } },
+        { cadNum: 1, centroid: 1, regionCode: 1 }
+    ).lean();
 
     const cache = new Map();
-
     for (const d of districts) {
+        if (!d.cadNum) continue;
         const [lng, lat] = d.centroid.coordinates;
-        const entry = { lat, lng, regionCode: d.regionCode, _id: d._id };
-
-        // Index by all available name variants
-        for (const name of [d.name?.uz, d.name?.ru, d.name?.en]) {
-            if (!name) continue;
-            const key = normalizeTuman(name);
-            if (key && !cache.has(key)) cache.set(key, entry);
-        }
+        cache.set(d.cadNum, { lat, lng, regionCode: d.regionCode, _id: d._id });
     }
 
-    console.log(`  📍 District cache: ${cache.size} entries from ${districts.length} districts`);
+    console.log(`  📍 District cache: ${cache.size} entries`);
     return cache;
 }
 
-// ── Field transform helpers ───────────────────────────────────────────────────
+// ── Field helpers ─────────────────────────────────────────────────────────────
 
-function str(v) {
-    return (v != null && v !== '') ? String(v) : null;
-}
-
-function num(v) {
-    const n = parseInt(v, 10);
-    return isNaN(n) ? null : n;
-}
+function str(v) { return (v != null && v !== '') ? String(v) : null; }
+function num(v) { const n = parseInt(v, 10); return isNaN(n) ? null : n; }
 
 // ── Per-source transforms ─────────────────────────────────────────────────────
 
@@ -195,13 +177,13 @@ function transformMaktab(row, coords) {
     };
 }
 
-// ── Core import function (exportable for admin controller) ────────────────────
+// ── Core import function (also called by admin controller) ────────────────────
 
 /**
- * @param {object} options
- * @param {string|null}  options.source    'ssv' | 'bogcha' | 'maktab44' | null (all)
- * @param {boolean}      options.dryRun    If true, skip DB writes
- * @param {function}     options.onProgress  (phase, done, total) callback
+ * @param {object}        options
+ * @param {string|null}   options.source      'ssv' | 'bogcha' | 'maktab44' | null (all three)
+ * @param {boolean}       options.dryRun      Skip DB writes when true
+ * @param {function}      options.onProgress  (phase, done, total) progress callback
  */
 export async function importObjects({ source = null, dryRun = false, onProgress = () => { } } = {}) {
     const SOURCES = [
@@ -211,13 +193,11 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
     ];
 
     const targets = source ? SOURCES.filter(s => s.key === source) : SOURCES;
-
-    if (targets.length === 0) {
-        throw new Error(`Unknown source: ${source}`);
-    }
+    if (targets.length === 0) throw new Error(`Unknown source: ${source}`);
 
     onProgress('loading_districts', 0, 1);
     const districtCache = await buildDistrictCache();
+    onProgress('loading_districts', 1, 1);
 
     const totals = { upserted: 0, skipped: 0, noDistrict: 0 };
 
@@ -239,11 +219,12 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
         let noDistrict = 0;
 
         for (const row of rows) {
+            // code is the unique key per record; skip if missing
             if (!row.code) { totals.skipped++; continue; }
 
-            // Resolve district from tuman name
-            const tumanKey = normalizeTuman(row.tuman);
-            const district = districtCache.get(tumanKey);
+            // Resolve district via parent_code → cadNum
+            const cadNum = row.parent_code ? toCadNum(row.parent_code) : null;
+            const district = cadNum ? districtCache.get(cadNum) : null;
 
             let coords;
             if (district) {
@@ -254,10 +235,10 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
                     districtId: district._id,
                 };
             } else {
-                // No district match — place at Uzbekistan centre with no assignment
-                // This happens for very few records with unusual tuman spellings
-                coords = { lat: 41.2, lng: 69.2, regionCode: null, districtId: null };
+                // parent_code had no cadNum match — skip rather than place at wrong location
                 noDistrict++;
+                totals.skipped++;
+                continue;
             }
 
             const doc = transform(row, coords);
@@ -273,7 +254,7 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
 
         totals.noDistrict += noDistrict;
         if (noDistrict > 0) {
-            console.warn(`  ⚠️  ${noDistrict} records had no district match`);
+            console.warn(`  ⚠️  ${noDistrict} records had no cadNum match (parent_code unresolved)`);
         }
 
         if (dryRun) {
@@ -282,7 +263,7 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
             continue;
         }
 
-        // Bulk write in batches
+        // Bulk write in batches of BATCH_SIZE
         let done = 0;
         for (let i = 0; i < bulkOps.length; i += BATCH_SIZE) {
             const batch = bulkOps.slice(i, i + BATCH_SIZE);
@@ -295,7 +276,7 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
         console.log(`  ✅ ${key}: ${done} upserted`);
     }
 
-    console.log(`\n✅ Import complete — ${totals.upserted} upserted, ${totals.skipped} skipped, ${totals.noDistrict} no-district`);
+    console.log(`\n✅ Import complete — ${totals.upserted} upserted, ${totals.skipped} skipped (${totals.noDistrict} no-district)`);
     return totals;
 }
 
@@ -325,7 +306,6 @@ async function main() {
     }
 }
 
-// Run only when executed directly, not when imported
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     main().catch(err => { console.error('❌', err); process.exit(1); });
 }

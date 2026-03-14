@@ -60,8 +60,7 @@ export const getUserActivity = async (req, res) => {
         return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const mongoose_ = (await import('mongoose')).default;
-    const userId = new mongoose_.Types.ObjectId(id);
+    const userId = new mongoose.Types.ObjectId(id);
 
     const Issue = (await import('../issue/model.js')).default;
     const Task  = (await import('../task/model.js')).default;

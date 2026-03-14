@@ -248,14 +248,14 @@ export const useObjects = (regionCode?: number | null) => {
 
 // ── useUsers ──────────────────────────────────────────────────────────────────
 
-export const useUsers = () => {
+export const useUsers = (enabled = false) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let isMounted = true;
-
     const fetchUsers = async () => {
       try {
         setLoading(true);

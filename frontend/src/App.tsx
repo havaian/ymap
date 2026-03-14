@@ -76,7 +76,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     loading: objectsLoading,
     fetchDetail: fetchObjectDetail,
   } = useObjects(selectedRegionCode);
-  const { users, toggleBlockUser } = useUsers();
+  const isAdmin = currentUser.role === UserRole.ADMIN || currentUser.role.toLowerCase() === "admin";
+  const { users, toggleBlockUser } = useUsers(isAdmin);
 
   // Verification summary for map marker colors — Map<objectId, { doneCount, problemCount, totalCount }>
   const [verificationSummary, setVerificationSummary] = useState<
@@ -445,6 +446,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
             STATISTICS: "/dashboard",
             USERS: "/users",
             DATA: "/data",
+            PROGRAMS: "/programs",
+            PROFILE: "/profile",
+            LEADERBOARD: "/leaderboard",
           };
           navigate(routes[v]);
           setIsMenuOpen(false);
@@ -562,7 +566,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         ) : activeView === "PROGRAMS" ? (
           <ProgramsView currentUser={currentUser} />
         ) : (
-          <AnalyticsDashboard />
+          <AnalyticsDashboard initialRegionCode={selectedRegionCode} />
         )}
       </main>
 

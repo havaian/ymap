@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['.xlsx', '.xls', '.jpg', '.jpeg', '.png'];
+    const allowedTypes = ['.xlsx', '.xls', '.jpg', '.jpeg', '.png', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
 
     if (allowedTypes.includes(ext)) {

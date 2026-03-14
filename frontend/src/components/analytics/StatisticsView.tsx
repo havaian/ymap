@@ -1,7 +1,7 @@
 // frontend/src/components/analytics/StatisticsView.tsx
 
 import React, { useMemo, useState } from 'react';
-import { Issue, IssueCategory, Severity, Organization } from '../../../types';
+import { Issue, IssueCategory, Severity } from '../../../types';
 import { CATEGORY_COLORS } from '../../constants';
 import { useTrends, useResolution, useEfficiency } from '../../hooks/useAnalytics';
 import { 
@@ -13,7 +13,6 @@ import {
 
 interface StatisticsViewProps {
   issues: Issue[];
-  organizations: Organization[];
 }
 
 // ── Format helpers ──────────────────────────────────────

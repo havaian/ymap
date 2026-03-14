@@ -1,23 +1,22 @@
 /**
- * Assign Districts Script
- * 
- * For each existing Organization, Infrastructure, and Issue document,
- * determines the district (via $geoIntersects) and assigns regionCode + districtId.
- * 
+ * backend/src/scripts/assign-districts.js
+ *
+ * For each Object and Issue document, determines the district
+ * (via $geoIntersects) and assigns regionCode + districtId.
+ *
  * Usage:
  *   node src/scripts/assign-districts.js
- * 
+ *
  * Options:
- *   --force     Re-assign even if already assigned
- *   --dry-run   Show what would be updated without writing
- *   --collection=organizations|infrastructure|issues   Process only one collection
+ *   --force                Re-assign even if already assigned
+ *   --dry-run              Show what would be updated without writing
+ *   --collection=objects|issues   Process only one collection
  */
 
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import District from '../district/model.js';
-import Organization from '../organization/model.js';
-import Infrastructure from '../infrastructure/model.js';
+import Object_ from '../object/model.js';
 import Issue from '../issue/model.js';
 
 const BATCH_SIZE = 500;
@@ -32,8 +31,8 @@ function parseArgs() {
 }
 
 /**
- * Find district for a given lat/lng point
- * First tries $geoIntersects (point-in-polygon), then falls back to nearest centroid
+ * Find district for a given lat/lng point.
+ * First tries $geoIntersects (point-in-polygon), then falls back to nearest centroid.
  */
 async function findDistrictForPoint(lat, lng, districtCache) {
     const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
@@ -41,23 +40,19 @@ async function findDistrictForPoint(lat, lng, districtCache) {
         return districtCache.get(cacheKey);
     }
 
-    const point = {
-        type: 'Point',
-        coordinates: [lng, lat]
-    };
+    const point = { type: 'Point', coordinates: [lng, lat] };
 
-    // Try exact containment
     let district = await District.findOne({
         geometry: { $geoIntersects: { $geometry: point } }
     }).lean();
 
-    // Fallback: nearest centroid within 200km (needed for large regions like Navoi, Karakalpakstan)
+    // Fallback: nearest centroid within 200km (handles large regions like Navoi, Karakalpakstan)
     if (!district) {
         district = await District.findOne({
             centroid: {
                 $near: {
                     $geometry: point,
-                    $maxDistance: 200000 // 200km fallback radius (needed for large regions like Navoi, Karakalpakstan)
+                    $maxDistance: 200000
                 }
             }
         }).lean();
@@ -74,18 +69,16 @@ async function findDistrictForPoint(lat, lng, districtCache) {
 }
 
 /**
- * Process a collection: find unassigned docs, assign district+region
+ * Process a collection: find unassigned docs, assign district + region.
  */
 async function processCollection(Model, collectionName, options) {
     const { force, dryRun } = options;
 
-    // Build filter: only process docs that have coordinates
     const filter = {
         lat: { $exists: true, $ne: null },
         lng: { $exists: true, $ne: null }
     };
 
-    // Unless --force, only process unassigned docs
     if (!force) {
         filter.districtId = { $exists: false };
     }
@@ -103,9 +96,7 @@ async function processCollection(Model, collectionName, options) {
     let failed = 0;
     let processed = 0;
 
-    // Process in batches using cursor
     const cursor = Model.find(filter).select('lat lng').lean().cursor();
-
     const bulkOps = [];
 
     for await (const doc of cursor) {
@@ -117,12 +108,7 @@ async function processCollection(Model, collectionName, options) {
             bulkOps.push({
                 updateOne: {
                     filter: { _id: doc._id },
-                    update: {
-                        $set: {
-                            districtId: result.districtId,
-                            regionCode: result.regionCode
-                        }
-                    }
+                    update: { $set: { districtId: result.districtId, regionCode: result.regionCode } }
                 }
             });
             assigned++;
@@ -130,17 +116,13 @@ async function processCollection(Model, collectionName, options) {
             failed++;
         }
 
-        // Execute bulk ops in batches
         if (bulkOps.length >= BATCH_SIZE) {
-            if (!dryRun) {
-                await Model.bulkWrite(bulkOps, { ordered: false });
-            }
+            if (!dryRun) await Model.bulkWrite(bulkOps, { ordered: false });
             bulkOps.length = 0;
             process.stdout.write(`\r    Progress: ${processed}/${total} (assigned: ${assigned}, failed: ${failed})`);
         }
     }
 
-    // Flush remaining ops
     if (bulkOps.length > 0 && !dryRun) {
         await Model.bulkWrite(bulkOps, { ordered: false });
     }
@@ -170,8 +152,7 @@ async function main() {
     await mongoose.connect(mongoUri);
     console.log('✅ Connected');
 
-    // Verify districts exist
-    const districtCount = await District.countDocuments(regionFilter);
+    const districtCount = await District.countDocuments();
     if (districtCount === 0) {
         console.error('\n❌ No districts found in database. Run import-geodata.js first.');
         await mongoose.disconnect();
@@ -183,8 +164,7 @@ async function main() {
         const results = {};
 
         const collections = {
-            organizations: Organization,
-            infrastructure: Infrastructure,
+            objects: Object_,
             issues: Issue
         };
 
@@ -193,7 +173,6 @@ async function main() {
             results[name] = await processCollection(Model, name, options);
         }
 
-        // Summary
         console.log('\n═══════════════════════════════════════');
         console.log('  Migration Complete');
         console.log('═══════════════════════════════════════');

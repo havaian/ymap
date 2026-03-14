@@ -1,8 +1,10 @@
-// User types
+// frontend/types.ts
+
+// ── User ──────────────────────────────────────────────────────────────────────
+
 export enum UserRole {
-  CITIZEN = 'ADMIN',
-  ORG_ADMIN = 'ORG_ADMIN',
-  ADMIN = 'ADMIN'
+  CITIZEN = 'CITIZEN',
+  ADMIN   = 'ADMIN'
 }
 
 export interface User {
@@ -11,39 +13,38 @@ export interface User {
   email: string;
   role: UserRole;
   blocked?: boolean;
-  organizationId?: string;
 }
 
-// Issue types
+// ── Issue ─────────────────────────────────────────────────────────────────────
+
 export enum IssueCategory {
-  ROADS = 'Roads',
-  WATER = 'Water & Sewage',
+  ROADS       = 'Roads',
+  WATER       = 'Water & Sewage',
   ELECTRICITY = 'Electricity',
-  EDUCATION = 'Schools & Kindergartens',
-  HEALTH = 'Hospitals & Clinics',
-  WASTE = 'Waste Management',
-  OTHER = 'Other'
+  EDUCATION   = 'Schools & Kindergartens',
+  HEALTH      = 'Hospitals & Clinics',
+  WASTE       = 'Waste Management',
+  OTHER       = 'Other'
 }
 
 export enum IssueSubCategory {
-  WATER = 'Water',
+  WATER       = 'Water',
   ELECTRICITY = 'Electricity',
-  GENERAL = 'General/Other'
+  GENERAL     = 'General/Other'
 }
 
 export enum Severity {
-  LOW = 'Low',
-  MEDIUM = 'Medium',
-  HIGH = 'High',
+  LOW      = 'Low',
+  MEDIUM   = 'Medium',
+  HIGH     = 'High',
   CRITICAL = 'Critical'
 }
 
 export interface Comment {
   id: string;
-  userId: string;
-  userName: string;
+  author: string;
   text: string;
-  timestamp: string;
+  timestamp: number;
 }
 
 export interface Issue {
@@ -56,138 +57,168 @@ export interface Issue {
   subCategory?: string;
   severity: Severity;
   status: 'Open' | 'In Progress' | 'Resolved';
-  userId: string;
-  userName: string;
-  organizationId?: string;
-  organizationName?: string;
-  infrastructureId?: string;
-  infrastructureName?: string;
+  // Links to the unified Object
+  objectId?: string;
+  objectName?: string;
   aiSummary?: string;
   votes: number;
   comments: Comment[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
 }
 
-// Coordinates
 export interface Coordinates {
   lat: number;
   lng: number;
 }
 
-// Organization with complete fields from DB model
-export interface Organization {
+// ── Facility Object ──────────────────
+
+export type ObjectType = 'school' | 'kindergarten' | 'health_post';
+export type SourceApi  = 'ssv' | 'bogcha' | 'maktab44';
+
+export interface ObjectDetails {
+  materialSten?:       string;
+  elektrKunDavomida?:  string;
+  ichimlikSuviManbaa?: string;
+  internet?:           string;
+  binoIchidaSuv?:      string;
+  kapitalTamir?:       string;
+  qurilishYili?:       string;
+  sigimi?:             number;
+  umumiyUquvchi?:      number;
+  smena?:              string;
+  sportZalHolati?:     string;
+  aktivZalHolati?:     string;
+  oshhonaHolati?:      string;
+}
+
+export interface FacilityObject {
   id: string;
-  externalId?: number;
-  projectId?: number;
-  objectId?: number;
+  uid?: number;
+  inn?: string;
+  code?: number;
+  parentCode?: number;
+  sourceApi: SourceApi;
+  objectType: ObjectType;
   name: string;
-  type: IssueCategory;
-  objectType?: string;
+  nameRu?: string;
+  nameEn?: string;
+  viloyat?: string;
+  tuman?: string;
+  regionCode?: number;
+  districtId?: string;
   lat: number;
   lng: number;
-  address: string;
-  region: {
-    id?: number;
-    name: string;
-  };
-  year?: number;
-  sector?: string;
-  sourceType?: string;
-  sourceName?: string;
-  status?: string;
-  budget?: {
-    committedUZS?: number;
-    spentUZS?: number;
-    committedUSD?: number;
-    spentUSD?: number;
-  };
+  details?: ObjectDetails;
+  sourceUpdatedAt?: string;
+  lastSyncedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
-// Infrastructure with complete fields from DB model
-export interface Infrastructure {
+// ── Program ───────────────────────────────────────────────────────────────────
+
+export type ProgramStatus = 'active' | 'completed' | 'cancelled';
+
+export interface ProgramScope {
+  objectTypes: ObjectType[];
+  regionCode:  number | null;
+  districtId:  string | null;
+}
+
+export interface Program {
   id: string;
-  externalId?: number;
-  projectId?: number;
-  objectId?: number;
   name: string;
-  type: 'Roads' | 'Water & Sewage';
-  objectType?: string;
-  lat: number;
-  lng: number;
-  address?: string;
-  region?: {
-    id?: number;
-    name?: string;
-  };
-  year?: number;
-  sector?: string;
-  sourceType?: string;
-  sourceName?: string;
-  status?: string;
-  budget?: {
-    committedUZS?: number;
-    spentUZS?: number;
-    committedUSD?: number;
-    spentUSD?: number;
-  };
-  createdAt?: string;
-  updatedAt?: string;
+  number?: string;
+  description?: string;
+  deadline?: string | null;
+  status: ProgramStatus;
+  totalBudget?: number | null;
+  currency: 'UZS' | 'USD';
+  scope: ProgramScope;
+  objectIds: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// API Response types
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+// ── Task (replaces Promise/CivicPromise) ──────────────────────────────────────
 
-export type PromiseStatus =
+export type TaskStatus =
   | 'Planned'
   | 'In Progress'
   | 'Pending Verification'
   | 'Completed'
   | 'Failed';
- 
+
+export interface TaskVerification {
+  _id: string;
+  userId: string;
+  userName: string;
+  status: 'done' | 'problem';
+  comment?: string;
+  photoUrl?: string;
+  createdAt: string;
+}
+
+export interface Task {
+  id: string;
+  targetId: string;
+  programId: string | null;
+  allocationId: string | null;
+  title: string;
+  description?: string;
+  deadline?: string | null;
+  status: TaskStatus;
+  createdBy: string;
+  votes: {
+    confirmed: string[];
+    rejected:  string[];
+  };
+  verifications: TaskVerification[];
+  // Virtual counts attached by controller
+  totalCount:   number;
+  doneCount:    number;
+  problemCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskStats {
+  total: number;
+  byStatus: Partial<Record<TaskStatus, number>>;
+  votes: { confirmed: number; rejected: number };
+  verifications: { done: number; problem: number };
+}
+
+// ── Budget Allocation ─────────────────────────────────────────────────────────
+
 export interface BudgetAllocation {
   id: string;
-  targetType: 'organization' | 'infrastructure';
+  targetType: 'object' | 'program';
   targetId: string;
   amount?: number;
   currency: 'UZS' | 'USD';
   period?: string;
   note?: string;
   createdBy: string;
-  promiseCount?: number; // attached by getAllocations controller
+  taskCount?: number;  // attached by getAllocations controller
   createdAt: string;
   updatedAt: string;
 }
- 
-export interface CivicPromise {
-  id: string;
-  targetType: 'organization' | 'infrastructure';
-  targetId: string;
-  allocationId: string | null;
-  title: string;
-  description?: string;
-  deadline?: string | null;
-  status: PromiseStatus;
-  createdBy: string;
-  votes: {
-    confirmed: string[]; // array of userId strings
-    rejected: string[];
-  };
-  createdAt: string;
-  updatedAt: string;
+
+// ── API Response ──────────────────────────────────────────────────────────────
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }
- 
-export interface PromiseStats {
-  total: number;
-  byStatus: Partial<Record<PromiseStatus, number>>;
-  votes: {
-    confirmed: number;
-    rejected: number;
-  };
-}
+
+// ── Legacy aliases — kept so any remaining import doesn't break at once ───────
+// TODO: remove once all components are migrated to Task / FacilityObject
+
+/** @deprecated use Task */
+export type CivicPromise = Task;
+/** @deprecated use TaskStatus */
+export type PromiseStatus = TaskStatus;

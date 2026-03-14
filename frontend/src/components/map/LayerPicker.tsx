@@ -3,30 +3,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Layers, Flame, Building2, Plus, ChevronDown, X } from 'lucide-react';
 
-// choropleth intentionally excluded — it lives in ScorePicker (AppHeader)
+// choropleth is intentionally excluded — it lives in ScorePicker (AppHeader)
 export interface LayerState {
   showHeatmap: boolean;
-  showOrgs: boolean;
-  showInfrastructure: boolean;
+  showObjects: boolean;
   showStandaloneIssues: boolean;
 }
 
 interface LayerPickerProps {
   layers: LayerState;
   onToggleHeatmap: () => void;
-  onToggleOrgs: () => void;
-  onToggleInfrastructure: () => void;
+  onToggleObjects: () => void;
   onToggleStandaloneIssues: () => void;
 }
 
 function LayerToggle({ active, label, icon, color, onClick }: {
-  active: boolean; label: string; icon: React.ReactNode; color: string; onClick: () => void;
+  active: boolean;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-        active ? 'text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+        active
+          ? 'text-white'
+          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
       }`}
       style={active ? { backgroundColor: color } : undefined}
     >
@@ -53,8 +57,7 @@ function LayerToggle({ active, label, icon, color, onClick }: {
 export const LayerPicker: React.FC<LayerPickerProps> = ({
   layers,
   onToggleHeatmap,
-  onToggleOrgs,
-  onToggleInfrastructure,
+  onToggleObjects,
   onToggleStandaloneIssues,
 }) => {
   const [open, setOpen] = useState(false);
@@ -62,8 +65,7 @@ export const LayerPicker: React.FC<LayerPickerProps> = ({
 
   const activeCount = [
     layers.showHeatmap,
-    layers.showOrgs,
-    layers.showInfrastructure,
+    layers.showObjects,
     layers.showStandaloneIssues,
   ].filter(Boolean).length;
 
@@ -97,7 +99,7 @@ export const LayerPicker: React.FC<LayerPickerProps> = ({
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[500]">
+        <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[500]">
           <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Слои карты</p>
             <button
@@ -117,22 +119,15 @@ export const LayerPicker: React.FC<LayerPickerProps> = ({
               onClick={onToggleHeatmap}
             />
             <LayerToggle
-              active={layers.showOrgs}
-              label="Учреждения"
+              active={layers.showObjects}
+              label="Объекты"
               icon={<Building2 size={16} />}
               color="#4f46e5"
-              onClick={onToggleOrgs}
-            />
-            <LayerToggle
-              active={layers.showInfrastructure}
-              label="Инфраструктура"
-              icon={<Layers size={16} />}
-              color="#2563eb"
-              onClick={onToggleInfrastructure}
+              onClick={onToggleObjects}
             />
             <LayerToggle
               active={layers.showStandaloneIssues}
-              label="Обращения"
+              label="Все обращения"
               icon={<Plus size={16} />}
               color="#9333ea"
               onClick={onToggleStandaloneIssues}

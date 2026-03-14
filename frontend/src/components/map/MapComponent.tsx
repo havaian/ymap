@@ -1,318 +1,165 @@
-// frontend/src/components/MapComponent.tsx
+// frontend/src/components/map/MapComponent.tsx
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.heat';
 import 'leaflet.markercluster';
-import { Issue, Coordinates, IssueCategory, Organization, Infrastructure, Severity } from '../../../types';
+import { Issue, Coordinates, IssueCategory, FacilityObject, ObjectType } from '../../../types';
 import { CATEGORY_COLORS } from '../../constants';
-import { Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle, Building2, School, Hospital, Construction, Waves, ArrowRight } from 'lucide-react';
+import {
+  Car, Droplets, Zap, GraduationCap, Stethoscope, Trash2, HelpCircle,
+  Building2, School, Hospital, Stethoscope as HealthIcon
+} from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ChoroplethLayer, ChoroplethLegend } from '../analytics/ChoroplethLayer';
 import { RegionBorderLayer } from './RegionBorderLayer';
 
-// Fix for Leaflet default icons in ESM environment
+// ── Leaflet default icon fix (ESM) ────────────────────────────────────────────
+
 if (L.Icon && L.Icon.Default) {
   delete (L.Icon.Default.prototype as any)._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconUrl:       'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl:     'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
   });
 }
 
-function VisualPinIcon({ size, className }: { size: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 7 13s7-7.75 7-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
-    </svg>
-  );
-}
+// ── Icon cache ────────────────────────────────────────────────────────────────
+// Each unique icon variant is built exactly ONCE and reused for all markers.
 
-function getCategoryIcon(category: IssueCategory) {
-  switch (category) {
-    case IssueCategory.ROADS: return <Car size={16} strokeWidth={2.5} color="white" />;
-    case IssueCategory.WATER: return <Droplets size={16} strokeWidth={2.5} color="white" />;
-    case IssueCategory.ELECTRICITY: return <Zap size={16} strokeWidth={2.5} color="white" />;
-    case IssueCategory.EDUCATION: return <GraduationCap size={16} strokeWidth={2.5} color="white" />;
-    case IssueCategory.HEALTH: return <Stethoscope size={16} strokeWidth={2.5} color="white" />;
-    case IssueCategory.WASTE: return <Trash2 size={16} strokeWidth={2.5} color="white" />;
-    default: return <HelpCircle size={16} strokeWidth={2.5} color="white" />;
-  }
-}
-
-// 4 DIFFERENT ICONS FOR ORGANIZATIONS AND INFRASTRUCTURE
-function getOrgIcon(type: IssueCategory, size: number = 18) {
-  switch (type) {
-    case IssueCategory.EDUCATION:
-      return <School size={size} strokeWidth={2.5} color="white" />;
-    case IssueCategory.HEALTH:
-      return <Hospital size={size} strokeWidth={2.5} color="white" />;
-    default:
-      return <Building2 size={size} strokeWidth={2.5} color="white" />;
-  }
-}
-
-function getInfraIcon(type: string, size: number = 18) {
-  if (type === 'Roads') {
-    return <Construction size={size} strokeWidth={2.5} color="white" />;
-  } else if (type === 'Water & Sewage') {
-    return <Waves size={size} strokeWidth={2.5} color="white" />;
-  }
-  return <Building2 size={size} strokeWidth={2.5} color="white" />;
-}
-
-// Get colors for different types
-function getOrgColor(type: IssueCategory): string {
-  switch (type) {
-    case IssueCategory.EDUCATION: return '#10b981'; // Green
-    case IssueCategory.HEALTH: return '#ef4444'; // Red
-    default: return '#4f46e5'; // Indigo
-  }
-}
-
-function getInfraColor(type: string): string {
-  if (type === 'Roads') return '#f59e0b'; // Amber
-  if (type === 'Water & Sewage') return '#06b6d4'; // Cyan
-  return '#6366f1'; // Indigo
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MODULE-LEVEL ICON CACHE
-//
-// Creating icons is expensive: renderToStaticMarkup runs React's server renderer
-// for every SVG, and L.divIcon allocates DOM. With 15k+ markers this becomes the
-// primary performance bottleneck — especially when zoom changes re-trigger it.
-//
-// This cache means each unique icon variant (type + state) is built exactly ONCE
-// per browser session, then reused forever.
-//
-// Key format:
-//   issue_{category}_{0|1}         (0 = full icon, 1 = zoomed-out dot)
-//   org_{type}_{count}             (count capped at 99)
-//   infra_{type}_{count}           (count capped at 99)
-// ─────────────────────────────────────────────────────────────────────────────
 const iconCache = new Map<string, L.DivIcon>();
 
 function getCachedIcon(key: string, creator: () => L.DivIcon): L.DivIcon {
-  if (!iconCache.has(key)) {
-    iconCache.set(key, creator());
-  }
+  if (!iconCache.has(key)) iconCache.set(key, creator());
   return iconCache.get(key)!;
+}
+
+// ── Category icons (issue markers) ───────────────────────────────────────────
+
+function getCategoryIcon(category: IssueCategory) {
+  switch (category) {
+    case IssueCategory.ROADS:       return <Car         size={16} strokeWidth={2.5} color="white" />;
+    case IssueCategory.WATER:       return <Droplets    size={16} strokeWidth={2.5} color="white" />;
+    case IssueCategory.ELECTRICITY: return <Zap         size={16} strokeWidth={2.5} color="white" />;
+    case IssueCategory.EDUCATION:   return <GraduationCap size={16} strokeWidth={2.5} color="white" />;
+    case IssueCategory.HEALTH:      return <Stethoscope size={16} strokeWidth={2.5} color="white" />;
+    case IssueCategory.WASTE:       return <Trash2      size={16} strokeWidth={2.5} color="white" />;
+    default:                        return <HelpCircle  size={16} strokeWidth={2.5} color="white" />;
+  }
 }
 
 function createCustomIcon(category: IssueCategory, isZoomedOut: boolean) {
   return getCachedIcon(`issue_${category}_${isZoomedOut ? 1 : 0}`, () => {
     const color = CATEGORY_COLORS[category] || '#64748b';
-
     if (isZoomedOut) {
       const svg = `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="${color}" stroke="white" stroke-width="2.5" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/></svg>`;
       return L.divIcon({ html: svg, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
-    } else {
-      const iconSvg = renderToStaticMarkup(getCategoryIcon(category));
-      const svg = `
-        <div style="background-color: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-          ${iconSvg}
-        </div>
-        <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid white; position: absolute; bottom: -8px; left: 12px;"></div>
-      `;
-      return L.divIcon({ html: svg, className: '', iconSize: [38, 48], iconAnchor: [19, 48] });
     }
+    const iconSvg = renderToStaticMarkup(getCategoryIcon(category));
+    const html = `
+      <div style="background-color: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        ${iconSvg}
+      </div>
+      <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid white; position: absolute; bottom: -8px; left: 12px;"></div>
+    `;
+    return L.divIcon({ html, className: '', iconSize: [38, 48], iconAnchor: [19, 48] });
   });
 }
 
-// Fixed-size org icon — zoom parameter removed.
-// Previously icons were recreated on every zoom tick to change size.
-// Now they use a single fixed size; the cluster group handles visual density.
-function createOrgIcon(unresolvedCount: number, type: IssueCategory) {
-  const countKey = unresolvedCount > 99 ? 99 : unresolvedCount;
-  return getCachedIcon(`org_${type}_${countKey}`, () => {
-    const color = getOrgColor(type);
-    const baseSize = 40;
-    const borderRadius = 12;
-    const badgeSize = 20;
-    const badgeFontSize = 10;
+// ── Object icons (facility markers) ──────────────────────────────────────────
 
-    const iconSvg = renderToStaticMarkup(getOrgIcon(type, 18));
+const OBJECT_COLOR: Record<ObjectType | string, string> = {
+  school:       '#4f46e5',
+  kindergarten: '#0891b2',
+  health_post:  '#059669'
+};
 
-    const badgeSvg = unresolvedCount > 0 ? `
-      <div style="position: absolute; top: -7px; right: -7px; background: #ef4444; color: white; border-radius: 50%; width: ${badgeSize}px; height: ${badgeSize}px; display: flex; align-items: center; justify-content: center; font-size: ${badgeFontSize}px; font-weight: 900; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;">
-        ${countKey >= 99 ? '99+' : unresolvedCount}
-      </div>
-    ` : '';
+const OBJECT_LABEL: Record<ObjectType | string, string> = {
+  school:       'Школа',
+  kindergarten: 'Детский сад',
+  health_post:  'ФАП'
+};
 
+function getObjectIcon(objectType: string, size = 18) {
+  switch (objectType) {
+    case 'school':       return <School    size={size} strokeWidth={2.5} color="white" />;
+    case 'kindergarten': return <Building2 size={size} strokeWidth={2.5} color="white" />;
+    case 'health_post':  return <Hospital  size={size} strokeWidth={2.5} color="white" />;
+    default:             return <Building2 size={size} strokeWidth={2.5} color="white" />;
+  }
+}
+
+function createObjectIcon(objectType: string, unresolvedCount: number) {
+  const countKey = Math.min(unresolvedCount, 99);
+  return getCachedIcon(`obj_${objectType}_${countKey}`, () => {
+    const color     = OBJECT_COLOR[objectType] || '#4f46e5';
+    const baseSize  = 40;
+    const iconSvg   = renderToStaticMarkup(getObjectIcon(objectType, 18));
+    const badgeSvg  = unresolvedCount > 0
+      ? `<div style="position:absolute;top:-7px;right:-7px;background:#ef4444;color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;">${countKey >= 99 ? '99+' : unresolvedCount}</div>`
+      : '';
     const html = `
-      <div class="org-marker-glow" style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4);">
-        ${iconSvg}
-        ${badgeSvg}
+      <div style="position:relative;background-color:${color};width:${baseSize}px;height:${baseSize}px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 4px 12px -2px ${color}66;">
+        ${iconSvg}${badgeSvg}
       </div>
     `;
     return L.divIcon({ html, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize / 2, baseSize / 2] });
   });
 }
 
-// Fixed-size infra icon with optional unresolved badge — parallel to org icon.
-function createInfraIcon(type: string, unresolvedCount: number = 0) {
-  const countKey = unresolvedCount > 99 ? 99 : unresolvedCount;
-  return getCachedIcon(`infra_${type}_${countKey}`, () => {
-    const color = getInfraColor(type);
-    const baseSize = 32;
-    const borderRadius = 8;
+// ── HeatmapLayer ──────────────────────────────────────────────────────────────
 
-    const iconSvg = renderToStaticMarkup(getInfraIcon(type, 14));
-
-    const badgeSvg = unresolvedCount > 0 ? `
-      <div style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;">
-        ${countKey >= 99 ? '99+' : unresolvedCount}
-      </div>
-    ` : '';
-
-    const html = `
-      <div style="position: relative; background-color: ${color}; width: ${baseSize}px; height: ${baseSize}px; border-radius: ${borderRadius}px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3);">
-        ${iconSvg}
-        ${badgeSvg}
-      </div>
-    `;
-    return L.divIcon({ html, className: '', iconSize: [baseSize, baseSize], iconAnchor: [baseSize / 2, baseSize / 2] });
-  });
-}
-
-function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[], show: boolean, zoomLevel: number }) {
+function HeatmapLayer({ issues, show, zoomLevel }: { issues: Issue[]; show: boolean; zoomLevel: number }) {
   const map = useMap();
-  const layerRef = useRef<any>(null);
+  const heatRef = useRef<any>(null);
 
   useEffect(() => {
-    // Cleanup existing layer safely
-    if (layerRef.current) {
-      if (map.hasLayer(layerRef.current)) {
-        map.removeLayer(layerRef.current);
-      }
-      layerRef.current = null;
+    if (!show) {
+      if (heatRef.current) { map.removeLayer(heatRef.current); heatRef.current = null; }
+      return;
     }
-
-    if (!show || issues.length === 0) return;
-
-    const heatLayerFunc = (L as any).heatLayer;
-    if (typeof heatLayerFunc !== 'function') return;
-
-    const heatPoints: [number, number, number][] = issues
-      .filter(i => {
-          const lat = parseFloat(i.lat as any);
-          const lng = parseFloat(i.lng as any);
-          return !isNaN(lat) && !isNaN(lng) && i.status !== 'Resolved';
-      })
-      .map(i => {
-        let weight = 10;
-        switch (i.severity) {
-          case Severity.LOW: weight = 10; break;
-          case Severity.MEDIUM: weight = 30; break;
-          case Severity.HIGH: weight = 80; break;
-          case Severity.CRITICAL: weight = 200; break;
-        }
-
-        const orgMultiplier = i.organizationId ? 2.5 : 1.0;
-        const votesMultiplier = 1 + (Math.log10(Math.max(0, i.votes) + 1) * 1.5);
-
-        const finalWeight = Math.min(1000, weight * orgMultiplier * votesMultiplier);
-        return [i.lat, i.lng, finalWeight];
-      });
-
-    if (heatPoints.length === 0) return;
-
-    const radius = Math.round(Math.max(15, (zoomLevel - 10) * 4 + 25));
-    const blur = Math.round(Math.max(10, radius * 0.75));
-    const dynamicMax = Math.max(50, 2500 / Math.pow(1.6, Math.max(0, zoomLevel - 11)));
-
-    try {
-      const heatLayer = heatLayerFunc(heatPoints, {
-        radius: radius,
-        blur: blur,
-        maxZoom: 18,
-        max: dynamicMax,
-        minOpacity: 0.15,
-        gradient: {
-          0.1: '#3b82f6',
-          0.3: '#10b981',
-          0.5: '#fbbf24',
-          0.7: '#f97316',
-          1.0: '#ef4444'
-        }
-      });
-
-      heatLayer.addTo(map);
-      layerRef.current = heatLayer;
-
-      return () => {
-        if (layerRef.current && map.hasLayer(layerRef.current)) {
-          map.removeLayer(layerRef.current);
-          layerRef.current = null;
-        }
-      };
-    } catch (e) {
-      console.warn("Heatmap rendering bypassed to prevent canvas crash:", e);
+    const points = issues.map(i => [i.lat, i.lng, 0.5] as [number, number, number]);
+    if (heatRef.current) {
+      heatRef.current.setLatLngs(points);
+    } else {
+      heatRef.current = (L as any).heatLayer(points, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
     }
-  }, [map, issues, show, zoomLevel]);
+    return () => {
+      if (heatRef.current) { map.removeLayer(heatRef.current); heatRef.current = null; }
+    };
+  }, [issues, show, map]);
 
   return null;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CLUSTER GROUP ARCHITECTURE — 3-effect pattern
-//
-// The root performance problem was: ALL THREE cluster groups had zoomLevel in
-// their marker-population effect deps. Every zoom event triggered:
-//   clearLayers() → remove all N markers from DOM
-//   createIcon() × N → N renderToStaticMarkup calls
-//   addLayers() → re-insert all N markers into DOM
-//
-// For 15k infrastructure items this is catastrophic on every scroll.
-//
-// Fix: Split into three separate effects per group:
-//   1. [map]         — create cluster group ONCE, destroy on unmount
-//   2. [map, hidden] — toggle map visibility without touching markers
-//   3. [data]        — repopulate markers only when data actually changes
-//   +  [zoomLevel]   — (issues only) update icons when threshold 14 is crossed
-//
-// Result: zoom events no longer trigger any marker operations.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Issue marker cluster group ────────────────────────────────────────────────
 
 function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
   const map = useMap();
   const clusterGroupRef = useRef<any>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const issuesRef = useRef<Issue[]>([]);
-  // Track the last zoom state used for icon rendering to skip redundant updates
+  const markersRef      = useRef<L.Marker[]>([]);
+  const issuesRef       = useRef<Issue[]>([]);
   const prevZoomedOutRef = useRef<boolean>(zoomLevel < 14);
-
-  // Stable ref for click callback — prevents stale closures when issues array changes
-  const onIssueClickRef = useRef(onIssueClick);
+  const onIssueClickRef  = useRef(onIssueClick);
   useEffect(() => { onIssueClickRef.current = onIssueClick; }, [onIssueClick]);
 
-  // Effect 1: Create cluster group once on mount, clean up on unmount
   useEffect(() => {
-    const markerClusterFunc = (L as any).markerClusterGroup;
-    if (typeof markerClusterFunc !== 'function') return;
-
-    clusterGroupRef.current = markerClusterFunc({
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      maxClusterRadius: 80,
-      disableClusteringAtZoom: 15,
-      animate: true,
+    const mcFunc = (L as any).markerClusterGroup;
+    if (typeof mcFunc !== 'function') return;
+    clusterGroupRef.current = mcFunc({
+      showCoverageOnHover: false, spiderfyOnMaxZoom: true, maxClusterRadius: 80,
+      disableClusteringAtZoom: 15, animate: true,
       iconCreateFunction: (cluster: any) => {
         const count = cluster.getChildCount();
-        let color = '#10b981';
-        if (count >= 10 && count < 50) color = '#f59e0b';
-        else if (count >= 50) color = '#ef4444';
+        const color = count >= 50 ? '#ef4444' : count >= 10 ? '#f59e0b' : '#10b981';
         return L.divIcon({
-          html: `<div class="cluster-anim-pulse" style="background: ${color}; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">${count}</div>`,
-          className: 'custom-cluster-wrapper',
-          iconSize: L.point(38, 38)
+          html: `<div class="cluster-anim-pulse" style="background:${color};width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:14px;border:3px solid white;box-shadow:0 4px 15px rgba(0,0,0,0.2);">${count}</div>`,
+          className: 'custom-cluster-wrapper', iconSize: L.point(38, 38)
         });
       }
     });
-
     return () => {
       if (clusterGroupRef.current) {
         if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
@@ -321,54 +168,39 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
     };
   }, [map]);
 
-  // Effect 2: Toggle visibility without touching markers
   useEffect(() => {
     if (!clusterGroupRef.current) return;
-    if (hidden) {
-      if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
-    } else {
-      if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current);
-    }
+    if (hidden) { if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current); }
+    else        { if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current); }
   }, [map, hidden]);
 
-  // Effect 3: Repopulate markers only when issue DATA changes — NOT on zoom
   useEffect(() => {
     const cg = clusterGroupRef.current;
     if (!cg) return;
-
     cg.clearLayers();
     markersRef.current = [];
-    issuesRef.current = [];
-
+    issuesRef.current  = [];
     if (hidden) return;
 
+    issuesRef.current = issues;
     const isZoomedOut = zoomLevel < 14;
     prevZoomedOutRef.current = isZoomedOut;
 
-    const freeIssues = issues.filter((i: Issue) => !i.organizationId && !i.infrastructureId && i.lat && i.lng);
-    issuesRef.current = freeIssues;
-
-    const markers = freeIssues.map((issue: Issue) => {
-      const marker = L.marker([issue.lat, issue.lng], {
-        icon: createCustomIcon(issue.category, isZoomedOut)
-      });
-      // Use ref so click always calls the latest handler without rebinding
-      marker.on('click', () => onIssueClickRef.current(issue));
+    const markers = issues.map((issue: Issue) => {
+      const marker = L.marker([issue.lat, issue.lng], { icon: createCustomIcon(issue.category, isZoomedOut) });
+      marker.on('click', (e) => { L.DomEvent.stopPropagation(e); onIssueClickRef.current(issue); });
       return marker;
     });
 
     markersRef.current = markers;
     cg.addLayers(markers);
-  }, [issues, hidden]); // zoomLevel intentionally NOT here — handled by effect 4
+  }, [issues, hidden]);
 
-  // Effect 4: Update icons only when zoom crosses the dot↔full threshold (zoom 14).
-  // Uses setIcon() which is O(n) but orders of magnitude faster than clearLayers+addLayers.
+  // Zoom icon swap — only when threshold 14 is crossed
   useEffect(() => {
     const isZoomedOut = zoomLevel < 14;
-    // Early return if the visual state hasn't actually changed
     if (isZoomedOut === prevZoomedOutRef.current) return;
     prevZoomedOutRef.current = isZoomedOut;
-
     markersRef.current.forEach((marker, i) => {
       const issue = issuesRef.current[i];
       if (issue) marker.setIcon(createCustomIcon(issue.category, isZoomedOut));
@@ -378,53 +210,37 @@ function MarkerClusterGroup({ issues, onIssueClick, zoomLevel, hidden }: any) {
   return null;
 }
 
-function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden, orgUnresolvedCounts }: any) {
+// ── Object (facility) cluster group ──────────────────────────────────────────
+
+function ObjectClusterGroup({ objects, onObjectClick, hidden, objectUnresolvedCounts }: any) {
   const map = useMap();
   const clusterGroupRef = useRef<any>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const orgsRef = useRef<Organization[]>([]);
+  const markersRef      = useRef<L.Marker[]>([]);
+  const objectsRef      = useRef<FacilityObject[]>([]);
 
-  // Stable refs for callbacks and counts
-  const onOrgClickRef = useRef(onOrgClick);
-  useEffect(() => { onOrgClickRef.current = onOrgClick; }, [onOrgClick]);
+  const onObjectClickRef = useRef(onObjectClick);
+  useEffect(() => { onObjectClickRef.current = onObjectClick; }, [onObjectClick]);
 
-  // Keep counts ref current so the data effect always uses latest values
-  // without needing orgUnresolvedCounts in its deps (which would force full marker recreation)
-  const orgCountsRef = useRef(orgUnresolvedCounts);
-  useEffect(() => { orgCountsRef.current = orgUnresolvedCounts; }, [orgUnresolvedCounts]);
+  const countsRef = useRef(objectUnresolvedCounts);
+  useEffect(() => { countsRef.current = objectUnresolvedCounts; }, [objectUnresolvedCounts]);
 
   // Effect 1: Create cluster group once
   useEffect(() => {
-    const markerClusterFunc = (L as any).markerClusterGroup;
-    if (typeof markerClusterFunc !== 'function') return;
-
-    clusterGroupRef.current = markerClusterFunc({
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      maxClusterRadius: 60,
-      disableClusteringAtZoom: null,
-      animate: true,
+    const mcFunc = (L as any).markerClusterGroup;
+    if (typeof mcFunc !== 'function') return;
+    clusterGroupRef.current = mcFunc({
+      showCoverageOnHover: false, spiderfyOnMaxZoom: true,
+      maxClusterRadius: 60, disableClusteringAtZoom: null, animate: true,
       iconCreateFunction: (cluster: any) => {
         const count = cluster.getChildCount();
-        let color = '#4f46e5';
-        let size = 38;
-
-        if (count >= 100) {
-          color = '#7c3aed';
-          size = 48;
-        } else if (count >= 50) {
-          color = '#6366f1';
-          size = 44;
-        }
-
+        const color = count >= 100 ? '#7c3aed' : count >= 50 ? '#6366f1' : '#4f46e5';
+        const size  = count >= 100 ? 48 : count >= 50 ? 44 : 38;
         return L.divIcon({
-          html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);">${count}</div>`,
-          className: 'custom-org-cluster-wrapper',
-          iconSize: L.point(size, size)
+          html: `<div style="background:${color};width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:${size > 40 ? '16px' : '14px'};border:3px solid white;box-shadow:0 4px 15px ${color}66;">${count}</div>`,
+          className: 'custom-obj-cluster-wrapper', iconSize: L.point(size, size)
         });
       }
     });
-
     return () => {
       if (clusterGroupRef.current) {
         if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
@@ -436,236 +252,72 @@ function OrganizationClusterGroup({ organizations, onOrgClick, zoomLevel, hidden
   // Effect 2: Toggle visibility
   useEffect(() => {
     if (!clusterGroupRef.current) return;
-    if (hidden) {
-      if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
-    } else {
-      if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current);
-    }
+    if (hidden) { if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current); }
+    else        { if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current); }
   }, [map, hidden]);
 
-  // Effect 3: Repopulate markers only when organization list changes.
-  // orgUnresolvedCounts is accessed via ref (always current, not a dep).
-  // Icon badge counts are handled separately in effect 4.
+  // Effect 3: Repopulate markers when object list changes
   useEffect(() => {
     const cg = clusterGroupRef.current;
     if (!cg) return;
-
     cg.clearLayers();
     markersRef.current = [];
-    orgsRef.current = [];
-
+    objectsRef.current = [];
     if (hidden) return;
 
-    orgsRef.current = organizations;
-    const arrowSvg = renderToStaticMarkup(<ArrowRight size={10} />);
+    objectsRef.current = objects;
 
-    const markers = organizations.map((org: Organization) => {
-      const unresolvedCount = orgCountsRef.current[org.id] || 0;
-      const marker = L.marker([org.lat, org.lng], {
-        icon: createOrgIcon(unresolvedCount, org.type)
-      });
+    const markers = objects.map((obj: FacilityObject) => {
+      const unresolvedCount = countsRef.current[obj.id] || 0;
+      const marker = L.marker([obj.lat, obj.lng], { icon: createObjectIcon(obj.objectType, unresolvedCount) });
 
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
-        onOrgClickRef.current(org);
+        onObjectClickRef.current(obj);
       });
 
-      const iconSvg = renderToStaticMarkup(getOrgIcon(org.type, 14));
-      const popupContent = `
+      const label = OBJECT_LABEL[obj.objectType] || obj.objectType;
+      const color = OBJECT_COLOR[obj.objectType] || '#4f46e5';
+      const iconSvg = renderToStaticMarkup(getObjectIcon(obj.objectType, 14));
+
+      marker.bindPopup(`
         <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-600 dark:text-indigo-400">
-                ${iconSvg}
-              </div>
-              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                ${org.type}
-              </span>
-            </div>
-            <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${org.name}</div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">${org.address}</div>
-            
-            <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700/50">
-              <div class="flex flex-col">
-                 <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 mb-0.5">Активные задачи</span>
-                 <span class="text-sm font-black ${unresolvedCount > 0 ? 'text-red-500' : 'text-green-500'}">
-                   ${unresolvedCount}
-                 </span>
-              </div>
-              <div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest group">
-                Подробнее ${arrowSvg}
-              </div>
-            </div>
+          <div class="flex items-center gap-2 mb-2">
+            <div class="p-1.5 rounded-lg" style="background-color:${color}20;color:${color};">${iconSvg}</div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">${label}</span>
+          </div>
+          <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${obj.name}</div>
+          ${obj.tuman ? `<div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold">${obj.tuman}</div>` : ''}
         </div>
-      `;
-
-      marker.bindPopup(popupContent, {
-        closeButton: false,
-        offset: [0, -5],
-        className: 'org-popup'
-      });
+      `, { closeButton: false, offset: [0, -5] });
 
       marker.on('mouseover', (e) => { e.target.openPopup(); });
-      marker.on('mouseout', (e) => { e.target.closePopup(); });
-
+      marker.on('mouseout',  (e) => { e.target.closePopup(); });
       return marker;
     });
 
     markersRef.current = markers;
     cg.addLayers(markers);
-  }, [organizations, hidden]); // orgUnresolvedCounts NOT here — handled in effect 4
+  }, [objects, hidden]);
 
-  // Effect 4: Update only the badge icons when issue counts change.
-  // This runs when issues are resolved/reopened without recreating all org markers.
-  // Note: popup count text may be slightly stale; the badge icon is always current.
+  // Effect 4: Update badge icons when unresolved counts change
   useEffect(() => {
     if (!markersRef.current.length) return;
-    orgsRef.current.forEach((org, i) => {
+    objectsRef.current.forEach((obj, i) => {
       const marker = markersRef.current[i];
-      if (marker) marker.setIcon(createOrgIcon(orgUnresolvedCounts[org.id] || 0, org.type));
+      if (marker) marker.setIcon(createObjectIcon(obj.objectType, objectUnresolvedCounts[obj.id] || 0));
     });
-  }, [orgUnresolvedCounts]);
+  }, [objectUnresolvedCounts]);
 
   return null;
 }
 
-function InfrastructureClusterGroup({ infrastructure, onInfraClick, zoomLevel, hidden, infraUnresolvedCounts }: any) {
-  const map = useMap();
-  const clusterGroupRef = useRef<any>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const infrasRef = useRef<Infrastructure[]>([]);
-
-  // Stable ref for optional click callback
-  const onInfraClickRef = useRef(onInfraClick);
-  useEffect(() => { onInfraClickRef.current = onInfraClick; }, [onInfraClick]);
-
-  // Keep counts ref current without forcing marker recreation on count changes
-  const infraCountsRef = useRef(infraUnresolvedCounts);
-  useEffect(() => { infraCountsRef.current = infraUnresolvedCounts; }, [infraUnresolvedCounts]);
-
-  // Effect 1: Create cluster group once
-  useEffect(() => {
-    const markerClusterFunc = (L as any).markerClusterGroup;
-    if (typeof markerClusterFunc !== 'function') return;
-
-    clusterGroupRef.current = markerClusterFunc({
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      maxClusterRadius: 60,
-      disableClusteringAtZoom: null,
-      animate: true,
-      iconCreateFunction: (cluster: any) => {
-        const count = cluster.getChildCount();
-        let color = '#f59e0b'; // Amber for infrastructure
-        let size = 38;
-
-        if (count >= 100) {
-          color = '#dc2626'; // Red
-          size = 48;
-        } else if (count >= 50) {
-          color = '#ea580c'; // Orange
-          size = 44;
-        }
-
-        return L.divIcon({
-          html: `<div style="background: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: ${size > 40 ? '16px' : '14px'}; border: 3px solid white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">${count}</div>`,
-          className: 'custom-infra-cluster-wrapper',
-          iconSize: L.point(size, size)
-        });
-      }
-    });
-
-    return () => {
-      if (clusterGroupRef.current) {
-        if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
-        clusterGroupRef.current = null;
-      }
-    };
-  }, [map]);
-
-  // Effect 2: Toggle visibility
-  useEffect(() => {
-    if (!clusterGroupRef.current) return;
-    if (hidden) {
-      if (map.hasLayer(clusterGroupRef.current)) map.removeLayer(clusterGroupRef.current);
-    } else {
-      if (!map.hasLayer(clusterGroupRef.current)) map.addLayer(clusterGroupRef.current);
-    }
-  }, [map, hidden]);
-
-  // Effect 3: Repopulate markers only when infrastructure data changes.
-  // No zoom dependency — icons are fixed size, clustering handles visual density.
-  // infraUnresolvedCounts accessed via ref — badge updates handled by effect 4.
-  useEffect(() => {
-    const cg = clusterGroupRef.current;
-    if (!cg) return;
-
-    cg.clearLayers();
-    markersRef.current = [];
-    infrasRef.current = [];
-
-    if (hidden) return;
-
-    infrasRef.current = infrastructure;
-
-    const markers = infrastructure.map((infra: Infrastructure) => {
-      const unresolvedCount = infraCountsRef.current[infra.id] || 0;
-      const marker = L.marker([infra.lat, infra.lng], {
-        icon: createInfraIcon(infra.type, unresolvedCount)
-      });
-
-      marker.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        if (onInfraClickRef.current) onInfraClickRef.current(infra);
-      });
-
-      const iconSvg = renderToStaticMarkup(getInfraIcon(infra.type, 14));
-      const popupContent = `
-        <div class="p-4 min-w-[200px] bg-white dark:bg-slate-800 transition-colors">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="p-1.5 rounded-lg" style="background-color: ${getInfraColor(infra.type)}20; color: ${getInfraColor(infra.type)};">
-                ${iconSvg}
-              </div>
-              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                ${infra.type}
-              </span>
-            </div>
-            <div class="font-black text-slate-900 dark:text-white text-base leading-tight mb-1">${infra.name}</div>
-            ${infra.address ? `<div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold mb-3">${infra.address}</div>` : ''}
-        </div>
-      `;
-
-      marker.bindPopup(popupContent, {
-        closeButton: false,
-        offset: [0, -5],
-        className: 'infra-popup'
-      });
-
-      marker.on('mouseover', (e) => { e.target.openPopup(); });
-      marker.on('mouseout', (e) => { e.target.closePopup(); });
-
-      return marker;
-    });
-
-    markersRef.current = markers;
-    cg.addLayers(markers);
-  }, [infrastructure, hidden]); // zoomLevel and infraUnresolvedCounts intentionally NOT here
-
-  // Effect 4: Update only badge icons when issue counts change — parallel to org Effect 4.
-  useEffect(() => {
-    if (!markersRef.current.length) return;
-    infrasRef.current.forEach((infra, i) => {
-      const marker = markersRef.current[i];
-      if (marker) marker.setIcon(createInfraIcon(infra.type, infraUnresolvedCounts[infra.id] || 0));
-    });
-  }, [infraUnresolvedCounts]);
-
-  return null;
-}
+// ── Map utilities ─────────────────────────────────────────────────────────────
 
 function MapController({ onMapClick, setZoomLevel, userLocation, triggerLocate }: any) {
   const map = useMap();
   useMapEvents({
-    click(e) { onMapClick(e.latlng); },
+    click(e)   { onMapClick(e.latlng); },
     zoomend(e) { setZoomLevel(e.target.getZoom()); }
   });
   useEffect(() => {
@@ -678,54 +330,37 @@ function MapController({ onMapClick, setZoomLevel, userLocation, triggerLocate }
 
 function MapSizeHandler() {
   const map = useMap();
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
-
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => map.invalidateSize(), 100);
+    return () => clearTimeout(t);
   }, [map]);
-
   return null;
 }
 
-// Eliminates the vertical/horizontal hairline seams that appear between map tiles.
-// Browsers render tile edges at sub-pixel boundaries, leaving 1px gaps.
-// Extending each tile by 1px via negative margin makes them overlap and
-// closes the gap without any visual distortion.
 function TileSeamFix() {
   useEffect(() => {
-    const styleId = 'leaflet-tile-seam-fix';
-    if (document.getElementById(styleId)) return;
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      .leaflet-tile {
-        margin-right: -1px !important;
-        margin-bottom: -1px !important;
-      }
-    `;
+    const id = 'leaflet-tile-seam-fix';
+    if (document.getElementById(id)) return;
+    const style  = document.createElement('style');
+    style.id     = id;
+    style.textContent = `.leaflet-tile { margin-right: -1px !important; margin-bottom: -1px !important; }`;
     document.head.appendChild(style);
-    return () => {
-      document.getElementById(styleId)?.remove();
-    };
+    return () => { document.getElementById(id)?.remove(); };
   }, []);
   return null;
 }
 
+// ── Props ─────────────────────────────────────────────────────────────────────
+
 interface MapComponentProps {
   issues: Issue[];
-  organizations: Organization[];
-  infrastructure: Infrastructure[];
+  objects: FacilityObject[];
   center: [number, number];
-  onIssueClick: (issue: Issue) => void;
-  onMapClick: (coords: Coordinates) => void;
-  onOrgClick: (org: Organization) => void;
-  onInfraClick?: (infra: Infrastructure) => void;
+  onIssueClick:  (issue: Issue) => void;
+  onMapClick:    (coords: Coordinates) => void;
+  onObjectClick: (obj: FacilityObject) => void;
   isAdding: boolean;
-  showOrgs: boolean;
-  showInfrastructure: boolean;
+  showObjects: boolean;
   showHeatmap: boolean;
   userLocation: Coordinates | null;
   triggerLocate: number;
@@ -734,34 +369,20 @@ interface MapComponentProps {
   choroplethMetric: string;
   onDistrictClick?: (districtId: string, name: any, scores: any) => void;
   selectedRegionCode?: number | null;
+  objectUnresolvedCounts: Record<string, number>;
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export const MapComponent: React.FC<MapComponentProps> = ({
-  issues, organizations, infrastructure, center, onIssueClick, onMapClick, onOrgClick, onInfraClick,
-  isAdding, showOrgs, showInfrastructure, showHeatmap, userLocation, triggerLocate, isDark,
-  showChoropleth, choroplethMetric, onDistrictClick, selectedRegionCode
+  issues, objects, center,
+  onIssueClick, onMapClick, onObjectClick,
+  isAdding, showObjects, showHeatmap,
+  userLocation, triggerLocate, isDark,
+  showChoropleth, choroplethMetric, onDistrictClick,
+  selectedRegionCode, objectUnresolvedCounts
 }) => {
   const [zoomLevel, setZoomLevel] = useState(13);
-
-  const orgUnresolvedCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    issues.forEach(issue => {
-      if (issue.organizationId && issue.status !== 'Resolved') {
-        counts[issue.organizationId] = (counts[issue.organizationId] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [issues]);
-
-  const infraUnresolvedCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    issues.forEach(issue => {
-      if (issue.infrastructureId && issue.status !== 'Resolved') {
-        counts[issue.infrastructureId] = (counts[issue.infrastructureId] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [issues]);
 
   const tileUrl = isDark
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -778,10 +399,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       >
         <MapSizeHandler />
         <TileSeamFix />
-        <TileLayer
-          key={tileUrl}
-          url={tileUrl}
-        />
+        <TileLayer key={tileUrl} url={tileUrl} />
 
         <RegionBorderLayer regionCode={selectedRegionCode ?? null} />
         <HeatmapLayer issues={issues} show={showHeatmap} zoomLevel={zoomLevel} />
@@ -800,20 +418,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           hidden={showHeatmap}
         />
 
-        <OrganizationClusterGroup
-          organizations={organizations}
-          onOrgClick={onOrgClick}
-          zoomLevel={zoomLevel}
-          hidden={!showOrgs || showHeatmap}
-          orgUnresolvedCounts={orgUnresolvedCounts}
-        />
-
-        <InfrastructureClusterGroup
-          infrastructure={infrastructure}
-          onInfraClick={onInfraClick}
-          zoomLevel={zoomLevel}
-          hidden={!showInfrastructure || showHeatmap}
-          infraUnresolvedCounts={infraUnresolvedCounts}
+        <ObjectClusterGroup
+          objects={objects}
+          onObjectClick={onObjectClick}
+          hidden={!showObjects || showHeatmap}
+          objectUnresolvedCounts={objectUnresolvedCounts}
         />
 
         {userLocation && (
@@ -826,16 +435,14 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           />
         )}
 
-        {isAdding && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000] pointer-events-none">
-            <div className="relative">
-              <VisualPinIcon size={48} className="text-blue-600 drop-shadow-2xl mb-4 animate-pulse" />
-            </div>
-          </div>
-        )}
-
-        <MapController onMapClick={onMapClick} setZoomLevel={setZoomLevel} userLocation={userLocation} triggerLocate={triggerLocate} />
+        <MapController
+          onMapClick={onMapClick}
+          setZoomLevel={setZoomLevel}
+          userLocation={userLocation}
+          triggerLocate={triggerLocate}
+        />
       </MapContainer>
+
       {showChoropleth && !showHeatmap && (
         <div className="absolute bottom-24 left-4 z-[400]">
           <ChoroplethLegend metric={choroplethMetric} />

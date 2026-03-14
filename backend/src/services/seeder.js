@@ -1,11 +1,140 @@
+// backend/src/services/seeder.js
+// Generates mock citizen issue reports for demo / testing.
+// Uses the unified Object model (school, kindergarten, health_post).
+
 import Issue from '../issue/model.js';
 import Comment from '../comment/model.js';
-import Organization from '../organization/model.js';
+import Object_ from '../object/model.js';
 import User from '../user/model.js';
 import bcrypt from 'bcryptjs';
 
-const SEVERITIES = ['Low', 'Medium', 'High', 'Critical'];
-const STATUSES = ['Open', 'In Progress', 'Resolved'];
+// ── Issue templates per object type / sub-category ────────────────────────────
+
+const PROBLEM_TEMPLATES = {
+    school: {
+        Water: [
+            'Не работает водопровод в туалете',
+            'Протечка воды в коридоре',
+            'Слабый напор воды',
+            'Проблемы с горячей водой'
+        ],
+        Electricity: [
+            'Отключили свет в классе',
+            'Не работает освещение в спортзале',
+            'Проблемы с розетками в кабинете',
+            'Перегорели лампы в коридоре'
+        ],
+        'General/Other': [
+            'Требуется ремонт крыши',
+            'Сломаны окна в классе',
+            'Проблемы с отоплением зимой',
+            'Нужен ремонт напольного покрытия',
+            'Сломаны парты в кабинете'
+        ]
+    },
+    kindergarten: {
+        Water: [
+            'Нет воды в умывальной комнате',
+            'Протечка трубы в игровой',
+            'Низкий напор воды',
+            'Нет горячей воды'
+        ],
+        Electricity: [
+            'Отключили свет в группе',
+            'Неисправны светильники',
+            'Проблемы с электропроводкой',
+            'Нет освещения на площадке'
+        ],
+        'General/Other': [
+            'Сломано игровое оборудование',
+            'Требуется ремонт кровли',
+            'Проблемы с вентиляцией',
+            'Нужна замена окон',
+            'Требуется дезинфекция помещений'
+        ]
+    },
+    health_post: {
+        Water: [
+            'Нет воды в процедурной',
+            'Протечка в санузле',
+            'Низкое давление воды',
+            'Проблемы с канализацией'
+        ],
+        Electricity: [
+            'Отключение электричества в кабинете',
+            'Неисправность освещения',
+            'Проблемы с электропитанием аппаратуры',
+            'Перебои со светом в коридоре'
+        ],
+        'General/Other': [
+            'Требуется ремонт помещения',
+            'Проблемы с вентиляцией',
+            'Нужна замена окон',
+            'Требуется покраска стен',
+            'Сломаны двери в кабинете'
+        ]
+    }
+};
+
+// ── Standalone (not object-bound) issue templates ─────────────────────────────
+
+const STANDALONE_TEMPLATES = {
+    Roads: [
+        'Яма на дороге угрожает безопасности',
+        'Разбитый асфальт на перекрёстке',
+        'Отсутствует разметка на дороге',
+        'Сломан светофор',
+        'Повреждённый тротуар',
+        'Нет пешеходного перехода',
+        'Затопление дороги после дождя',
+        'Упавшее дерево перекрыло проезд'
+    ],
+    'Water & Sewage': [
+        'Прорыв водопровода на улице',
+        'Вода течёт из-под земли',
+        'Неприятный запах из канализационного люка',
+        'Открытый канализационный люк',
+        'Затопление подвала из-за прорыва',
+        'Отключили воду без предупреждения'
+    ],
+    Electricity: [
+        'Оборванный провод на земле',
+        'Не горят фонари на улице',
+        'Искрит электрощит во дворе',
+        'Отключили электричество в квартале',
+        'Провода свисают над тротуаром'
+    ],
+    'Waste Management': [
+        'Стихийная свалка мусора во дворе',
+        'Переполненные мусорные контейнеры',
+        'Мусор не убирают уже несколько дней',
+        'Сжигают мусор рядом с жилыми домами',
+        'Нелегальный сброс строительного мусора',
+        'Нет мусорных контейнеров в районе'
+    ]
+};
+
+// Approximate bounding box for Tashkent city
+const TASHKENT_BOUNDS = { latMin: 41.20, latMax: 41.38, lngMin: 69.13, lngMax: 69.38 };
+
+const STANDALONE_CATEGORIES = Object.keys(STANDALONE_TEMPLATES);
+
+// Maps objectType → IssueCategory value for object-bound issues
+const OBJECT_TYPE_CATEGORY = {
+    school:       'Schools & Kindergartens',
+    kindergarten: 'Schools & Kindergartens',
+    health_post:  'Hospitals & Clinics'
+};
+
+const COMMENT_TEMPLATES = [
+    'Когда планируется ремонт?',
+    'Проблема существует уже давно',
+    'Ситуация критическая, нужно срочно решить',
+    'Спасибо за внимание к проблеме',
+    'Поддерживаю, у нас тоже самое',
+    'Надеюсь скоро починят',
+    'Проблема актуальна уже несколько недель'
+];
 
 const MOCK_USER_NAMES = [
     'Тимур Алимов', 'Нигора Саидова', 'Азиза Каримова', 'Бобур Рахимов',
@@ -24,337 +153,173 @@ const MOCK_USER_NAMES = [
     'Нилюфер Абдуллаева', 'Шухрат Камалов', 'Диёра Усманова', 'Фаррух Ахмадов',
     'Мадина Рахмонова', 'Санжарбек Холматов', 'Нозима Турсунова', 'Умидбек Саттаров',
     'Дилором Мирзаева', 'Жавлон Исмоилов', 'Сайёра Юлдашева', 'Акмал Раимов',
-    'Шахноза Садыкова', 'Дониёр Муродов', 'Нигора Алимова', 'Бахтиёр Эргашев',
-    'Зулфия Холматова', 'Рашид Абдуллаев', 'Латофат Каримова', 'Шахбоз Раупов',
-    'Мухаббат Усмонова', 'Комил Шарипов', 'Дилноз Рахимова', 'Жасурбек Назаров',
-    'Феруза Султанова', 'Ойбек Турдиев', 'Нозима Юнусова', 'Равшанбек Махмудов',
-    'Дилдора Аминова', 'Шерзодбек Джураева', 'Гулнора Каримова', 'Достонбек Исмаилов',
-    'Шахзод Расулов', 'Нилуфар Тошматова', 'Бахром Махмудов', 'Озодахон Нурматова',
-    'Умидбек Абдуллаев', 'Дилафруз Камолова', 'Жавохир Усманов', 'Мадина Ахмадова',
-    'Шухрат Рахмонов', 'Нозимахон Холматова', 'Фарход Турсунов', 'Диёрабону Саттарова',
-    'Санжар Мирзаев', 'Сайёрахон Исмоилова', 'Акмалбек Юлдашев', 'Зулфияхон Раимова',
-    'Рашидбек Садыков', 'Латофатхон Муродова', 'Шахбозбек Алимов', 'Мухаббатхон Эргашева',
-    'Комилбек Холматов', 'Дилнозахон Абдуллаева', 'Жасур Каримов', 'Ойбекбек Раупов'
+    'Шахноза Садыкова', 'Дониёр Муродов', 'Нигора Алимова', 'Бахтиёр Эргашев'
 ];
 
-const PROBLEM_TEMPLATES = {
-    'Schools & Kindergartens': {
-        Water: [
-            'Не работает водопровод в туалете',
-            'Протечка воды в коридоре',
-            'Слабый напор воды',
-            'Проблемы с горячей водой'
-        ],
-        Electricity: [
-            'Отключили свет в классе',
-            'Не работает освещение',
-            'Проблемы с розетками',
-            'Перегорели лампы'
-        ],
-        'General/Other': [
-            'Требуется ремонт крыши',
-            'Сломаны окна',
-            'Проблемы с отоплением',
-            'Нужен ремонт пола'
-        ]
-    },
-    'Hospitals & Clinics': {
-        Water: [
-            'Нет воды в процедурной',
-            'Протечка в санузле',
-            'Низкое давление воды',
-            'Проблемы с канализацией'
-        ],
-        Electricity: [
-            'Отключение электричества',
-            'Неисправность освещения',
-            'Проблемы с электропитанием аппаратуры',
-            'Перебои со светом'
-        ],
-        'General/Other': [
-            'Ремонт помещения',
-            'Проблемы с вентиляцией',
-            'Нужна замена окон',
-            'Требуется покраска стен'
-        ]
-    }
-};
+const randomChoice  = (arr)       => arr[Math.floor(Math.random() * arr.length)];
+const randomBetween = (min, max)  => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomFloat   = (min, max)  => Math.random() * (max - min) + min;
 
-// Standalone issue templates — no organization, reported by citizens on the street.
-// Keys MUST match IssueCategory enum values in types.ts exactly.
-const STANDALONE_TEMPLATES = {
-    Roads: [
-        'Яма на дороге угрожает безопасности',
-        'Разбитый асфальт на перекрёстке',
-        'Отсутствует разметка на дороге',
-        'Сломан светофор',
-        'Повреждённый тротуар',
-        'Нет пешеходного перехода',
-        'Затопление дороги после дождя',
-        'Упавшее дерево перекрыло проезд',
-        'Выбоины на дороге рядом с жилым домом',
-        'Сломан дорожный знак'
-    ],
-    'Water & Sewage': [
-        'Прорыв водопровода на улице',
-        'Вода течёт из-под земли',
-        'Неприятный запах из канализационного люка',
-        'Открытый канализационный люк',
-        'Затопление подвала из-за прорыва',
-        'Лужа из грунтовых вод посреди двора',
-        'Отключили воду без предупреждения',
-        'Ржавая вода из крана'
-    ],
-    Electricity: [
-        'Оборванный провод на земле',
-        'Не горят фонари на улице',
-        'Искрит электрощит во дворе',
-        'Отключили электричество в квартале',
-        'Сломан уличный фонарь',
-        'Провода свисают над тротуаром'
-    ],
-    'Schools & Kindergartens': [
-        'Опасный участок дороги к школе',
-        'Нет пешеходного перехода у школы',
-        'Стихийная свалка рядом со школой',
-        'Отсутствует освещение у входа в школу'
-    ],
-    'Hospitals & Clinics': [
-        'Несанкционированная свалка рядом с поликлиникой',
-        'Нет пандуса у входа в медучреждение',
-        'Опасный участок на пути к больнице',
-        'Грязь и антисанитария у входа'
-    ],
-    'Waste Management': [
-        'Стихийная свалка мусора во дворе',
-        'Переполненные мусорные контейнеры',
-        'Мусор не убирают уже несколько дней',
-        'Сжигают мусор рядом с жилыми домами',
-        'Нелегальный сброс строительного мусора',
-        'Нет мусорных контейнеров в районе',
-        'Разбросанный мусор после рынка',
-        'Мусорный бак сломан и переполнен'
-    ]
-};
-
-// Approximate bounding box for Tashkent city
-const TASHKENT_BOUNDS = {
-    latMin: 41.20,
-    latMax: 41.38,
-    lngMin: 69.13,
-    lngMax: 69.38
-};
-
-const STANDALONE_CATEGORIES = Object.keys(STANDALONE_TEMPLATES);
-
-const COMMENT_TEMPLATES = [
-    'Когда планируется ремонт?',
-    'Ситуация критическая, нужно срочно решить',
-    'Спасибо за внимание к проблеме',
-    'Поддерживаю, у нас тоже самое',
-    'Надеюсь скоро починят',
-    'Проблема актуальна уже несколько недель'
-];
-
-const randomChoice = (array) => array[Math.floor(Math.random() * array.length)];
-const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const randomFloat = (min, max) => Math.random() * (max - min) + min;
+// ── generateMockData ──────────────────────────────────────────────────────────
 
 export const generateMockData = async (count = 1000, includeComments = true) => {
     console.log(`🌱 Generating ${count} mock issues...`);
 
-    // Auto-clear any leftover seeded data from previous runs to avoid duplicate key errors
-    const existingSeededIssueIds = await Issue.find({ isSeeded: true }).distinct('_id');
-    if (existingSeededIssueIds.length > 0) {
-        console.log(`🧹 Clearing ${existingSeededIssueIds.length} leftover seeded issues from previous run...`);
-        await Comment.deleteMany({ issueId: { $in: existingSeededIssueIds } });
+    // Auto-clear any leftover seeded data
+    const existingIds = await Issue.find({ isSeeded: true }).distinct('_id');
+    if (existingIds.length > 0) {
+        console.log(`🧹 Clearing ${existingIds.length} leftover seeded issues...`);
+        await Comment.deleteMany({ issueId: { $in: existingIds } });
         await Issue.deleteMany({ isSeeded: true });
         await User.deleteMany({ isSeeded: true });
-        console.log(`✅ Cleared previous seeded data`);
     }
 
-    // Step 1: Calculate how many users we need (1 user per 10 issues + 5 comments)
-    const usersNeeded = Math.ceil(count / 10);
-    console.log(`👥 Creating ${usersNeeded} mock users...`);
+    // Step 1: Create mock users (1 per 10 issues)
+    const usersNeeded     = Math.ceil(count / 10);
+    const hashedPassword  = await bcrypt.hash('MockUser123!', 10);
+    const runId           = Date.now();
 
-    // Step 2: Create mock users with hashed password
-    const hashedPassword = await bcrypt.hash('MockUser123!', 10);
-    // Timestamp prefix ensures emails are unique across runs (secondary safety net)
-    const runId = Date.now();
-    const mockUsers = [];
-
-    for (let i = 0; i < usersNeeded; i++) {
-        const userName = MOCK_USER_NAMES[i % MOCK_USER_NAMES.length];
-        const email = `mock.${runId}.${i + 1}@test.ymap.uz`;
-
-        mockUsers.push({
-            name: userName,
-            email,
-            password: hashedPassword,
-            role: 'CITIZEN',
-            district: 'Tashkent',
-            isSeeded: true
-        });
-    }
+    const mockUsers = Array.from({ length: usersNeeded }, (_, i) => ({
+        name:      MOCK_USER_NAMES[i % MOCK_USER_NAMES.length],
+        email:     `mock.${runId}.${i + 1}@test.ymap.uz`,
+        password:  hashedPassword,
+        role:      'CITIZEN',
+        isSeeded:  true
+    }));
 
     const insertedUsers = await User.insertMany(mockUsers);
     console.log(`✅ Created ${insertedUsers.length} mock users`);
 
-    // Step 3: Get organizations
-    const orgs = await Organization.find().limit(500);
+    // Step 2: Load objects from the unified Object collection (sample up to 500)
+    const objects = await Object_.find().limit(500).lean();
 
-    if (orgs.length === 0) {
-        throw new Error('No organizations found. Please import organizations first.');
+    if (objects.length === 0) {
+        throw new Error('No objects found. Please sync objects first via POST /api/admin/sync-objects.');
     }
 
-    // Step 4: Generate issues with user assignment.
-    // ~30% of issues are standalone (no organization), ~70% are org-bound.
-    const issues = [];
-    const now = Date.now();
+    // Step 3: Generate issues
+    const issues       = [];
+    const now          = Date.now();
     const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
 
     for (let i = 0; i < count; i++) {
-        // Assign user: every 10 issues to same user
-        const userIndex = Math.floor(i / 10);
-        const user = insertedUsers[userIndex];
-
-        // Weight severities: 70% Medium/Low, 30% High/Critical
-        const severityRand = Math.random();
-        let severity;
-        if (severityRand > 0.9) severity = 'Critical';
-        else if (severityRand > 0.7) severity = 'High';
-        else if (severityRand > 0.4) severity = 'Medium';
-        else severity = 'Low';
-
-        // Weight statuses: 70% Open, 20% In Progress, 10% Resolved
-        const statusRand = Math.random();
-        let status;
-        if (statusRand > 0.9) status = 'Resolved';
-        else if (statusRand > 0.7) status = 'In Progress';
-        else status = 'Open';
-
+        const user      = insertedUsers[Math.floor(i / 10)];
         const createdAt = new Date(ninetyDaysAgo + Math.random() * (now - ninetyDaysAgo));
 
+        const severityRand = Math.random();
+        const severity = severityRand > 0.9 ? 'Critical' : severityRand > 0.7 ? 'High' : severityRand > 0.4 ? 'Medium' : 'Low';
+
+        const statusRand = Math.random();
+        const status = statusRand > 0.9 ? 'Resolved' : statusRand > 0.7 ? 'In Progress' : 'Open';
+
         if (Math.random() < 0.3) {
-            // --- Standalone issue (no organization) ---
+            // ── Standalone issue ──────────────────────────────────────────────
             const category = randomChoice(STANDALONE_CATEGORIES);
-            const title = randomChoice(STANDALONE_TEMPLATES[category]);
-            const lat = randomFloat(TASHKENT_BOUNDS.latMin, TASHKENT_BOUNDS.latMax);
-            const lng = randomFloat(TASHKENT_BOUNDS.lngMin, TASHKENT_BOUNDS.lngMax);
+            const title    = randomChoice(STANDALONE_TEMPLATES[category]);
+            const lat      = randomFloat(TASHKENT_BOUNDS.latMin, TASHKENT_BOUNDS.latMax);
+            const lng      = randomFloat(TASHKENT_BOUNDS.lngMin, TASHKENT_BOUNDS.lngMax);
 
             issues.push({
                 lat,
                 lng,
-                location: {
-                    type: 'Point',
-                    coordinates: [lng, lat]
-                },
+                location:    { type: 'Point', coordinates: [lng, lat] },
                 title,
-                description: `Обращение от жителя. ${title}. Просьба обратить внимание и решить проблему.`,
+                description: `Обращение от жителя. ${title}. Просьба обратить внимание.`,
                 category,
                 subCategory: 'General/Other',
                 severity,
                 status,
-                votes: randomBetween(1, 300),
-                userId: user._id,
-                // organizationId and organizationName intentionally omitted
-                aiSummary: `Автоматически определено: ${severity} приоритет. Самостоятельное обращение без привязки к учреждению.`,
-                isSeeded: true,
+                votes:       randomBetween(1, 300),
+                userId:      user._id,
+                aiSummary:   `Автоматически определено: ${severity} приоритет.`,
+                isSeeded:    true,
                 createdAt
             });
-        } else {
-            // --- Org-bound issue ---
-            const org = randomChoice(orgs);
-            const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
-            const templates = PROBLEM_TEMPLATES[org.type][subCategory];
-            const title = randomChoice(templates);
 
-            const latOffset = (Math.random() - 0.5) * 0.002;
-            const lngOffset = (Math.random() - 0.5) * 0.002;
+        } else {
+            // ── Object-bound issue ────────────────────────────────────────────
+            const obj        = randomChoice(objects);
+            const objType    = obj.objectType;
+            const templates  = PROBLEM_TEMPLATES[objType] || PROBLEM_TEMPLATES.school;
+            const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
+            const title      = randomChoice(templates[subCategory] || templates['General/Other']);
+            const category   = OBJECT_TYPE_CATEGORY[objType] || 'Schools & Kindergartens';
+
+            const latOffset  = (Math.random() - 0.5) * 0.002;
+            const lngOffset  = (Math.random() - 0.5) * 0.002;
 
             issues.push({
-                lat: org.lat + latOffset,
-                lng: org.lng + lngOffset,
-                location: {
-                    type: 'Point',
-                    coordinates: [org.lng + lngOffset, org.lat + latOffset]
-                },
+                lat:         obj.lat + latOffset,
+                lng:         obj.lng + lngOffset,
+                location:    { type: 'Point', coordinates: [obj.lng + lngOffset, obj.lat + latOffset] },
                 title,
-                description: `Обращение по объекту ${org.name}. ${title}. Требуется решение проблемы.`,
-                category: org.type,
+                description: `Обращение по объекту ${obj.name}. ${title}. Требуется решение.`,
+                category,
                 subCategory,
                 severity,
                 status,
-                votes: randomBetween(1, 500),
-                userId: user._id,
-                organizationId: org._id.toString(),
-                organizationName: org.name,
-                aiSummary: `Автоматически определено: ${severity} приоритет. Категория: ${subCategory}.`,
-                isSeeded: true,
+                votes:       randomBetween(1, 500),
+                userId:      user._id,
+                objectId:    obj._id.toString(),
+                objectName:  obj.name,
+                aiSummary:   `Автоматически определено: ${severity} приоритет.`,
+                isSeeded:    true,
                 createdAt
             });
         }
     }
 
     const insertedIssues = await Issue.insertMany(issues);
-    const standaloneCount = issues.filter(i => !i.organizationId).length;
-    const orgBoundCount = issues.length - standaloneCount;
-    console.log(`✅ Created ${insertedIssues.length} mock issues (${orgBoundCount} org-bound, ${standaloneCount} standalone)`);
+    const standaloneCount = issues.filter(i => !i.objectId).length;
+    const boundCount      = issues.length - standaloneCount;
+    console.log(`✅ Created ${insertedIssues.length} mock issues (${boundCount} object-bound, ${standaloneCount} standalone)`);
 
-    // Step 5: Generate comments with user assignment
+    // Step 4: Generate comments
     let commentsGenerated = 0;
     if (includeComments) {
         const allComments = [];
-
-        for (let userIndex = 0; userIndex < insertedUsers.length; userIndex++) {
-            const user = insertedUsers[userIndex];
-
-            // Each user creates 5 comments on random issues
+        for (let u = 0; u < insertedUsers.length; u++) {
             for (let j = 0; j < 5; j++) {
-                const randomIssue = randomChoice(insertedIssues);
-
                 allComments.push({
-                    issueId: randomIssue._id,
-                    userId: user._id,
-                    author: user.name,
-                    text: randomChoice(COMMENT_TEMPLATES),
+                    issueId:   randomChoice(insertedIssues)._id,
+                    userId:    insertedUsers[u]._id,
+                    author:    insertedUsers[u].name,
+                    text:      randomChoice(COMMENT_TEMPLATES),
                     createdAt: new Date(now - randomBetween(0, 30 * 24 * 60 * 60 * 1000))
                 });
                 commentsGenerated++;
             }
         }
-
-        if (allComments.length > 0) {
-            await Comment.insertMany(allComments);
-        }
+        if (allComments.length > 0) await Comment.insertMany(allComments);
     }
 
-    console.log(`✅ Generated ${count} mock issues with ${commentsGenerated} comments from ${usersNeeded} users`);
+    console.log(`✅ Generated ${count} mock issues with ${commentsGenerated} comments`);
 
     return {
-        generated: count,
+        generated:  count,
         standalone: standaloneCount,
-        orgBound: orgBoundCount,
-        comments: commentsGenerated,
-        users: usersNeeded,
-        organizations: orgs.length
+        bound:      boundCount,
+        comments:   commentsGenerated,
+        users:      usersNeeded,
+        objects:    objects.length
     };
 };
 
+// ── clearSeededData ───────────────────────────────────────────────────────────
+
 export const clearSeededData = async () => {
-    // Get all seeded issue IDs before deletion
-    const seededIssueIds = await Issue.find({ isSeeded: true }).distinct('_id');
+    const seededIds = await Issue.find({ isSeeded: true }).distinct('_id');
+    const [commentsResult, issuesResult, usersResult] = await Promise.all([
+        Comment.deleteMany({ issueId: { $in: seededIds } }),
+        Issue.deleteMany({ isSeeded: true }),
+        User.deleteMany({ isSeeded: true })
+    ]);
 
-    // Delete in order: Comments -> Issues -> Users
-    const commentsResult = await Comment.deleteMany({ issueId: { $in: seededIssueIds } });
-    const issuesResult = await Issue.deleteMany({ isSeeded: true });
-    const usersResult = await User.deleteMany({ isSeeded: true });
-
-    console.log(`🗑️ Cleared ${issuesResult.deletedCount} seeded issues, ${commentsResult.deletedCount} comments, and ${usersResult.deletedCount} users`);
+    console.log(`🗑️ Cleared ${issuesResult.deletedCount} seeded issues, ${commentsResult.deletedCount} comments, ${usersResult.deletedCount} users`);
 
     return {
-        issues: issuesResult.deletedCount,
+        issues:   issuesResult.deletedCount,
         comments: commentsResult.deletedCount,
-        users: usersResult.deletedCount
+        users:    usersResult.deletedCount
     };
 };

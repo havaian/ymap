@@ -1,9 +1,9 @@
 /**
- * Ensure Indexes Script
- * 
+ * backend/src/scripts/ensure-indexes.js
+ *
  * Creates compound indexes that the analytics aggregation pipelines need.
  * Safe to run multiple times — MongoDB skips existing indexes.
- * 
+ *
  * Usage:
  *   docker compose exec backend node src/scripts/ensure-indexes.js
  */
@@ -25,48 +25,67 @@ async function main() {
     const db = mongoose.connection.db;
 
     const indexes = [
-        // ── Issues ──
+        // ── Issues ────────────────────────────────────────────────────────────
         {
             collection: 'issues',
             indexes: [
                 { key: { regionCode: 1, districtId: 1 }, name: 'issues_region_district' },
-                { key: { districtId: 1, status: 1 }, name: 'issues_district_status' },
-                { key: { districtId: 1, severity: 1 }, name: 'issues_district_severity' },
+                { key: { districtId: 1, status: 1 },     name: 'issues_district_status' },
+                { key: { districtId: 1, severity: 1 },   name: 'issues_district_severity' },
                 { key: { regionCode: 1, createdAt: -1 }, name: 'issues_region_created' },
-                { key: { category: 1, regionCode: 1 }, name: 'issues_category_region' },
-                { key: { status: 1, createdAt: -1 }, name: 'issues_status_created' },
-                { key: { votes: -1 }, name: 'issues_votes_desc' },
+                { key: { category: 1, regionCode: 1 },   name: 'issues_category_region' },
+                { key: { status: 1, createdAt: -1 },     name: 'issues_status_created' },
+                { key: { votes: -1 },                    name: 'issues_votes_desc' },
+                { key: { objectId: 1 },                  name: 'issues_object_id' },
             ]
         },
-        // ── Organizations ──
+        // ── Objects (unified facility collection) ─────────────────────────────
         {
-            collection: 'organizations',
+            collection: 'objects',
             indexes: [
-                { key: { regionCode: 1, districtId: 1 }, name: 'orgs_region_district' },
-                { key: { districtId: 1, type: 1 }, name: 'orgs_district_type' },
-                { key: { type: 1, regionCode: 1 }, name: 'orgs_type_region' },
-                { key: { lat: 1, lng: 1 }, name: 'orgs_latlng' },
+                { key: { regionCode: 1, districtId: 1 },  name: 'objects_region_district' },
+                { key: { districtId: 1, objectType: 1 },  name: 'objects_district_type' },
+                { key: { objectType: 1, regionCode: 1 },  name: 'objects_type_region' },
+                { key: { viloyat: 1 },                    name: 'objects_viloyat' },
+                { key: { lat: 1, lng: 1 },                name: 'objects_latlng' },
+                { key: { inn: 1, code: 1, sourceApi: 1 }, name: 'objects_upsert_key', sparse: true },
             ]
         },
-        // ── Infrastructure ──
+        // ── Tasks ─────────────────────────────────────────────────────────────
         {
-            collection: 'infrastructures',
+            collection: 'tasks',
             indexes: [
-                { key: { regionCode: 1, districtId: 1 }, name: 'infra_region_district' },
-                { key: { districtId: 1, type: 1 }, name: 'infra_district_type' },
-                { key: { type: 1, regionCode: 1 }, name: 'infra_type_region' },
-                { key: { lat: 1, lng: 1 }, name: 'infra_latlng' },
+                { key: { targetId: 1, status: 1 },   name: 'tasks_target_status' },
+                { key: { programId: 1, status: 1 },  name: 'tasks_program_status' },
+                { key: { allocationId: 1 },          name: 'tasks_allocation' },
+                { key: { deadline: 1 },              name: 'tasks_deadline' },
             ]
         },
-        // ── Districts ──
+        // ── Programs ──────────────────────────────────────────────────────────
+        {
+            collection: 'programs',
+            indexes: [
+                { key: { status: 1 },                    name: 'programs_status' },
+                { key: { 'scope.regionCode': 1 },        name: 'programs_scope_region' },
+            ]
+        },
+        // ── Budget Allocations ────────────────────────────────────────────────
+        {
+            collection: 'budgetallocations',
+            indexes: [
+                { key: { targetType: 1, targetId: 1 }, name: 'allocations_target' },
+            ]
+        },
+        // ── Districts ─────────────────────────────────────────────────────────
         {
             collection: 'districts',
             indexes: [
-                { key: { regionCode: 1 }, name: 'districts_region' },
-                { key: { 'name.en': 1 }, name: 'districts_name_en' },
+                { key: { regionCode: 1 },   name: 'districts_region' },
+                { key: { 'name.en': 1 },    name: 'districts_name_en' },
+                { key: { code: 1 },         name: 'districts_code' },
             ]
         },
-        // ── Comments (for $lookup performance) ──
+        // ── Comments ──────────────────────────────────────────────────────────
         {
             collection: 'comments',
             indexes: [
@@ -82,18 +101,17 @@ async function main() {
         console.log(`📋 ${collection}:`);
         const col = db.collection(collection);
 
-        for (const idx of idxList) {
+        for (const { key, name, ...opts } of idxList) {
             try {
-                await col.createIndex(idx.key, { name: idx.name, background: true });
-                console.log(`   ✅ ${idx.name}`);
+                await col.createIndex(key, { name, background: true, ...opts });
+                console.log(`   ✅ ${name}`);
                 created++;
             } catch (err) {
                 if (err.code === 85 || err.code === 86) {
-                    // Index already exists (possibly with different options)
-                    console.log(`   ⏭  ${idx.name} (already exists)`);
+                    console.log(`   ⏭  ${name} (already exists)`);
                     skipped++;
                 } else {
-                    console.error(`   ❌ ${idx.name}: ${err.message}`);
+                    console.error(`   ❌ ${name}: ${err.message}`);
                 }
             }
         }

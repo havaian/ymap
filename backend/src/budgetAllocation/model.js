@@ -1,11 +1,14 @@
 // backend/src/budgetAllocation/model.js
+
 import mongoose from 'mongoose';
 
 const budgetAllocationSchema = new mongoose.Schema({
+    // 'object'  — funds allocated to a specific facility
+    // 'program' — funds allocated to a whole governmental program
     targetType: {
         type: String,
         required: true,
-        enum: ['organization', 'infrastructure'],
+        enum: ['object', 'program'],
         index: true
     },
     targetId: {

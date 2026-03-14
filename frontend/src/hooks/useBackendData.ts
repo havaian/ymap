@@ -1,22 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { markersAPI, issuesAPI, organizationsAPI, adminAPI } from '../services/api';
-import { Issue, Organization, User } from '../../types';
+// frontend/src/hooks/useBackendData.ts
 
-/**
- * useIssues — OPTIMIZED
- * 
- * Initial load: /api/markers/issues (~80KB gzipped vs 798KB)
- *   Returns: id, lat, lng, title, category, severity, status, votes, organizationId, createdAt
- *   Missing: description, comments, author — fetched on demand
- * 
- * regionCode — when set, only issues from that region are loaded.
- *   Changing regionCode clears the cache and re-fetches.
- */
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { markersAPI, issuesAPI, objectsAPI, adminAPI } from '../services/api';
+import { Issue, FacilityObject, User } from '../../types';
+
+// ── useIssues ─────────────────────────────────────────────────────────────────
+// Initial load: /api/markers/issues — only map fields
+// Full details fetched on demand when a user opens an issue panel
+
 export const useIssues = (regionCode?: number | null) => {
-    const [issues, setIssues] = useState<Issue[]>([]);
+    const [issues, setIssues]   = useState<Issue[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    // Cache full issue details to avoid re-fetching
+    const [error, setError]     = useState<string | null>(null);
     const detailCache = useRef<Map<string, Issue>>(new Map());
 
     useEffect(() => {
@@ -26,7 +21,6 @@ export const useIssues = (regionCode?: number | null) => {
             try {
                 if (!isMounted) return;
                 setLoading(true);
-                // Clear detail cache whenever the region filter changes
                 detailCache.current.clear();
 
                 const params: Record<string, any> = {};
@@ -34,20 +28,16 @@ export const useIssues = (regionCode?: number | null) => {
 
                 const response = await markersAPI.getIssues(params);
                 if (isMounted) {
-                    const data = response.data.data.map((d: any) => ({
+                    setIssues(response.data.data.map((d: any) => ({
                         ...d,
                         comments: [],
                         description: '',
                         _isMarker: true
-                    }));
-                    setIssues(data);
+                    })));
                     setError(null);
                 }
             } catch (err: any) {
-                if (isMounted && err.name !== 'AbortError') {
-                    setError(err.response?.data?.message || 'Failed to fetch issues');
-                    console.error('Error fetching issue markers:', err);
-                }
+                if (isMounted) setError(err.response?.data?.message || 'Failed to fetch issues');
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -58,19 +48,12 @@ export const useIssues = (regionCode?: number | null) => {
     }, [regionCode]);
 
     const fetchDetail = useCallback(async (id: string): Promise<Issue | null> => {
-        if (detailCache.current.has(id)) {
-            return detailCache.current.get(id)!;
-        }
-
+        if (detailCache.current.has(id)) return detailCache.current.get(id)!;
         try {
             const response = await issuesAPI.getOne(id);
             const full = response.data.data;
             detailCache.current.set(id, full);
-
-            setIssues(prev => prev.map(i =>
-                i.id === id ? { ...i, ...full, _isMarker: false } : i
-            ));
-
+            setIssues(prev => prev.map(i => i.id === id ? { ...i, ...full, _isMarker: false } : i));
             return full;
         } catch (err) {
             console.error('Error fetching issue detail:', err);
@@ -128,9 +111,7 @@ export const useIssues = (regionCode?: number | null) => {
             const response = await issuesAPI.addComment(id, { text });
             const newComment = response.data.data;
             setIssues(prev => prev.map(i =>
-                i.id === id
-                    ? { ...i, comments: [newComment, ...(i.comments || [])] }
-                    : i
+                i.id === id ? { ...i, comments: [newComment, ...(i.comments || [])] } : i
             ));
             detailCache.current.delete(id);
             return { success: true, comment: newComment };
@@ -157,35 +138,18 @@ export const useIssues = (regionCode?: number | null) => {
         }
     };
 
-    return {
-        issues,
-        loading,
-        error,
-        refetch,
-        fetchDetail,
-        addIssue,
-        updateIssueStatus,
-        deleteIssue,
-        upvoteIssue,
-        addComment
-    };
+    return { issues, loading, error, refetch, fetchDetail, addIssue, updateIssueStatus, deleteIssue, upvoteIssue, addComment };
 };
 
-/**
- * useOrganizations — OPTIMIZED
- * 
- * Initial load: /api/markers/organizations (~60KB gzipped vs 3,922KB)
- *   Returns: id, lat, lng, name, type
- *   Missing: address, region, budget, year, sector — fetched on demand
- * 
- * regionCode — when set, only orgs from that region are loaded.
- *   Changing regionCode clears the cache and re-fetches.
- */
-export const useOrganizations = (regionCode?: number | null) => {
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const detailCache = useRef<Map<string, Organization>>(new Map());
+// ── useObjects ────────────────────────────────────────────────────────────────
+// Initial load: /api/markers/objects — only map fields (id, lat, lng, name, objectType, sourceApi)
+// Full details fetched on demand.
+
+export const useObjects = (regionCode?: number | null) => {
+    const [objects, setObjects]   = useState<FacilityObject[]>([]);
+    const [loading, setLoading]   = useState(true);
+    const [error, setError]       = useState<string | null>(null);
+    const detailCache = useRef<Map<string, FacilityObject>>(new Map());
 
     useEffect(() => {
         let isMounted = true;
@@ -193,22 +157,18 @@ export const useOrganizations = (regionCode?: number | null) => {
         const fetchMarkers = async () => {
             try {
                 setLoading(true);
-                // Clear detail cache whenever the region filter changes
                 detailCache.current.clear();
 
                 const params: Record<string, any> = {};
                 if (regionCode != null) params.regionCode = regionCode;
 
-                const response = await markersAPI.getOrganizations(params);
+                const response = await markersAPI.getObjects(params);
                 if (isMounted) {
-                    setOrganizations(response.data.data);
+                    setObjects(response.data.data);
                     setError(null);
                 }
             } catch (err: any) {
-                if (isMounted) {
-                    setError(err.response?.data?.message || 'Failed to fetch organizations');
-                    console.error('Error fetching org markers:', err);
-                }
+                if (isMounted) setError(err.response?.data?.message || 'Failed to fetch objects');
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -218,23 +178,16 @@ export const useOrganizations = (regionCode?: number | null) => {
         return () => { isMounted = false; };
     }, [regionCode]);
 
-    const fetchDetail = useCallback(async (id: string): Promise<Organization | null> => {
-        if (detailCache.current.has(id)) {
-            return detailCache.current.get(id)!;
-        }
-
+    const fetchDetail = useCallback(async (id: string): Promise<FacilityObject | null> => {
+        if (detailCache.current.has(id)) return detailCache.current.get(id)!;
         try {
-            const response = await organizationsAPI.getOne(id);
+            const response = await objectsAPI.getOne(id);
             const full = response.data.data;
             detailCache.current.set(id, full);
-
-            setOrganizations(prev => prev.map(o =>
-                o.id === id ? { ...full } : o
-            ));
-
+            setObjects(prev => prev.map(o => o.id === id ? { ...full } : o));
             return full;
         } catch (err) {
-            console.error('Error fetching org detail:', err);
+            console.error('Error fetching object detail:', err);
             return null;
         }
     }, []);
@@ -245,37 +198,31 @@ export const useOrganizations = (regionCode?: number | null) => {
             detailCache.current.clear();
             const params: Record<string, any> = {};
             if (regionCode != null) params.regionCode = regionCode;
-            const response = await markersAPI.getOrganizations(params);
-            setOrganizations(response.data.data);
+            const response = await markersAPI.getObjects(params);
+            setObjects(response.data.data);
             setError(null);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch organizations');
+            setError(err.response?.data?.message || 'Failed to fetch objects');
         } finally {
             setLoading(false);
         }
     };
 
-    return {
-        organizations,
-        loading,
-        error,
-        refetch,
-        fetchDetail
-    };
+    return { objects, loading, error, refetch, fetchDetail };
 };
 
+// ── useUsers ──────────────────────────────────────────────────────────────────
+
 export const useUsers = () => {
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers]     = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError]     = useState<string | null>(null);
 
     useEffect(() => {
-        const abortController = new AbortController();
         let isMounted = true;
 
         const fetchUsers = async () => {
             try {
-                if (!isMounted) return;
                 setLoading(true);
                 const response = await adminAPI.getUsers();
                 if (isMounted) {
@@ -283,29 +230,20 @@ export const useUsers = () => {
                     setError(null);
                 }
             } catch (err: any) {
-                if (isMounted && err.name !== 'AbortError') {
-                    setError(err.response?.data?.message || 'Failed to fetch users');
-                    console.error('Error fetching users:', err);
-                }
+                if (isMounted) setError(err.response?.data?.message || 'Failed to fetch users');
             } finally {
                 if (isMounted) setLoading(false);
             }
         };
 
         fetchUsers();
-
-        return () => {
-            isMounted = false;
-            abortController.abort();
-        };
+        return () => { isMounted = false; };
     }, []);
 
     const toggleBlockUser = async (userId: string, currentBlocked: boolean) => {
         try {
             await adminAPI.blockUser(userId, !currentBlocked);
-            setUsers(users.map(u =>
-                u.id === userId ? { ...u, blocked: !currentBlocked } : u
-            ));
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, blocked: !currentBlocked } : u));
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.response?.data?.message };

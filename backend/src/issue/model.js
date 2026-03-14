@@ -1,3 +1,5 @@
+// backend/src/issue/model.js
+
 import mongoose from 'mongoose';
 
 const issueSchema = new mongoose.Schema({
@@ -55,16 +57,11 @@ const issueSchema = new mongoose.Schema({
     aiSummary: {
         type: String
     },
-    organizationId: {
+    // Linked facility object
+    objectId: {
         type: String
     },
-    organizationName: {
-        type: String
-    },
-    infrastructureId: {
-        type: String
-    },
-    infrastructureName: {
+    objectName: {
         type: String
     },
     userId: {

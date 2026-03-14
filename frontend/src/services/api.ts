@@ -1,35 +1,29 @@
+// frontend/src/services/api.ts
+
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 const API_BASE_URL = '/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Request interceptor - add auth token
+// Request interceptor — attach JWT
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle errors
+// Response interceptor — redirect to /login on 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const is401 = error.response?.status === 401;
-    // Don't redirect if the 401 came from login/register themselves
-    // (wrong password etc.) — that's a normal error the UI handles inline.
     const isAuthEndpoint: boolean =
       error.config?.url?.includes('/auth/login') ||
       error.config?.url?.includes('/auth/register');
@@ -40,12 +34,11 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
-
     return Promise.reject(error);
   }
 );
 
-// ─── Types ────────────────────────────────────────────
+// ── Param types ───────────────────────────────────────────────────────────────
 
 interface IssueFilterParams {
   category?: string;
@@ -54,22 +47,11 @@ interface IssueFilterParams {
   regionCode?: number;
 }
 
-interface OrgFilterParams {
-  type?: string;
+interface ObjectFilterParams {
+  objectType?: string;
+  sourceApi?: string;
   regionCode?: number;
-}
-
-interface InfraFilterParams {
-  type?: string;
-  region?: string;
-  regionCode?: number;
-}
-
-interface NearbyParams {
-  lat: number;
-  lng: number;
-  maxDistance?: number;
-  type?: string;
+  districtId?: string;
 }
 
 interface ApiResult<T = any> {
@@ -79,7 +61,7 @@ interface ApiResult<T = any> {
   error?: string;
 }
 
-// ─── Auth API ─────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const authAPI = {
   register: (data: { name: string; email: string; password: string }): Promise<AxiosResponse> =>
@@ -90,18 +72,17 @@ export const authAPI = {
     api.get('/auth/me')
 };
 
-// ─── Markers API (lightweight, for map display) ───────
+// ── Markers (lightweight, map display) ───────────────────────────────────────
 
 export const markersAPI = {
   getIssues: (params?: IssueFilterParams): Promise<AxiosResponse> =>
     api.get('/markers/issues', { params }),
-  getOrganizations: (params?: OrgFilterParams): Promise<AxiosResponse> =>
-    api.get('/markers/organizations', { params }),
-  getInfrastructure: (params?: InfraFilterParams): Promise<AxiosResponse> =>
-    api.get('/markers/infrastructure', { params }),
+  // Single endpoint replacing /markers/organizations + /markers/infrastructure
+  getObjects: (params?: ObjectFilterParams): Promise<AxiosResponse> =>
+    api.get('/markers/objects', { params })
 };
 
-// ─── Full detail APIs (on-demand, when user clicks) ───
+// ── Issues ────────────────────────────────────────────────────────────────────
 
 export const issuesAPI = {
   getAll: (params?: IssueFilterParams & { limit?: number }): Promise<AxiosResponse> =>
@@ -122,162 +103,149 @@ export const issuesAPI = {
     api.get(`/issues/${id}/comments`)
 };
 
-// ─── Organizations API ────────────────────────────────
+// ── Objects (replaces organizationsAPI + infrastructureAPI) ───────────────────
 
-export const organizationsAPI = {
-  getAll: (params?: OrgFilterParams): Promise<AxiosResponse> =>
-    api.get('/organizations', { params }),
+export const objectsAPI = {
+  getAll: (params?: ObjectFilterParams & { limit?: number; offset?: number }): Promise<AxiosResponse> =>
+    api.get('/objects', { params }),
   getOne: (id: string): Promise<AxiosResponse> =>
-    api.get(`/organizations/${id}`),
-  getNearby: (params?: NearbyParams): Promise<AxiosResponse> =>
-    api.get('/organizations/nearby', { params })
+    api.get(`/objects/${id}`)
 };
 
-// ─── Admin API ────────────────────────────────────────
+// ── Programs ──────────────────────────────────────────────────────────────────
+
+export const programsAPI = {
+  getAll: (params?: { status?: string; regionCode?: number }): Promise<AxiosResponse> =>
+    api.get('/programs', { params }),
+  getOne: (id: string): Promise<AxiosResponse> =>
+    api.get(`/programs/${id}`),
+  create: (data: Record<string, any>): Promise<AxiosResponse> =>
+    api.post('/programs', data),
+  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
+    api.patch(`/programs/${id}`, data),
+  delete: (id: string): Promise<AxiosResponse> =>
+    api.delete(`/programs/${id}`),
+  assignObjects: (id: string): Promise<AxiosResponse> =>
+    api.post(`/programs/${id}/assign-objects`),
+  addObject: (programId: string, objectId: string): Promise<AxiosResponse> =>
+    api.post(`/programs/${programId}/objects/${objectId}`),
+  removeObject: (programId: string, objectId: string): Promise<AxiosResponse> =>
+    api.delete(`/programs/${programId}/objects/${objectId}`)
+};
+
+// ── Tasks (replaces promisesAPI) ──────────────────────────────────────────────
+
+export const tasksAPI = {
+  // Reads
+  getByObject: (targetId: string): Promise<AxiosResponse> =>
+    api.get('/tasks', { params: { targetId } }),
+  getByProgram: (programId: string): Promise<AxiosResponse> =>
+    api.get('/tasks', { params: { programId } }),
+  getByAllocation: (allocationId: string): Promise<AxiosResponse> =>
+    api.get('/tasks', { params: { allocationId } }),
+  getByTarget: (targetId: string): Promise<AxiosResponse> =>
+    api.get('/tasks', { params: { targetId } }),
+  getStats: (): Promise<AxiosResponse> =>
+    api.get('/tasks/stats'),
+
+  // Admin writes
+  create: (data: Record<string, any>): Promise<AxiosResponse> =>
+    api.post('/tasks', data),
+  updateStatus: (id: string, status: string): Promise<AxiosResponse> =>
+    api.patch(`/tasks/${id}/status`, { status }),
+  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
+    api.patch(`/tasks/${id}`, data),
+  delete: (id: string): Promise<AxiosResponse> =>
+    api.delete(`/tasks/${id}`),
+
+  // Citizen actions
+  vote: (id: string, verdict: 'confirmed' | 'rejected'): Promise<AxiosResponse> =>
+    api.post(`/tasks/${id}/vote`, { verdict }),
+  uploadPhoto: (file: File): Promise<AxiosResponse> => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return api.post('/tasks/upload-photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  verify: (id: string, data: { status: 'done' | 'problem'; comment?: string; photoUrl?: string }): Promise<AxiosResponse> =>
+    api.post(`/tasks/${id}/verify`, data)
+};
+
+// ── Budget Allocations ────────────────────────────────────────────────────────
+
+export const allocationsAPI = {
+  getByTarget: (targetType: string, targetId: string): Promise<AxiosResponse> =>
+    api.get('/allocations', { params: { targetType, targetId } }),
+  create: (data: Record<string, any>): Promise<AxiosResponse> =>
+    api.post('/allocations', data),
+  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
+    api.patch(`/allocations/${id}`, data),
+  delete: (id: string): Promise<AxiosResponse> =>
+    api.delete(`/allocations/${id}`)
+};
+
+// ── Regions ───────────────────────────────────────────────────────────────────
+
+export const regionsAPI = {
+  getAll: (): Promise<AxiosResponse> =>
+    api.get('/regions'),
+  getByCode: (code: number): Promise<AxiosResponse> =>
+    api.get(`/regions/${code}`)
+};
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
 
 export const adminAPI = {
   getUsers: (): Promise<AxiosResponse> =>
     api.get('/admin/users'),
   blockUser: (id: string, blocked: boolean): Promise<AxiosResponse> =>
     api.patch(`/admin/users/${id}/block`, { blocked }),
-  uploadOrganizations: (file: File): Promise<AxiosResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/admin/upload/organizations', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
+  syncObjects: (): Promise<AxiosResponse> =>
+    api.post('/admin/sync-objects'),
+  getJobStatus: (jobId: string): Promise<AxiosResponse> =>
+    api.get(`/admin/jobs/${jobId}`),
   seedData: (data: Record<string, any>): Promise<AxiosResponse> =>
     api.post('/admin/seed/generate', data),
   clearSeeded: (): Promise<AxiosResponse> =>
     api.delete('/admin/seed/clear')
 };
 
-// ─── Infrastructure API ───────────────────────────────
+// ── Backward-compat aliases — prevent import errors in components not yet migrated ──
 
-export const infrastructureAPI = {
-  getAll: async (params?: InfraFilterParams): Promise<ApiResult> => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.type) queryParams.append('type', params.type);
-      if (params?.region) queryParams.append('region', params.region);
-      if (params?.regionCode != null) queryParams.append('regionCode', String(params.regionCode));
-
-      const queryString = queryParams.toString();
-      const url = queryString ? `/infrastructure?${queryString}` : '/infrastructure';
-      const response = await api.get(url);
-      return response.data;
-    } catch (error: any) {
-      return { success: false, error: error.message, data: [] };
-    }
-  },
-  getById: async (id: string): Promise<ApiResult> => {
-    try {
-      const response = await api.get(`/infrastructure/${id}`);
-      return response.data;
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  },
-  getNearby: async (lat: number, lng: number, maxDistance: number = 5000, type?: string): Promise<ApiResult> => {
-    try {
-      const params = new URLSearchParams({
-        lat: String(lat),
-        lng: String(lng),
-        maxDistance: String(maxDistance)
-      });
-      if (type) params.append('type', type);
-      const response = await api.get(`/infrastructure/nearby?${params}`);
-      return response.data;
-    } catch (error: any) {
-      return { success: false, error: error.message, data: [] };
-    }
-  }
-};
-
-// ─── Regions API ──────────────────────────────────────
-
-export const regionsAPI = {
-  getAll: (): Promise<AxiosResponse> =>
-    api.get('/regions'),
-  // Fetches a single region including its geometry — used by RegionBorderLayer
-  getByCode: (code: number): Promise<AxiosResponse> =>
-    api.get(`/regions/${code}`),
-};
-
-// ─── Promises API ─────────────────────────────────────────────────────────────
-
+/** @deprecated use tasksAPI */
 export const promisesAPI = {
-  // ── Read (authenticated) ──────────────────────────────────────────────────
-
-  // Shorthand used by OrgSidebar's PromisesSection
-  getByOrg: (orgId: string): Promise<AxiosResponse> =>
-    api.get('/promises', { params: { orgId } }),
-
-  // Shorthand used by InfraSidebar's PromisesSection
-  getByInfra: (infraId: string): Promise<AxiosResponse> =>
-    api.get('/promises', { params: { infraId } }),
-
-  // Generic — used by AllocationSection
-  getByTarget: (targetType: string, targetId: string): Promise<AxiosResponse> =>
-    api.get('/promises', { params: { targetType, targetId } }),
-
-  getByAllocation: (allocationId: string): Promise<AxiosResponse> =>
-    api.get('/promises', { params: { allocationId } }),
-
-  // ── Public ───────────────────────────────────────────────────────────────
-
-  getStats: (): Promise<AxiosResponse> =>
-    api.get('/promises/stats'),
-
-  // ── Admin writes ─────────────────────────────────────────────────────────
-
-  create: (data: Record<string, any>): Promise<AxiosResponse> =>
-    api.post('/promises', data),
-
-  updateStatus: (id: string, status: string): Promise<AxiosResponse> =>
-    api.patch(`/promises/${id}/status`, { status }),
-
-  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
-    api.patch(`/promises/${id}`, data),
-
-  delete: (id: string): Promise<AxiosResponse> =>
-    api.delete(`/promises/${id}`),
-
-  // ── Citizen: photo upload then verify ────────────────────────────────────
-
-  // Step 1 — upload photo, get back { photoUrl: 'filename.jpg' }
-  uploadPhoto: (file: File): Promise<AxiosResponse> => {
-    const formData = new FormData();
-    formData.append('photo', file);
-    return api.post('/promises/upload-photo', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
-
-  // Step 2 — submit done/problem verdict with optional photo + comment
-  verify: (id: string, data: { status: 'done' | 'problem'; comment?: string; photoUrl?: string }): Promise<AxiosResponse> =>
-    api.post(`/promises/${id}/verify`, data),
-
-  // ── Citizen: vote (AllocationSection vote UI) ─────────────────────────────
-  vote: (id: string, verdict: 'confirmed' | 'rejected'): Promise<AxiosResponse> =>
-    api.post(`/promises/${id}/vote`, { verdict })
+  getByOrg:       (orgId: string)                               => tasksAPI.getByObject(orgId),
+  getByInfra:     (infraId: string)                             => tasksAPI.getByObject(infraId),
+  getByTarget:    (_type: string, targetId: string)             => tasksAPI.getByTarget(targetId),
+  getByAllocation:(allocationId: string)                        => tasksAPI.getByAllocation(allocationId),
+  getStats:       ()                                            => tasksAPI.getStats(),
+  create:         (data: Record<string, any>)                   => tasksAPI.create(data),
+  updateStatus:   (id: string, status: string)                  => tasksAPI.updateStatus(id, status),
+  update:         (id: string, data: Record<string, any>)       => tasksAPI.update(id, data),
+  delete:         (id: string)                                  => tasksAPI.delete(id),
+  uploadPhoto:    (file: File)                                  => tasksAPI.uploadPhoto(file),
+  verify:         (id: string, data: any)                       => tasksAPI.verify(id, data),
+  vote:           (id: string, verdict: 'confirmed'|'rejected') => tasksAPI.vote(id, verdict)
 };
- 
-// ─── Budget Allocations API ───────────────────────────────────────────────────
- 
-export const allocationsAPI = {
-  getByTarget: (targetType: string, targetId: string): Promise<AxiosResponse> =>
-    api.get('/allocations', { params: { targetType, targetId } }),
- 
-  create: (data: Record<string, any>): Promise<AxiosResponse> =>
-    api.post('/allocations', data),
- 
-  update: (id: string, data: Record<string, any>): Promise<AxiosResponse> =>
-    api.patch(`/allocations/${id}`, data),
- 
-  delete: (id: string): Promise<AxiosResponse> =>
-    api.delete(`/allocations/${id}`)
+
+/** @deprecated use objectsAPI */
+export const organizationsAPI = {
+  getAll:   (params?: any) => objectsAPI.getAll(params),
+  getOne:   (id: string)   => objectsAPI.getOne(id),
+  getNearby: (_p: any)     => objectsAPI.getAll(_p)
+};
+
+/** @deprecated use objectsAPI */
+export const infrastructureAPI = {
+  getAll:   async (params?: any): Promise<ApiResult> => {
+    try { const r = await objectsAPI.getAll(params); return r.data; }
+    catch (e: any) { return { success: false, error: e.message, data: [] }; }
+  },
+  getById:  async (id: string): Promise<ApiResult> => {
+    try { const r = await objectsAPI.getOne(id); return r.data; }
+    catch (e: any) { return { success: false, error: e.message }; }
+  }
 };
 
 export default api;

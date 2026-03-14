@@ -1,169 +1,164 @@
-/**
- * OpenBudget Controller
- * 
- * Spec Section IV: Institution-level scoring for budget prioritization.
- * 
- * Priority Index = weighted composite of:
- *   - Issue burden (40%): unresolved issues weighted by severity
- *   - Budget efficiency (25%): spent/committed ratio (lower = worse = higher priority)
- *   - Community signal (20%): total votes on linked issues
- *   - Infrastructure gap (15%): missing infra in vicinity
- * 
- * Higher score = higher priority for funding.
- */
+// backend/src/openbudget/controller.js
+//
+// Priority Index = weighted composite of:
+//   - Issue burden   (40%): unresolved issues weighted by severity
+//   - Task gap       (25%): incomplete tasks / total tasks ratio
+//   - Community signal (20%): total votes on linked issues
+//   - Verification pressure (15%): problem verifications ratio
 
-import Organization from '../organization/model.js';
-import Infrastructure from '../infrastructure/model.js';
+import mongoose from 'mongoose';
+import Object_ from '../object/model.js';
 import Issue from '../issue/model.js';
+import Task from '../task/model.js';
+import BudgetAllocation from '../budgetAllocation/model.js';
 
 const SEVERITY_WEIGHTS = { Critical: 10, High: 5, Medium: 2, Low: 1 };
+const EDUCATION_TYPES  = ['school', 'kindergarten'];
+const HEALTH_TYPES     = ['health_post'];
 
-// ─────────────────────────────────────────────
-// GET /api/openbudget/scoring
-// Ranked list of all orgs by funding priority
-// Query: ?type=Schools & Kindergartens&regionName=Toshkent&limit=50&offset=0
-// ─────────────────────────────────────────────
-
+// ── GET /api/openbudget/scoring ───────────────────────────────────────────────
+// Ranked list of all objects by funding priority
+// Query: ?objectType=school&viloyat=Toshkent&limit=50&offset=0&sort=priorityScore&order=desc
 export const getOrgScoring = async (req, res) => {
     try {
         const {
-            type,
-            regionName,
-            limit = 50,
+            objectType,
+            viloyat,
+            limit  = 50,
             offset = 0,
-            sort = 'priorityScore', // priorityScore | issueBurden | budgetGap | name
-            order = 'desc'
+            sort   = 'priorityScore',
+            order  = 'desc'
         } = req.query;
 
-        const orgFilter = {};
-        if (type) orgFilter.type = type;
-        if (regionName) orgFilter['region.name'] = regionName;
+        const objFilter = {};
+        if (objectType) objFilter.objectType = objectType;
+        if (viloyat)    objFilter.viloyat     = viloyat;
 
-        // Step 1: Get all orgs with budget data
-        const orgs = await Organization.find(orgFilter)
-            .select('name type lat lng address region budget status')
+        const objects = await Object_.find(objFilter)
+            .select('name objectType sourceApi lat lng viloyat tuman regionCode districtId')
             .lean();
 
-        if (orgs.length === 0) {
+        if (objects.length === 0) {
             return res.json({ success: true, data: { total: 0, orgs: [] } });
         }
 
-        const orgIds = orgs.map(o => o._id.toString());
+        const objectIds = objects.map(o => o._id.toString());
 
-        // Step 2: Get issue stats per org (single aggregation)
+        // Issue stats per object — single aggregation
         const issueStats = await Issue.aggregate([
-            { $match: { organizationId: { $in: orgIds } } },
+            { $match: { objectId: { $in: objectIds } } },
             {
                 $group: {
-                    _id: '$organizationId',
-                    totalIssues: { $sum: 1 },
-                    openIssues: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } },
+                    _id:            '$objectId',
+                    totalIssues:    { $sum: 1 },
+                    openIssues:     { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } },
                     resolvedIssues: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
-                    criticalCount: { $sum: { $cond: [{ $eq: ['$severity', 'Critical'] }, 1, 0] } },
-                    highCount: { $sum: { $cond: [{ $eq: ['$severity', 'High'] }, 1, 0] } },
-                    mediumCount: { $sum: { $cond: [{ $eq: ['$severity', 'Medium'] }, 1, 0] } },
-                    lowCount: { $sum: { $cond: [{ $eq: ['$severity', 'Low'] }, 1, 0] } },
-                    totalVotes: { $sum: '$votes' },
-                    avgSeverityScore: {
-                        $avg: {
-                            $switch: {
-                                branches: [
-                                    { case: { $eq: ['$severity', 'Critical'] }, then: 10 },
-                                    { case: { $eq: ['$severity', 'High'] }, then: 5 },
-                                    { case: { $eq: ['$severity', 'Medium'] }, then: 2 },
-                                ],
-                                default: 1
+                    criticalCount:  { $sum: { $cond: [{ $eq: ['$severity', 'Critical'] }, 1, 0] } },
+                    highCount:      { $sum: { $cond: [{ $eq: ['$severity', 'High'] }, 1, 0] } },
+                    mediumCount:    { $sum: { $cond: [{ $eq: ['$severity', 'Medium'] }, 1, 0] } },
+                    lowCount:       { $sum: { $cond: [{ $eq: ['$severity', 'Low'] }, 1, 0] } },
+                    totalVotes:     { $sum: '$votes' }
+                }
+            }
+        ]);
+
+        // Task stats per object — single aggregation
+        const taskStats = await Task.aggregate([
+            { $match: { targetId: { $in: objects.map(o => o._id) } } },
+            {
+                $group: {
+                    _id:          '$targetId',
+                    totalTasks:   { $sum: 1 },
+                    completedTasks: { $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] } },
+                    problemVerifications: {
+                        $sum: {
+                            $size: {
+                                $filter: {
+                                    input: '$verifications',
+                                    as:    'v',
+                                    cond:  { $eq: ['$$v.status', 'problem'] }
+                                }
                             }
                         }
-                    }
+                    },
+                    totalVerifications: { $sum: { $size: '$verifications' } }
                 }
             }
         ]);
 
         const issueMap = new Map(issueStats.map(s => [s._id, s]));
+        const taskMap  = new Map(taskStats.map(s => [s._id.toString(), s]));
 
-        // Step 3: Compute scores
-        // Normalization ranges
         const maxVotes = Math.max(...issueStats.map(s => s.totalVotes), 1);
         const maxBurden = Math.max(
             ...issueStats.map(s =>
-                (s.criticalCount * 10) + (s.highCount * 5) + (s.mediumCount * 2) + (s.lowCount * 1)
+                (s.criticalCount  * SEVERITY_WEIGHTS.Critical) +
+                (s.highCount      * SEVERITY_WEIGHTS.High) +
+                (s.mediumCount    * SEVERITY_WEIGHTS.Medium) +
+                (s.lowCount       * SEVERITY_WEIGHTS.Low)
             ), 1
         );
 
-        const scored = orgs.map(org => {
-            const id = org._id.toString();
-            const stats = issueMap.get(id) || {
-                totalIssues: 0, openIssues: 0, resolvedIssues: 0,
-                criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0,
-                totalVotes: 0, avgSeverityScore: 0
-            };
+        const scored = objects.map(obj => {
+            const id     = obj._id.toString();
+            const issues = issueMap.get(id) || { totalIssues: 0, openIssues: 0, resolvedIssues: 0, criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0, totalVotes: 0 };
+            const tasks  = taskMap.get(id)  || { totalTasks: 0, completedTasks: 0, problemVerifications: 0, totalVerifications: 0 };
 
-            // Issue burden: weighted unresolved issues (0-100)
-            const rawBurden = (stats.criticalCount * 10) + (stats.highCount * 5) +
-                (stats.mediumCount * 2) + (stats.lowCount * 1);
-            const issueBurden = Math.min((rawBurden / maxBurden) * 100, 100);
+            const rawBurden = (issues.criticalCount * SEVERITY_WEIGHTS.Critical) +
+                              (issues.highCount     * SEVERITY_WEIGHTS.High) +
+                              (issues.mediumCount   * SEVERITY_WEIGHTS.Medium) +
+                              (issues.lowCount      * SEVERITY_WEIGHTS.Low);
 
-            // Budget gap: inverse of execution rate (0-100, higher = worse)
-            const committed = org.budget?.committedUZS || 0;
-            const spent = org.budget?.spentUZS || 0;
-            const executionRate = committed > 0 ? spent / committed : 0;
-            const budgetGap = Math.round((1 - executionRate) * 100);
-
-            // Community signal: votes normalized (0-100)
-            const communitySignal = Math.min((stats.totalVotes / maxVotes) * 100, 100);
-
-            // Infrastructure gap: simple proxy — open issues / total (0-100)
-            const infraGap = stats.totalIssues > 0
-                ? Math.round((stats.openIssues / stats.totalIssues) * 100)
+            const issueBurden      = Math.round((rawBurden / maxBurden) * 100);
+            const taskGap          = tasks.totalTasks > 0 ? Math.round((1 - tasks.completedTasks / tasks.totalTasks) * 100) : 0;
+            const communitySignal  = Math.min(Math.round((issues.totalVotes / maxVotes) * 100), 100);
+            const verificationPressure = tasks.totalVerifications > 0
+                ? Math.round((tasks.problemVerifications / tasks.totalVerifications) * 100)
                 : 0;
 
-            // Composite priority score
             const priorityScore = Math.round(
-                issueBurden * 0.40 +
-                budgetGap * 0.25 +
-                communitySignal * 0.20 +
-                infraGap * 0.15
+                issueBurden         * 0.40 +
+                taskGap             * 0.25 +
+                communitySignal     * 0.20 +
+                verificationPressure * 0.15
             );
 
             return {
-                orgId: id,
-                name: org.name,
-                type: org.type,
-                address: org.address,
-                region: org.region,
-                lat: org.lat,
-                lng: org.lng,
-                status: org.status,
-                budget: {
-                    committedUZS: committed,
-                    spentUZS: spent,
-                    committedUSD: org.budget?.committedUSD || 0,
-                    spentUSD: org.budget?.spentUSD || 0,
-                    executionRate: Math.round(executionRate * 1000) / 10
-                },
+                orgId:      id,
+                name:       obj.name,
+                objectType: obj.objectType,
+                sourceApi:  obj.sourceApi,
+                lat:        obj.lat,
+                lng:        obj.lng,
+                viloyat:    obj.viloyat,
+                tuman:      obj.tuman,
+                regionCode: obj.regionCode,
                 issues: {
-                    total: stats.totalIssues,
-                    open: stats.openIssues,
-                    resolved: stats.resolvedIssues,
-                    critical: stats.criticalCount,
-                    high: stats.highCount,
-                    medium: stats.mediumCount,
-                    low: stats.lowCount,
-                    totalVotes: stats.totalVotes
+                    total:      issues.totalIssues,
+                    open:       issues.openIssues,
+                    resolved:   issues.resolvedIssues,
+                    critical:   issues.criticalCount,
+                    high:       issues.highCount,
+                    medium:     issues.mediumCount,
+                    low:        issues.lowCount,
+                    totalVotes: issues.totalVotes
+                },
+                tasks: {
+                    total:     tasks.totalTasks,
+                    completed: tasks.completedTasks,
+                    taskGap
                 },
                 scores: {
                     priorityScore,
-                    issueBurden: Math.round(issueBurden),
-                    budgetGap,
-                    communitySignal: Math.round(communitySignal),
-                    infraGap
+                    issueBurden,
+                    taskGap,
+                    communitySignal,
+                    verificationPressure
                 }
             };
         });
 
         // Sort
-        const sortKey = sort === 'name' ? 'name' : `scores.${sort}`;
         scored.sort((a, b) => {
             const aVal = sort === 'name' ? a.name : (a.scores[sort] ?? a.scores.priorityScore);
             const bVal = sort === 'name' ? b.name : (b.scores[sort] ?? b.scores.priorityScore);
@@ -171,175 +166,142 @@ export const getOrgScoring = async (req, res) => {
             return aVal < bVal ? 1 : -1;
         });
 
-        // Assign ranks after sorting by priorityScore desc
+        // Assign ranks after sorting by priorityScore
         const byPriority = [...scored].sort((a, b) => b.scores.priorityScore - a.scores.priorityScore);
         byPriority.forEach((o, i) => { o.rank = i + 1; });
 
-        // Pagination
         const total = scored.length;
-        const paginated = scored.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
 
-        // Summary stats
         const summary = {
-            totalOrgs: total,
+            totalObjects:     total,
             criticalPriority: scored.filter(o => o.scores.priorityScore >= 70).length,
-            highPriority: scored.filter(o => o.scores.priorityScore >= 40 && o.scores.priorityScore < 70).length,
-            lowPriority: scored.filter(o => o.scores.priorityScore < 40).length,
-            avgExecutionRate: Math.round(
-                scored.reduce((sum, o) => sum + o.budget.executionRate, 0) / Math.max(total, 1) * 10
-            ) / 10,
-            totalUnresolvedIssues: scored.reduce((sum, o) => sum + o.issues.open, 0)
+            highPriority:     scored.filter(o => o.scores.priorityScore >= 40 && o.scores.priorityScore < 70).length,
+            lowPriority:      scored.filter(o => o.scores.priorityScore < 40).length,
+            totalOpenIssues:  scored.reduce((s, o) => s + o.issues.open, 0)
         };
+
+        const paginated = scored.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
 
         res.json({
             success: true,
-            data: {
-                summary,
-                total,
-                limit: parseInt(limit),
-                offset: parseInt(offset),
-                orgs: paginated
-            }
+            data: { summary, total, limit: parseInt(limit), offset: parseInt(offset), orgs: paginated }
         });
     } catch (err) {
         console.error('OpenBudget scoring error:', err);
-        res.status(500).json({ success: false, error: 'Failed to compute org scoring' });
+        res.status(500).json({ success: false, error: 'Failed to compute scoring' });
     }
 };
 
-// ─────────────────────────────────────────────
-// GET /api/openbudget/org/:id
-// Single org detail with full scoring breakdown
-// ─────────────────────────────────────────────
-
+// ── GET /api/openbudget/org/:id ───────────────────────────────────────────────
+// Single object detail with full scoring breakdown + linked tasks + allocations
 export const getOrgDetail = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const org = await Organization.findById(id).lean();
-        if (!org) {
-            return res.status(404).json({ success: false, error: 'Organization not found' });
+        if (!mongoose.isValidObjectId(id)) {
+            return res.status(400).json({ success: false, error: 'Invalid id' });
         }
 
-        // Issues for this org
-        const issues = await Issue.find({ organizationId: id })
-            .select('title category severity status votes createdAt')
-            .sort({ votes: -1 })
-            .lean();
+        const obj = await Object_.findById(id).lean();
+        if (!obj) {
+            return res.status(404).json({ success: false, error: 'Object not found' });
+        }
 
-        // Nearby infrastructure (within 2km)
-        const nearbyInfra = await Infrastructure.find({
-            location: {
-                $near: {
-                    $geometry: { type: 'Point', coordinates: [org.lng, org.lat] },
-                    $maxDistance: 2000
-                }
-            }
-        }).select('name type budget status').limit(20).lean();
+        const [issues, tasks, allocations] = await Promise.all([
+            Issue.find({ objectId: id })
+                .select('title category severity status votes createdAt')
+                .sort({ votes: -1 })
+                .lean(),
+            Task.find({ targetId: id })
+                .select('title status deadline verifications programId')
+                .sort({ createdAt: -1 })
+                .lean(),
+            BudgetAllocation.find({ targetType: 'object', targetId: id })
+                .sort({ createdAt: -1 })
+                .lean()
+        ]);
 
-        const openIssues = issues.filter(i => i.status !== 'Resolved');
+        const openIssues     = issues.filter(i => i.status !== 'Resolved');
         const resolvedIssues = issues.filter(i => i.status === 'Resolved');
 
-        // Severity breakdown
         const severityBreakdown = {};
-        for (const i of openIssues) {
-            severityBreakdown[i.severity] = (severityBreakdown[i.severity] || 0) + 1;
-        }
-
-        // Category breakdown
         const categoryBreakdown = {};
-        for (const i of issues) {
+        issues.forEach(i => {
+            severityBreakdown[i.severity] = (severityBreakdown[i.severity] || 0) + 1;
             categoryBreakdown[i.category] = (categoryBreakdown[i.category] || 0) + 1;
-        }
+        });
 
-        const committed = org.budget?.committedUZS || 0;
-        const spent = org.budget?.spentUZS || 0;
-        const executionRate = committed > 0 ? Math.round((spent / committed) * 1000) / 10 : 0;
+        const totalAllocated = allocations.reduce((s, a) => s + (a.amount || 0), 0);
 
         res.json({
             success: true,
             data: {
-                org: {
-                    id: org._id.toString(),
-                    name: org.name,
-                    type: org.type,
-                    address: org.address,
-                    region: org.region,
-                    lat: org.lat,
-                    lng: org.lng,
-                    status: org.status,
-                    year: org.year,
-                    budget: {
-                        committedUZS: committed,
-                        spentUZS: spent,
-                        committedUSD: org.budget?.committedUSD || 0,
-                        spentUSD: org.budget?.spentUSD || 0,
-                        executionRate
-                    }
+                object: {
+                    id:         obj._id.toString(),
+                    name:       obj.name,
+                    objectType: obj.objectType,
+                    sourceApi:  obj.sourceApi,
+                    viloyat:    obj.viloyat,
+                    tuman:      obj.tuman,
+                    lat:        obj.lat,
+                    lng:        obj.lng,
+                    details:    obj.details
                 },
                 issues: {
-                    total: issues.length,
-                    open: openIssues.length,
-                    resolved: resolvedIssues.length,
+                    total:              issues.length,
+                    open:               openIssues.length,
+                    resolved:           resolvedIssues.length,
                     severityBreakdown,
                     categoryBreakdown,
-                    totalVotes: issues.reduce((s, i) => s + (i.votes || 0), 0),
-                    topIssues: issues.slice(0, 10).map(i => ({
-                        id: i._id.toString(),
-                        title: i.title,
-                        category: i.category,
-                        severity: i.severity,
-                        status: i.status,
-                        votes: i.votes || 0,
-                        createdAt: i.createdAt
+                    totalVotes:         issues.reduce((s, i) => s + (i.votes || 0), 0),
+                    topIssues:          issues.slice(0, 10).map(i => ({
+                        id: i._id.toString(), title: i.title, category: i.category,
+                        severity: i.severity, status: i.status, votes: i.votes || 0, createdAt: i.createdAt
                     }))
                 },
-                nearbyInfrastructure: nearbyInfra.map(i => ({
-                    id: i._id.toString(),
-                    name: i.name,
-                    type: i.type,
-                    status: i.status,
-                    budget: i.budget
-                }))
+                tasks: tasks.map(t => ({
+                    id:            t._id.toString(),
+                    title:         t.title,
+                    status:        t.status,
+                    deadline:      t.deadline,
+                    programId:     t.programId?.toString() || null,
+                    totalCount:    t.verifications?.length || 0,
+                    doneCount:     t.verifications?.filter(v => v.status === 'done').length || 0,
+                    problemCount:  t.verifications?.filter(v => v.status === 'problem').length || 0
+                })),
+                budget: {
+                    totalAllocated,
+                    allocations: allocations.map(a => ({
+                        id: a._id.toString(), amount: a.amount, currency: a.currency,
+                        period: a.period, note: a.note
+                    }))
+                }
             }
         });
     } catch (err) {
-        console.error('OpenBudget org detail error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch org detail' });
+        console.error('OpenBudget detail error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch object detail' });
     }
 };
 
-// ─────────────────────────────────────────────
-// GET /api/openbudget/deficit
-// Infrastructure Deficit Index (Spec Section II.2)
-// (Потребность − Обеспеченность) / Потребность per district
-// ─────────────────────────────────────────────
-
+// ── GET /api/openbudget/deficit ───────────────────────────────────────────────
+// Facility Deficit Index per district
+// (max_in_region − actual) / max × 100 — higher = more underfunded
+// Query: ?regionCode=17
 export const getDeficitIndex = async (req, res) => {
     try {
         const { regionCode } = req.query;
-        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
+        const regionFilter   = regionCode ? { regionCode: parseInt(regionCode) } : {};
 
-        const [orgsByDistrict, infraByDistrict, issuesByDistrict] = await Promise.all([
-            Organization.aggregate([
+        const [objectsByDistrict, issuesByDistrict] = await Promise.all([
+            Object_.aggregate([
                 { $match: { districtId: { $exists: true }, ...regionFilter } },
                 {
                     $group: {
-                        _id: '$districtId',
-                        orgCount: { $sum: 1 },
-                        schoolCount: { $sum: { $cond: [{ $eq: ['$type', 'Schools & Kindergartens'] }, 1, 0] } },
-                        hospitalCount: { $sum: { $cond: [{ $eq: ['$type', 'Hospitals & Clinics'] }, 1, 0] } },
-                    }
-                }
-            ]),
-            Infrastructure.aggregate([
-                { $match: { districtId: { $exists: true }, ...regionFilter } },
-                {
-                    $group: {
-                        _id: '$districtId',
-                        infraCount: { $sum: 1 },
-                        roadCount: { $sum: { $cond: [{ $eq: ['$type', 'Roads'] }, 1, 0] } },
-                        waterCount: { $sum: { $cond: [{ $eq: ['$type', 'Water & Sewage'] }, 1, 0] } },
+                        _id:            '$districtId',
+                        objectCount:    { $sum: 1 },
+                        educationCount: { $sum: { $cond: [{ $in: ['$objectType', EDUCATION_TYPES] }, 1, 0] } },
+                        healthCount:    { $sum: { $cond: [{ $in: ['$objectType', HEALTH_TYPES]    }, 1, 0] } }
                     }
                 }
             ]),
@@ -347,77 +309,51 @@ export const getDeficitIndex = async (req, res) => {
                 { $match: { districtId: { $exists: true }, ...regionFilter } },
                 {
                     $group: {
-                        _id: '$districtId',
+                        _id:         '$districtId',
                         totalIssues: { $sum: 1 },
-                        openIssues: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } },
-                        infraIssues: {
-                            $sum: {
-                                $cond: [
-                                    { $in: ['$category', ['Roads', 'Water & Sewage', 'Electricity']] },
-                                    1, 0
-                                ]
-                            }
-                        }
+                        openIssues:  { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } }
                     }
                 }
             ])
         ]);
 
-        const orgMap = new Map(orgsByDistrict.map(d => [d._id?.toString(), d]));
-        const infraMap = new Map(infraByDistrict.map(d => [d._id?.toString(), d]));
+        const objMap   = new Map(objectsByDistrict.map(d => [d._id?.toString(), d]));
         const issueMap = new Map(issuesByDistrict.map(d => [d._id?.toString(), d]));
 
-        // Get all district IDs
+        const maxEducation = Math.max(...objectsByDistrict.map(d => d.educationCount), 1);
+        const maxHealth    = Math.max(...objectsByDistrict.map(d => d.healthCount),    1);
+
         const allIds = new Set([
-            ...orgsByDistrict.map(d => d._id?.toString()),
-            ...infraByDistrict.map(d => d._id?.toString()),
-            ...issuesByDistrict.map(d => d._id?.toString())
+            ...objectsByDistrict.map(d => d._id?.toString()),
+            ...issuesByDistrict.map(d =>  d._id?.toString())
         ]);
 
-        // Compute max values for normalization
-        const maxSchools = Math.max(...orgsByDistrict.map(d => d.schoolCount), 1);
-        const maxHospitals = Math.max(...orgsByDistrict.map(d => d.hospitalCount), 1);
-        const maxRoads = Math.max(...infraByDistrict.map(d => d.roadCount), 1);
-        const maxWater = Math.max(...infraByDistrict.map(d => d.waterCount), 1);
-
         const deficits = Array.from(allIds).filter(Boolean).map(districtId => {
-            const orgs = orgMap.get(districtId) || { schoolCount: 0, hospitalCount: 0, orgCount: 0 };
-            const infra = infraMap.get(districtId) || { roadCount: 0, waterCount: 0, infraCount: 0 };
-            const issues = issueMap.get(districtId) || { totalIssues: 0, openIssues: 0, infraIssues: 0 };
+            const objs   = objMap.get(districtId)   || { objectCount: 0, educationCount: 0, healthCount: 0 };
+            const issues = issueMap.get(districtId) || { totalIssues: 0, openIssues: 0 };
 
-            // Deficit = (max - actual) / max * 100 — higher = more deficit
-            const educationDeficit = Math.round((1 - orgs.schoolCount / maxSchools) * 100);
-            const healthDeficit = Math.round((1 - orgs.hospitalCount / maxHospitals) * 100);
-            const roadDeficit = Math.round((1 - infra.roadCount / maxRoads) * 100);
-            const waterDeficit = Math.round((1 - infra.waterCount / maxWater) * 100);
+            const educationDeficit = Math.round((1 - objs.educationCount / maxEducation) * 100);
+            const healthDeficit    = Math.round((1 - objs.healthCount    / maxHealth)    * 100);
 
-            // Issue pressure adds to deficit
             const issuePressure = issues.totalIssues > 0
-                ? Math.min(Math.round((issues.infraIssues / issues.totalIssues) * 100), 100)
+                ? Math.min(Math.round((issues.openIssues / issues.totalIssues) * 100), 100)
                 : 0;
 
             const composite = Math.round(
-                educationDeficit * 0.25 +
-                healthDeficit * 0.25 +
-                roadDeficit * 0.20 +
-                waterDeficit * 0.20 +
-                issuePressure * 0.10
+                educationDeficit * 0.40 +
+                healthDeficit    * 0.40 +
+                issuePressure    * 0.20
             );
 
             return {
                 districtId,
-                facilityCount: orgs.orgCount + infra.infraCount,
-                schools: orgs.schoolCount,
-                hospitals: orgs.hospitalCount,
-                roads: infra.roadCount,
-                water: infra.waterCount,
-                openIssues: issues.openIssues,
-                infraIssues: issues.infraIssues,
+                facilityCount:    objs.objectCount,
+                educationCount:   objs.educationCount,
+                healthCount:      objs.healthCount,
+                openIssues:       issues.openIssues,
                 deficits: {
-                    education: educationDeficit,
-                    health: healthDeficit,
-                    roads: roadDeficit,
-                    water: waterDeficit,
+                    education:    educationDeficit,
+                    health:       healthDeficit,
                     issuePressure,
                     composite
                 }
@@ -426,10 +362,7 @@ export const getDeficitIndex = async (req, res) => {
 
         deficits.sort((a, b) => b.deficits.composite - a.deficits.composite);
 
-        res.json({
-            success: true,
-            data: deficits
-        });
+        res.json({ success: true, data: deficits });
     } catch (err) {
         console.error('Deficit index error:', err);
         res.status(500).json({ success: false, error: 'Failed to compute deficit index' });

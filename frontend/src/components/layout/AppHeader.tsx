@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Building2, ShieldCheck, MapPin, BarChart2, ChevronDown, X } from 'lucide-react';
+import { Menu, ShieldCheck, MapPin, BarChart2, ChevronDown, X } from 'lucide-react';
 import { MapPlusIcon } from '../map/MapPlusIcon';
 import { LayerPicker, LayerState } from '../map/LayerPicker';
 import { CustomSelect } from '../common/CustomSelect';
@@ -14,12 +14,11 @@ const SCORE_METRICS = [
   { value: 'infrastructure', label: 'Инфраструктура' },
   { value: 'issues',         label: 'Обращения' },
   { value: 'budget',         label: 'Бюджет' },
-  { value: 'crops',          label: 'Агро' },
 ];
 
-// ── ScorePicker ─────────────────────────────────────────
-// Dedicated choropleth toggle — kept separate from LayerPicker
-// so district scoring overlay can be combined with any layer.
+// ── ScorePicker ────────────────────────────────────────────────────────────────
+// Choropleth toggle — separate from LayerPicker so the district scoring overlay
+// can be combined with any other layer.
 function ScorePicker({ show, metric, onToggle, onMetricChange }: {
   show: boolean;
   metric: string;
@@ -85,7 +84,7 @@ function ScorePicker({ show, metric, onToggle, onMetricChange }: {
               </div>
             </button>
 
-            {/* Metric chips — always visible so user can pre-pick */}
+            {/* Metric chips */}
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Метрика</p>
               <div className="flex flex-wrap gap-1.5">
@@ -114,17 +113,16 @@ function ScorePicker({ show, metric, onToggle, onMetricChange }: {
   );
 }
 
-// ── AppHeader ───────────────────────────────────────────
+// ── AppHeader ──────────────────────────────────────────────────────────────────
 
 interface AppHeaderProps {
   currentUser: User;
   onMenuOpen: () => void;
   activeView: string;
-  // Map layers (choropleth excluded — handled by ScorePicker)
+  // Map layers
   layers: LayerState;
   onToggleHeatmap: () => void;
-  onToggleOrgs: () => void;
-  onToggleInfrastructure: () => void;
+  onToggleObjects: () => void;
   onToggleStandaloneIssues: () => void;
   // Choropleth — separate from layers
   showChoropleth: boolean;
@@ -134,17 +132,13 @@ interface AppHeaderProps {
   // Region filter
   selectedRegionCode: number | null;
   onRegionChange: (code: number | null) => void;
-  // Admin
-  isAdminOrgAddingMode: boolean;
-  onStartAdminOrgAdd: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   currentUser, onMenuOpen, activeView,
-  layers, onToggleHeatmap, onToggleOrgs, onToggleInfrastructure, onToggleStandaloneIssues,
+  layers, onToggleHeatmap, onToggleObjects, onToggleStandaloneIssues,
   showChoropleth, choroplethMetric, onToggleChoropleth, onChoroplethMetricChange,
   selectedRegionCode, onRegionChange,
-  isAdminOrgAddingMode, onStartAdminOrgAdd,
 }) => {
   const navigate = useNavigate();
   const [regionOptions, setRegionOptions] = useState<{ value: number; label: string }[]>([]);
@@ -212,25 +206,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onMetricChange={onChoroplethMetricChange}
           />
 
-          {currentUser.role === UserRole.ADMIN && (
-            <button
-              onClick={onStartAdminOrgAdd}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition duration-100 ${
-                isAdminOrgAddingMode
-                  ? 'bg-indigo-600 text-white shadow-lg'
-                  : 'bg-slate-100 dark:bg-slate-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">+ Объект</span>
-            </button>
-          )}
-
           <LayerPicker
             layers={layers}
             onToggleHeatmap={onToggleHeatmap}
-            onToggleOrgs={onToggleOrgs}
-            onToggleInfrastructure={onToggleInfrastructure}
+            onToggleObjects={onToggleObjects}
             onToggleStandaloneIssues={onToggleStandaloneIssues}
           />
         </div>

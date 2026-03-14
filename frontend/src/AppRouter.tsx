@@ -2,7 +2,6 @@
 //
 // Code-split: heavy views load on demand.
 // Map view loads eagerly (most common entry point).
-// Dashboard, Admin, List views load via React.lazy.
 
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -11,21 +10,6 @@ import { LoginView } from './components/auth/LoginView';
 import { User } from '../types';
 import '../public/assets/styles/index.css';
 
-// ─── Lazy-loaded views ─────────────────────────────────
-// These get split into separate chunks by Vite/Rollup.
-// The user only downloads them when they navigate to the route.
-
-const LazyStatistics = React.lazy(() =>
-    import('./App').then(mod => ({ default: mod.default }))
-);
-const LazyAdmin = React.lazy(() =>
-    import('./App').then(mod => ({ default: mod.default }))
-);
-const LazyList = React.lazy(() =>
-    import('./App').then(mod => ({ default: mod.default }))
-);
-
-// Loading fallback
 const ViewLoader = () => (
     <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
@@ -49,25 +33,18 @@ const AppWrapper: React.FC = () => {
     React.useEffect(() => {
         const applyTheme = () => {
             const root = window.document.documentElement;
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const shouldBeDark = theme === 'dark' || (theme === 'system' && systemPrefersDark);
-
-            if (shouldBeDark) {
-                root.classList.add('dark');
-                root.classList.remove('light');
-            } else {
-                root.classList.remove('dark');
-                root.classList.add('light');
-            }
+            const sysOk = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const dark  = theme === 'dark' || (theme === 'system' && sysOk);
+            root.classList.toggle('dark',  dark);
+            root.classList.toggle('light', !dark);
         };
         applyTheme();
     }, [theme]);
 
-    const handleLogin = (user: User) => {
+    const handleLogin  = (user: User) => {
         setCurrentUser(user);
         localStorage.setItem('currentUser', JSON.stringify(user));
     };
-
     const handleLogout = () => {
         setCurrentUser(null);
         localStorage.removeItem('currentUser');
@@ -77,11 +54,13 @@ const AppWrapper: React.FC = () => {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Login route */}
+                {/* Login */}
                 <Route
                     path="/login"
                     element={
-                        currentUser ? <Navigate to="/map" replace /> : <LoginView onLogin={handleLogin} />
+                        currentUser
+                            ? <Navigate to="/map" replace />
+                            : <LoginView onLogin={handleLogin} />
                     }
                 />
 
@@ -89,24 +68,23 @@ const AppWrapper: React.FC = () => {
                 <Route
                     path="/"
                     element={
-                        currentUser ? <Navigate to="/map" replace /> : <Navigate to="/login" replace />
+                        currentUser
+                            ? <Navigate to="/map" replace />
+                            : <Navigate to="/login" replace />
                     }
                 />
 
-                {/* Map routes — eagerly loaded (primary view) */}
+                {/* Map routes — eagerly loaded */}
                 <Route
                     path="/map"
                     element={
-                        currentUser ? (
-                            <App currentUser={currentUser} onLogout={handleLogout} view="MAP" />
-                        ) : (
-                            <Navigate to="/login" replace />
-                        )
+                        currentUser
+                            ? <App currentUser={currentUser} onLogout={handleLogout} view="MAP" />
+                            : <Navigate to="/login" replace />
                     }
                 >
-                    <Route path="issues/:issueId" element={null} />
-                    <Route path="organizations/:orgId" element={null} />
-                    <Route path="infrastructure/:infraId" element={null} />
+                    <Route path="issues/:issueId"  element={null} />
+                    <Route path="objects/:objectId" element={null} />
                 </Route>
 
                 {/* List routes — lazy loaded */}
@@ -122,12 +100,11 @@ const AppWrapper: React.FC = () => {
                         )
                     }
                 >
-                    <Route path="issues/:issueId" element={null} />
-                    <Route path="organizations/:orgId" element={null} />
-                    <Route path="infrastructure/:infraId" element={null} />
+                    <Route path="issues/:issueId"  element={null} />
+                    <Route path="objects/:objectId" element={null} />
                 </Route>
 
-                {/* Dashboard — lazy loaded */}
+                {/* Dashboard */}
                 <Route
                     path="/dashboard"
                     element={
@@ -141,7 +118,7 @@ const AppWrapper: React.FC = () => {
                     }
                 />
 
-                {/* Admin routes — lazy loaded */}
+                {/* Admin — users */}
                 <Route
                     path="/users"
                     element={
@@ -155,6 +132,7 @@ const AppWrapper: React.FC = () => {
                     }
                 />
 
+                {/* Admin — data management */}
                 <Route
                     path="/data"
                     element={

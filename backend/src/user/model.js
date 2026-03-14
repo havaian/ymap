@@ -1,4 +1,5 @@
 // backend/src/user/model.js
+
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
@@ -19,9 +20,10 @@ const userSchema = new mongoose.Schema({
         required: true,
         select: false
     },
+    // Two roles only: ADMIN (government operator) and CITIZEN (public user)
     role: {
         type: String,
-        enum: ['ADMIN', 'ORG_ADMIN', 'CITIZEN'],
+        enum: ['ADMIN', 'CITIZEN'],
         default: 'CITIZEN'
     },
     avatar: {
@@ -33,12 +35,6 @@ const userSchema = new mongoose.Schema({
     blocked: {
         type: Boolean,
         default: false
-    },
-    organizationId: {
-        type: String
-    },
-    organizationName: {
-        type: String
     },
     isSeeded: {
         type: Boolean,

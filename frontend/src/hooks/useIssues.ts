@@ -12,26 +12,11 @@ interface Issue {
     updatedAt: string;
 }
 
-interface Organization {
-    _id: string;
-    name: string;
-    region?: string;
-    type?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
 interface UseIssuesReturn {
     issues: Issue[];
     loading: boolean;
     error: string | null;
     refetch: () => void;
-}
-
-interface UseOrganizationsReturn {
-    organizations: Organization[];
-    loading: boolean;
-    error: string | null;
 }
 
 export const useIssues = (filters: Record<string, unknown> = {}): UseIssuesReturn => {
@@ -63,34 +48,4 @@ export const useIssues = (filters: Record<string, unknown> = {}): UseIssuesRetur
     const refetch = (): void => { fetchIssues(); };
 
     return { issues, loading, error, refetch };
-};
-
-export const useOrganizations = (filters: Record<string, unknown> = {}): UseOrganizationsReturn => {
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchOrganizations = async (): Promise<void> => {
-            try {
-                setLoading(true);
-                const { organizationsAPI } = await import('../services/api');
-                const response = await organizationsAPI.getAll(filters);
-                setOrganizations(response.data.data);
-                setError(null);
-            } catch (err: unknown) {
-                const message = err instanceof Error
-                    ? (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? err.message
-                    : 'Failed to fetch organizations';
-                setError(message);
-                console.error('Error fetching organizations:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchOrganizations();
-    }, [JSON.stringify(filters)]);
-
-    return { organizations, loading, error };
 };

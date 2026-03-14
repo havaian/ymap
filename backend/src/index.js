@@ -16,8 +16,7 @@ import { ensureAdminExists } from './services/admin-setup.js';
 
 import authRoutes from './auth/routes.js';
 import issueRoutes from './issue/routes.js';
-import infrastructureRoutes from './infrastructure/routes.js';
-import organizationRoutes from './organization/routes.js';
+import objectRoutes from './object/routes.js';
 import userRoutes from './user/routes.js';
 import voteRoutes from './vote/routes.js';
 import adminRoutes from './admin/routes.js';
@@ -26,8 +25,9 @@ import regionRoutes from './region/routes.js';
 import districtRoutes from './district/routes.js';
 import markerRoutes from './markers/routes.js';
 import openBudgetRoutes from './openbudget/routes.js';
-import promiseRoutes     from './promise/routes.js';
-import allocationRoutes  from './budgetAllocation/routes.js';
+import taskRoutes from './task/routes.js';
+import allocationRoutes from './budgetAllocation/routes.js';
+import programRoutes from './program/routes.js';
 import { PATHS as UPLOAD_PATHS } from './utils/uploadPaths.js';
 
 validateEnv();
@@ -35,7 +35,7 @@ validateEnv();
 const app = express();
 app.set('trust proxy', 1);
 
-// ── Security ─────────────────────────────────────────────────────────────────
+// ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
     origin: process.env.CORS_ORIGIN || '*',
@@ -43,26 +43,23 @@ app.use(cors({
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
-// Auth endpoints: strict — prevent brute-force
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,  // 15 minutes
-    max: 20,                    // 20 login attempts per window
+    windowMs: 15 * 60 * 1000,
+    max: 20,
     message: { success: false, message: 'Too many attempts, please try again later' },
     standardHeaders: true,
     legacyHeaders: false
 });
 
-// Data endpoints: generous — map app fires many requests on load
 const apiLimiter = rateLimit({
-    windowMs: 60 * 1000,        // 1 minute window
-    max: 300,                   // 300 req/min per IP (5 req/s)
+    windowMs: 60 * 1000,
+    max: 300,
     message: { success: false, message: 'Rate limit exceeded' },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => req.method === 'GET' // GET requests are unauthenticated reads, skip rate limit
+    skip: (req) => req.method === 'GET'
 });
 
-// Admin endpoints: moderate
 const adminLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 60,
@@ -78,51 +75,46 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Static uploads — served at /api/uploads/<subdir>/<filename> ──────────────
-// Docker mounts ./uploads → /app/uploads (docker-compose volume)
-// uploadPaths.js pre-creates subdirs (photos/, orgs/) on startup.
-// e.g. "photos/123-uuid.jpg" stored in DB → GET /api/uploads/photos/123-uuid.jpg
+// ── Static uploads ────────────────────────────────────────────────────────────
 app.use('/api/uploads', express.static(UPLOAD_PATHS.root));
 
-// ── Health check (public) ─────────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // ── Public routes ─────────────────────────────────────────────────────────────
-// Auth: login/register are public. /auth/me uses strictAuthMiddleware inside its route.
 app.use('/api/auth', authLimiter, authRoutes);
 
-// Map data read access is intentionally public — citizens can browse without accounts.
-// Write operations (create issue, vote, comment) are protected inside each route file.
+// Map data — read is public, writes are protected inside each route file
 app.use('/api/issues', apiLimiter, issueRoutes);
-app.use('/api/organizations', apiLimiter, organizationRoutes);
-app.use('/api/infrastructure', apiLimiter, infrastructureRoutes);
+app.use('/api/objects', apiLimiter, objectRoutes);
 
 // ── Authenticated routes ──────────────────────────────────────────────────────
-// All /api/users and /api/votes require a valid JWT
 app.use('/api/users', apiLimiter, authMiddleware, userRoutes);
 app.use('/api/votes', apiLimiter, authMiddleware, voteRoutes);
 
-// Promises & budget allocations — read: authenticated users, write: admin only
-app.use('/api/promises',    apiLimiter, promiseRoutes);
+// Tasks & budget allocations — read: authenticated, write: admin only
+app.use('/api/tasks', apiLimiter, taskRoutes);
 app.use('/api/allocations', apiLimiter, allocationRoutes);
 
+// Programs — read: authenticated, write: admin only
+app.use('/api/programs', apiLimiter, programRoutes);
+
 // ── Admin routes ──────────────────────────────────────────────────────────────
-// strictAuthMiddleware does a DB lookup — ensures admin account still exists and isn't blocked
 app.use('/api/admin', adminLimiter, strictAuthMiddleware, adminOnly, adminRoutes);
 
-// ── Analytics routes (protected by adminOnly but not rate-limited, as they may be used for internal reporting)
+// ── Analytics (admin only) ────────────────────────────────────────────────────
 app.use('/api/analytics', strictAuthMiddleware, adminOnly, analyticsRoutes);
 
-// ── Region & District routes (public, used by map for geojson and dropdowns)
+// ── Region & District (public — map GeoJSON + dropdowns) ─────────────────────
 app.use('/api/regions', apiLimiter, authMiddleware, regionRoutes);
 app.use('/api/districts', apiLimiter, authMiddleware, districtRoutes);
 
-// ── Marker routes (public, used by map for displaying issues/infrastructure/organizations)
+// ── Markers (public — map pins) ───────────────────────────────────────────────
 app.use('/api/markers', apiLimiter, authMiddleware, markerRoutes);
 
-// ── Open Budget routes (public, used by analytics dashboard and open budget page)
+// ── Open Budget (public) ──────────────────────────────────────────────────────
 app.use('/api/openbudget', apiLimiter, authMiddleware, openBudgetRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────

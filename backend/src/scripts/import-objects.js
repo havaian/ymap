@@ -2,11 +2,14 @@
  * backend/src/scripts/import-objects.js
  *
  * Reads the three local JSON files (ssv, bogcha, maktab44),
- * resolves each record's district via parent_code → District.cadNum,
- * jitters coordinates ±1200m around the district centroid,
- * and bulk-upserts into the Object collection.
+ * resolves each record's district by:
+ *   1. Matching viloyat → Region.name.uz → regionCode
+ *   2. Within that region, matching tuman → District.name.uz
+ * Then jitters coordinates ±1200m around the district centroid.
  *
- * parent_code (e.g. 1703) maps to cadNum (e.g. "17:03") in the District model.
+ * Uses normalizeUzName() from geo-translations.js (already in repo)
+ * which handles Latin/Cyrillic apostrophe variants, mixed scripts, and
+ * strips administrative suffixes like "tumani", "t.", "т.", etc.
  *
  * Usage:
  *   docker compose exec backend node src/scripts/import-objects.js
@@ -21,8 +24,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import mongoose from 'mongoose';
+import Region from '../region/model.js';
 import District from '../district/model.js';
 import Object_ from '../object/model.js';
+import { normalizeUzName } from './geo-translations.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -31,39 +36,97 @@ const BATCH_SIZE = 500;
 // ── Coordinate jitter ─────────────────────────────────────────────────────────
 // ±1200 m in degrees at ~41°N latitude
 const LAT_JITTER = 0.0108;   // 1200 / 111_000
-const LNG_JITTER = 0.0144;   // 1200 / (111_000 * cos(41°)) ≈ 1200 / 83_800
+const LNG_JITTER = 0.0144;   // 1200 / (111_000 * cos(41°))
 
 function jitter(center, range) {
     return center + (Math.random() * 2 - 1) * range;
 }
 
-// ── parent_code → cadNum ──────────────────────────────────────────────────────
-// 1703 → "17:03",  1710 → "17:10",  1735 → "17:35"
-function toCadNum(parentCode) {
-    const s = String(parentCode);
-    // First 2 digits = region code, remaining = district number (zero-pad to 2)
-    const region = s.slice(0, 2);
-    const district = s.slice(2).padStart(2, '0');
-    return `${region}:${district}`;
-}
+// ── Build lookup structures from DB ──────────────────────────────────────────
+//
+// regionsByNorm:  Map<normalizedViloyat, regionCode>
+// districtsByRegion: Map<regionCode, Array<{ normName, lat, lng, _id }>>
+//
+// Scoping district lookup by regionCode is critical — there are districts
+// with identical names in different regions (e.g. "Shahrisabz" exists in
+// multiple oblasts).
 
-// ── Build district lookup cache from DB ───────────────────────────────────────
-// Returns: Map<cadNum string, { lat, lng, regionCode, _id }>
-async function buildDistrictCache() {
-    const districts = await District.find(
-        { cadNum: { $exists: true, $ne: null } },
-        { cadNum: 1, centroid: 1, regionCode: 1 }
-    ).lean();
+async function buildCaches() {
+    // ── Regions ──
+    const regions = await Region.find({}, { code: 1, 'name.uz': 1, 'name.ru': 1, 'name.en': 1 }).lean();
 
-    const cache = new Map();
-    for (const d of districts) {
-        if (!d.cadNum) continue;
-        const [lng, lat] = d.centroid.coordinates;
-        cache.set(d.cadNum, { lat, lng, regionCode: d.regionCode, _id: d._id });
+    const regionsByNorm = new Map();
+    for (const r of regions) {
+        // Index all available name variants so "Namangan" and "Namangan viloyati" both match
+        for (const name of [r.name?.uz, r.name?.ru, r.name?.en]) {
+            if (!name) continue;
+            const key = normalizeUzName(name);
+            if (key && !regionsByNorm.has(key)) regionsByNorm.set(key, r.code);
+        }
     }
 
-    console.log(`  📍 District cache: ${cache.size} entries`);
-    return cache;
+    // ── Districts ──
+    const districts = await District.find(
+        {},
+        { regionCode: 1, 'name.uz': 1, 'name.ru': 1, 'name.en': 1, centroid: 1 }
+    ).lean();
+
+    // Map<regionCode, Array<{ normNames: string[], lat, lng, _id }>>
+    const districtsByRegion = new Map();
+
+    for (const d of districts) {
+        const [lng, lat] = d.centroid.coordinates;
+        const entry = {
+            normNames: [d.name?.uz, d.name?.ru, d.name?.en]
+                .filter(Boolean)
+                .map(n => normalizeUzName(n))
+                .filter(Boolean),
+            lat,
+            lng,
+            regionCode: d.regionCode,
+            _id: d._id,
+        };
+
+        if (!districtsByRegion.has(d.regionCode)) districtsByRegion.set(d.regionCode, []);
+        districtsByRegion.get(d.regionCode).push(entry);
+    }
+
+    console.log(`  📍 Regions: ${regionsByNorm.size} normalized names`);
+    console.log(`  📍 Districts: ${districts.length} across ${districtsByRegion.size} regions`);
+
+    return { regionsByNorm, districtsByRegion };
+}
+
+// ── Resolve a single record to a district ─────────────────────────────────────
+
+function resolveDistrict(viloyat, tuman, regionsByNorm, districtsByRegion) {
+    // Step 1: viloyat → regionCode
+    const regionKey = normalizeUzName(viloyat);
+    const regionCode = regionsByNorm.get(regionKey);
+    if (!regionCode) return null;
+
+    // Step 2: tuman → district within that region
+    const tumanKey = normalizeUzName(tuman);
+    const candidates = districtsByRegion.get(regionCode) || [];
+
+    // Try exact match first
+    let match = candidates.find(d => d.normNames.includes(tumanKey));
+
+    // Fallback: startsWith (handles minor suffix differences)
+    if (!match) {
+        match = candidates.find(d =>
+            d.normNames.some(n => n.startsWith(tumanKey) || tumanKey.startsWith(n))
+        );
+    }
+
+    if (!match) return null;
+
+    return {
+        lat: jitter(match.lat, LAT_JITTER),
+        lng: jitter(match.lng, LNG_JITTER),
+        regionCode: match.regionCode,
+        districtId: match._id,
+    };
 }
 
 // ── Field helpers ─────────────────────────────────────────────────────────────
@@ -183,7 +246,7 @@ function transformMaktab(row, coords) {
  * @param {object}        options
  * @param {string|null}   options.source      'ssv' | 'bogcha' | 'maktab44' | null (all three)
  * @param {boolean}       options.dryRun      Skip DB writes when true
- * @param {function}      options.onProgress  (phase, done, total) progress callback
+ * @param {function}      options.onProgress  (phase, done, total) callback
  */
 export async function importObjects({ source = null, dryRun = false, onProgress = () => { } } = {}) {
     const SOURCES = [
@@ -196,7 +259,7 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
     if (targets.length === 0) throw new Error(`Unknown source: ${source}`);
 
     onProgress('loading_districts', 0, 1);
-    const districtCache = await buildDistrictCache();
+    const { regionsByNorm, districtsByRegion } = await buildCaches();
     onProgress('loading_districts', 1, 1);
 
     const totals = { upserted: 0, skipped: 0, noDistrict: 0 };
@@ -215,46 +278,37 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
         console.log(`\n📂 ${key}: ${rows.length} records`);
         onProgress(`processing_${key}`, 0, rows.length);
 
+        // Collect unresolved pairs for diagnostics
+        const unresolved = new Set();
         const bulkOps = [];
         let noDistrict = 0;
 
         for (const row of rows) {
-            // code is the unique key per record; skip if missing
             if (!row.code) { totals.skipped++; continue; }
 
-            // Resolve district via parent_code → cadNum
-            const cadNum = row.parent_code ? toCadNum(row.parent_code) : null;
-            const district = cadNum ? districtCache.get(cadNum) : null;
+            const coords = resolveDistrict(row.viloyat, row.tuman, regionsByNorm, districtsByRegion);
 
-            let coords;
-            if (district) {
-                coords = {
-                    lat: jitter(district.lat, LAT_JITTER),
-                    lng: jitter(district.lng, LNG_JITTER),
-                    regionCode: district.regionCode,
-                    districtId: district._id,
-                };
-            } else {
-                // parent_code had no cadNum match — skip rather than place at wrong location
+            if (!coords) {
+                unresolved.add(`${row.viloyat} / ${row.tuman}`);
                 noDistrict++;
                 totals.skipped++;
                 continue;
             }
 
-            const doc = transform(row, coords);
-
             bulkOps.push({
                 updateOne: {
-                    filter: { code: doc.code, sourceApi: doc.sourceApi },
-                    update: { $set: doc },
+                    filter: { code: row.code, sourceApi: key === 'ssv' ? 'ssv' : key === 'bogcha' ? 'bogcha' : 'maktab44' },
+                    update: { $set: transform(row, coords) },
                     upsert: true,
                 }
             });
         }
 
         totals.noDistrict += noDistrict;
+
         if (noDistrict > 0) {
-            console.warn(`  ⚠️  ${noDistrict} records had no cadNum match (parent_code unresolved)`);
+            console.warn(`  ⚠️  ${noDistrict} unresolved (${unresolved.size} unique viloyat/tuman pairs):`);
+            for (const pair of unresolved) console.warn(`       ${pair}`);
         }
 
         if (dryRun) {
@@ -263,7 +317,6 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
             continue;
         }
 
-        // Bulk write in batches of BATCH_SIZE
         let done = 0;
         for (let i = 0; i < bulkOps.length; i += BATCH_SIZE) {
             const batch = bulkOps.slice(i, i + BATCH_SIZE);

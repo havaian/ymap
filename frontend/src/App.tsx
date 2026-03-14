@@ -17,6 +17,7 @@ import { AdminUserView } from "./components/admin/AdminUserView";
 import { AdminDataView } from "./components/admin/AdminDataView";
 import { AppHeader } from "./components/layout/AppHeader";
 import { DistrictDrilldown } from "./components/analytics/DistrictDrilldown";
+import { PublicStatsBar } from "./components/layout/PublicStatsBar";
 import { LayerState } from "./components/map/LayerPicker";
 import {
   Issue,
@@ -28,6 +29,7 @@ import {
 } from "../types";
 import { TASHKENT_CENTER } from "./constants";
 import { useIssues, useObjects, useUsers } from "./hooks/useBackendData";
+import { tasksAPI } from "./services/api";
 import { Plus, Navigation, Locate } from "lucide-react";
 
 interface AppProps {
@@ -61,14 +63,38 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     loading: objectsLoading,
     fetchDetail: fetchObjectDetail,
   } = useObjects(selectedRegionCode);
-
   const { users, toggleBlockUser } = useUsers();
+
+  // Verification summary for map marker colors — Map<objectId, { doneCount, problemCount, totalCount }>
+  const [verificationSummary, setVerificationSummary] = useState<
+    Map<string, any>
+  >(new Map());
+  const [taskStats, setTaskStats] = useState<any>(null);
+
+  useEffect(() => {
+    tasksAPI
+      .getVerificationSummary()
+      .then((res) => {
+        if (res.data?.success) {
+          const map = new Map<string, any>();
+          res.data.data.forEach((s: any) => map.set(s.targetId, s));
+          setVerificationSummary(map);
+        }
+      })
+      .catch(() => {});
+
+    tasksAPI
+      .getStats()
+      .then((res) => {
+        if (res.data?.success) setTaskStats(res.data.data);
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Derived from URL params ───────────────────────────
   const selectedIssue = params.issueId
     ? issues.find((i) => i.id === params.issueId) || null
     : null;
-
   const [viewingObject, setViewingObject] = useState<FacilityObject | null>(
     null
   );
@@ -100,7 +126,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [triggerLocate, setTriggerLocate] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Layer toggles
+  // Layer toggles — all three are fully independent, no mutual exclusions
   const [showObjects, setShowObjects] = useState(true);
   const [showStandaloneIssues, setShowStandaloneIssues] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
@@ -122,14 +148,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       ? saved
       : "system";
   });
-
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(() => {
     const saved = localStorage.getItem("fontSize");
     return saved === "small" || saved === "medium" || saved === "large"
       ? saved
       : "medium";
   });
-
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // ── Theme effect ──────────────────────────────────────
@@ -167,15 +191,9 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const removeToast = (id: string) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  // ── Layers for AppHeader / LayerPicker ────────────────
-  const layers: LayerState = {
-    showHeatmap,
-    showObjects,
-    showStandaloneIssues,
-  };
+  const layers: LayerState = { showHeatmap, showObjects, showStandaloneIssues };
 
   // ── Filtered map issues ───────────────────────────────
-  // selectedIssue intentionally NOT in deps — avoids full recalc on panel open/close
   const mapIssues = useMemo(() => {
     if (!issues || !Array.isArray(issues)) return [];
     let filtered = issues.filter((i) => i.status !== "Resolved");
@@ -195,8 +213,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     });
     return counts;
   }, [issues]);
-
-  const canShowObjects = showObjects && !showHeatmap;
 
   // ── Handlers ──────────────────────────────────────────
 
@@ -218,16 +234,16 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
 
   const handleObjectClick = useCallback(
     (obj: FacilityObject) => {
-      const base = activeView === "LIST" ? "/list" : "/map";
-      navigate(`${base}/objects/${obj.id}`);
+      navigate(`${activeView === "LIST" ? "/list" : "/map"}/objects/${obj.id}`);
     },
     [activeView, navigate]
   );
 
   const handleSelectIssue = useCallback(
     (issue: Issue) => {
-      const base = activeView === "LIST" ? "/list" : "/map";
-      navigate(`${base}/issues/${issue.id}`);
+      navigate(
+        `${activeView === "LIST" ? "/list" : "/map"}/issues/${issue.id}`
+      );
     },
     [activeView, navigate]
   );
@@ -338,6 +354,26 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     );
   };
 
+  // Refresh verification summary after a task is verified from ObjectSidebar
+  const handleVerificationDone = useCallback(() => {
+    tasksAPI
+      .getVerificationSummary()
+      .then((res) => {
+        if (res.data?.success) {
+          const map = new Map<string, any>();
+          res.data.data.forEach((s: any) => map.set(s.targetId, s));
+          setVerificationSummary(map);
+        }
+      })
+      .catch(() => {});
+    tasksAPI
+      .getStats()
+      .then((res) => {
+        if (res.data?.success) setTaskStats(res.data.data);
+      })
+      .catch(() => {});
+  }, []);
+
   // ── Loading screen ────────────────────────────────────
   if (issuesLoading || objectsLoading) {
     return (
@@ -403,6 +439,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       <main className="flex-1 min-h-0 relative z-0">
         {activeView === "MAP" ? (
           <>
+            {/* Public stats strip — shown on map view when there's task data */}
+            {taskStats && (
+              <PublicStatsBar stats={taskStats} objectCount={objects.length} />
+            )}
+
             <CategoryFilter
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}
@@ -415,7 +456,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
               onMapClick={handleMapClick}
               onObjectClick={handleObjectClick}
               isAdding={isAddingMode}
-              showObjects={canShowObjects}
+              showObjects={showObjects}
               showHeatmap={showHeatmap}
               showChoropleth={showChoropleth}
               choroplethMetric={choroplethMetric}
@@ -425,6 +466,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
               triggerLocate={triggerLocate}
               isDark={isDarkMode}
               objectUnresolvedCounts={objectUnresolvedCounts}
+              verificationSummary={verificationSummary}
             />
             <div className="absolute bottom-8 right-6 z-[400] flex flex-col items-end gap-4">
               <button
@@ -477,7 +519,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         )}
       </main>
 
-      {/* Issue Detail Panel */}
       <DetailPanel type="issue" isOpen={!!selectedIssue}>
         <DetailSidebar
           issue={selectedIssue}
@@ -490,7 +531,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         />
       </DetailPanel>
 
-      {/* Object Detail Panel */}
       <DetailPanel type="organization" isOpen={!!viewingObject}>
         <ObjectSidebar
           object={viewingObject}
@@ -499,10 +539,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
           onClose={() => navigate("/map")}
           onIssueClick={handleSelectIssue}
           onReportIssue={handleReportAtObject}
+          onVerificationDone={handleVerificationDone}
         />
       </DetailPanel>
 
-      {/* District Drilldown */}
       <DistrictDrilldown
         districtId={drilldownDistrictId}
         districtName={drilldownDistrictName}

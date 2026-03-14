@@ -1,289 +1,552 @@
-import React, { useState, useMemo } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  CartesianGrid,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Legend,
-} from "recharts";
-import {
-  Building2,
-  Construction,
-  AlertTriangle,
-  MapPin,
-  TrendingUp,
-  CheckCircle2,
-  AlertCircle,
-  DollarSign,
-  Wheat,
-  ChevronDown,
-  BarChart3,
-  Activity,
-  Award,
-  Layers,
-  Clock,
-} from "lucide-react";
-import { CustomSelect } from "../common/CustomSelect";
-import {
-  useAnalytics,
-  DistrictScore,
-  RegionSummary,
-  useResolution,
-  useEfficiency,
-} from "../../hooks/useAnalytics";
-import { DistrictDrilldown } from "./DistrictDrilldown";
+// frontend/src/components/analytics/AnalyticsDashboard.tsx
 
-// ─────────────────────────────────────────────
-// Color palette
-// ─────────────────────────────────────────────
+import React, { useState, useMemo } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend
+} from 'recharts';
+import {
+  Building2, AlertTriangle, CheckCircle2, AlertCircle,
+  Activity, BarChart3, Layers, MapPin, Wheat, Award,
+  ChevronDown
+} from 'lucide-react';
+import { useAnalytics, DistrictScore, RegionSummary } from '../../hooks/useAnalytics';
+import { DistrictDrilldown } from './DistrictDrilldown';
+import { CustomSelect } from '../common/CustomSelect';
 
-const COLORS = {
-  primary: "#3b82f6",
-  success: "#22c55e",
-  warning: "#f59e0b",
-  danger: "#ef4444",
-  info: "#06b6d4",
-  purple: "#8b5cf6",
-  rose: "#f43f5e",
-  emerald: "#10b981",
-  amber: "#f59e0b",
-  indigo: "#6366f1",
-  teal: "#14b8a6",
+// ── Palette ───────────────────────────────────────────────────────────────────
+
+const C = {
+  primary:  '#3b82f6',
+  success:  '#22c55e',
+  warning:  '#f59e0b',
+  danger:   '#ef4444',
+  purple:   '#8b5cf6',
+  teal:     '#14b8a6',
+  indigo:   '#6366f1',
 };
 
+const CHART_COLORS = [C.primary, C.success, C.warning, C.danger, C.purple, C.teal, C.indigo, '#f43f5e'];
+
 const SEVERITY_COLORS: Record<string, string> = {
-  Critical: "#ef4444",
-  High: "#f97316",
-  Medium: "#f59e0b",
-  Low: "#22c55e",
+  Critical: C.danger,
+  High:     '#f97316',
+  Medium:   C.warning,
+  Low:      C.success,
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  Open: "#ef4444",
-  "In Progress": "#3b82f6",
-  Resolved: "#22c55e",
+  Open:         C.danger,
+  'In Progress': C.primary,
+  Resolved:     C.success,
 };
 
-const CHART_COLORS = [
-  "#3b82f6",
-  "#22c55e",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-  "#f43f5e",
-  "#10b981",
-];
-
-const formatBudget = (val: number): string => {
-  if (val >= 1e12) return (val / 1e12).toFixed(1) + " трлн";
-  if (val >= 1e9) return (val / 1e9).toFixed(1) + " млрд";
-  if (val >= 1e6) return (val / 1e6).toFixed(1) + " млн";
-  if (val >= 1e3) return (val / 1e3).toFixed(0) + " тыс";
-  return val.toFixed(0);
+const OBJECT_TYPE_LABELS: Record<string, string> = {
+  school:       'Школы',
+  kindergarten: 'Детсады',
+  health_post:  'ФАП/СВП',
 };
 
-// ─────────────────────────────────────────────
-// Stat Card
-// ─────────────────────────────────────────────
+const TASK_STATUS_LABELS: Record<string, string> = {
+  Planned:              'Запланировано',
+  'In Progress':        'В работе',
+  'Pending Verification': 'На проверке',
+  Completed:            'Выполнено',
+  Failed:               'Не выполнено',
+};
+
+// ── Shared sub-components ─────────────────────────────────────────────────────
 
 const StatCard: React.FC<{
-  title: string;
-  value: string | number;
-  subtitle?: string;
   icon: React.ReactNode;
-  color: string;
-}> = ({ title, value, subtitle, icon, color }) => (
-  <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm">
-    <div className="flex items-start justify-between mb-3">
-      <div
-        className={`p-2.5 rounded-xl`}
-        style={{ backgroundColor: color + "18", color }}
-      >
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+}> = ({ icon, label, value, sub, color = C.primary }) => (
+  <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800">
+    <div className="flex items-start justify-between">
+      <div className="p-2 rounded-xl" style={{ backgroundColor: color + '18', color }}>
         {icon}
       </div>
     </div>
-    <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-      {value}
+    <div className="mt-4">
+      <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{value}</p>
+      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
+      {sub && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{sub}</p>}
     </div>
-    <div className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mt-1">
-      {title}
-    </div>
-    {subtitle && (
-      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-        {subtitle}
-      </div>
-    )}
   </div>
 );
 
-// ─────────────────────────────────────────────
-// Section wrapper
-// ─────────────────────────────────────────────
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h3 className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-4">{children}</h3>
+);
 
-const Section: React.FC<{
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-}> = ({ title, icon, children, className = "" }) => (
-  <div
-    className={`bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm ${className}`}
-  >
-    <div className="flex items-center gap-2.5 mb-5">
-      <div className="text-slate-400 dark:text-slate-500">{icon}</div>
-      <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm uppercase tracking-wide">
-        {title}
-      </h3>
-    </div>
+const ChartCard: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className = '' }) => (
+  <div className={`bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 ${className}`}>
+    <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">{title}</p>
     {children}
   </div>
 );
 
+function ScoreBar({ value, color }: { value: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-7 text-right">{value}</span>
+    </div>
+  );
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'overview',  label: 'Обзор',      icon: <BarChart3 size={14} /> },
+  { id: 'issues',    label: 'Обращения',  icon: <AlertTriangle size={14} /> },
+  { id: 'objects',   label: 'Объекты',    icon: <Building2 size={14} /> },
+  { id: 'tasks',     label: 'Задачи',     icon: <CheckCircle2 size={14} /> },
+  { id: 'districts', label: 'Районы',     icon: <MapPin size={14} /> },
+  { id: 'crops',     label: 'Агро',       icon: <Wheat size={14} /> },
+];
+
 // ─────────────────────────────────────────────
-// Custom tooltip
+// Tab: Overview
 // ─────────────────────────────────────────────
 
-const ChartTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
+const OverviewTab: React.FC<{ data: any; tasks: any; regions: RegionSummary[] }> = ({ data, tasks, regions }) => {
+  const byTypeData = useMemo(() => (data?.byType || []).map((t: any) => ({
+    name: OBJECT_TYPE_LABELS[t._id] || t._id,
+    count: t.count
+  })), [data]);
+
+  const topRegions = useMemo(() =>
+    [...(regions || [])].sort((a, b) => b.objectCount - a.objectCount).slice(0, 8)
+  , [regions]);
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs">
-      {label && (
-        <div className="font-bold text-slate-600 dark:text-slate-300 mb-1">
-          {label}
-        </div>
-      )}
-      {payload.map((p: any, i: number) => (
-        <div key={i} className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: p.color || p.fill }}
-          />
-          <span className="text-slate-500">{p.name}:</span>
-          <span className="font-bold text-slate-800 dark:text-slate-200">
-            {p.value}
-          </span>
-        </div>
-      ))}
+    <div className="space-y-6">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={<Building2 size={18} />} label="Объектов" value={(data?.total || 0).toLocaleString()} color={C.indigo} />
+        <StatCard icon={<AlertTriangle size={18} />} label="Обращений" value={0} sub="нет данных" color={C.danger} />
+        <StatCard icon={<CheckCircle2 size={18} />} label="Задач выполнено" value={tasks?.byStatus?.Completed ?? 0} sub={`из ${tasks?.total ?? 0}`} color={C.success} />
+        <StatCard
+          icon={<Activity size={18} />}
+          label="Верификаций"
+          value={(tasks?.verifications?.done ?? 0) + (tasks?.verifications?.problem ?? 0)}
+          sub={`✓ ${tasks?.verifications?.done ?? 0}  ✗ ${tasks?.verifications?.problem ?? 0}`}
+          color={C.teal}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="Объекты по типу">
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={byTypeData} margin={{ left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v: any) => [v.toLocaleString(), 'Объектов']} />
+              <Bar dataKey="count" fill={C.indigo} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Топ регионов по количеству объектов">
+          <div className="space-y-2">
+            {topRegions.map((r, i) => {
+              const max = topRegions[0]?.objectCount || 1;
+              return (
+                <div key={r.code} className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 w-4">{i + 1}</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-32 truncate">
+                    {r.name?.ru || r.name?.en || `Регион ${r.code}`}
+                  </span>
+                  <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-indigo-500"
+                         style={{ width: `${(r.objectCount / max) * 100}%` }} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-10 text-right">
+                    {r.objectCount.toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </ChartCard>
+      </div>
     </div>
   );
 };
 
 // ─────────────────────────────────────────────
-// District scoring table
+// Tab: Issues
 // ─────────────────────────────────────────────
 
-const ScoreBar: React.FC<{ value: number; color: string }> = ({
-  value,
-  color,
-}) => (
-  <div className="flex items-center gap-2">
-    <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-      <div
-        className="h-full rounded-full"
-        style={{ width: `${value}%`, backgroundColor: color }}
-      />
-    </div>
-    <span className="text-[10px] font-bold text-slate-500 w-7 text-right">
-      {value}
-    </span>
-  </div>
-);
+const IssuesTab: React.FC<{ data: any }> = ({ data }) => {
+  const categoryData = useMemo(() =>
+    (data?.byCategory || []).map((c: any) => ({ name: c._id || 'Другое', count: c.count, votes: c.votes || 0 }))
+  , [data]);
 
-const DistrictTable: React.FC<{
-  districts: DistrictScore[];
-  limit?: number;
-}> = ({ districts, limit = 15 }) => {
-  const shown = districts.slice(0, limit);
+  const severityData = useMemo(() =>
+    Object.entries(data?.bySeverity || {}).map(([name, value]) => ({ name, value: value as number, color: SEVERITY_COLORS[name] || '#888' }))
+  , [data]);
+
+  const statusData = useMemo(() =>
+    Object.entries(data?.byStatus || {}).map(([name, value]) => ({ name, value: value as number, color: STATUS_COLORS[name] || '#888' }))
+  , [data]);
+
+  const trendData = useMemo(() =>
+    (data?.trends || []).map((t: any) => ({
+      label:    `${t.year}-${String(t.month).padStart(2, '0')}`,
+      Всего:    t.count,
+      Решено:   t.resolved,
+    }))
+  , [data]);
+
   return (
-    <div className="overflow-x-auto -mx-2">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-            <th className="text-left py-2 px-2 font-bold">#</th>
-            <th className="text-left py-2 px-2 font-bold">Район</th>
-            <th className="text-center py-2 px-2 font-bold">Балл</th>
-            <th className="text-center py-2 px-2 font-bold">Объекты инф-ры</th>
-            <th className="text-center py-2 px-2 font-bold">Обращения</th>
-            <th className="text-center py-2 px-2 font-bold">Бюджет</th>
-            <th className="text-right py-2 px-2 font-bold">Объектов</th>
-            <th className="text-right py-2 px-2 font-bold">Проблем</th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((d) => (
-            <tr
-              key={d.districtId}
-              className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors cursor-pointer"
-              onClick={() => {
-                // Dispatch custom event for drilldown
-                window.dispatchEvent(
-                  new CustomEvent("district-drilldown", {
-                    detail: {
-                      id: d.districtId,
-                      name: d.districtName,
-                      scores: d.scores,
-                    },
-                  })
-                );
-              }}
-            >
-              <td className="py-2.5 px-2 font-black text-slate-300 dark:text-slate-600">
-                {d.rank}
-              </td>
-              <td className="py-2.5 px-2">
-                <div className="font-bold text-slate-800 dark:text-slate-200">
-                  {d.districtName?.en || d.districtName?.uz}
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={<Activity size={18} />}     label="Всего"       value={(data?.total || 0).toLocaleString()} color={C.primary} />
+        <StatCard icon={<AlertCircle size={18} />}  label="Открытых"    value={data?.byStatus?.Open || 0}           color={C.danger} />
+        <StatCard icon={<Activity size={18} />}     label="В работе"    value={data?.byStatus?.['In Progress'] || 0} color={C.primary} />
+        <StatCard icon={<CheckCircle2 size={18} />} label="Решено"      value={data?.byStatus?.Resolved || 0}       color={C.success} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <ChartCard title="По категории" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={categoryData} layout="vertical" margin={{ left: 60, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+              <XAxis type="number" tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} width={60} />
+              <Tooltip formatter={(v: any) => [v.toLocaleString(), '']} />
+              <Bar dataKey="count" name="Обращений" fill={C.danger} radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <div className="space-y-4">
+          <ChartCard title="По тяжести">
+            <ResponsiveContainer width="100%" height={100}>
+              <PieChart>
+                <Pie data={severityData} dataKey="value" innerRadius={25} outerRadius={42} paddingAngle={2}>
+                  {severityData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip formatter={(v: any) => [v, '']} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-1 mt-1">
+              {severityData.map(s => (
+                <div key={s.name} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                    <span className="text-slate-600 dark:text-slate-400">{s.name}</span>
+                  </div>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">{(s.value as number).toLocaleString()}</span>
                 </div>
-              </td>
-              <td className="py-2.5 px-2 text-center">
-                <span
-                  className={`inline-block px-2 py-0.5 rounded-full font-black text-[10px] ${
-                    d.scores.composite >= 60
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      : d.scores.composite >= 30
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                  }`}
-                >
-                  {d.scores.composite}
-                </span>
-              </td>
-              <td className="py-2.5 px-2">
-                <ScoreBar
-                  value={d.scores.infrastructure}
-                  color={COLORS.primary}
-                />
-              </td>
-              <td className="py-2.5 px-2">
-                <ScoreBar value={d.scores.issues} color={COLORS.success} />
-              </td>
-              <td className="py-2.5 px-2">
-                <ScoreBar value={d.scores.budget} color={COLORS.warning} />
-              </td>
-              <td className="py-2.5 px-2 text-right font-bold text-slate-600 dark:text-slate-400">
-                {d.orgCount + d.infraCount}
-              </td>
-              <td className="py-2.5 px-2 text-right font-bold text-slate-600 dark:text-slate-400">
-                {d.issueCount}
-              </td>
+              ))}
+            </div>
+          </ChartCard>
+        </div>
+      </div>
+
+      {trendData.length > 0 && (
+        <ChartCard title="Тренд за 12 месяцев">
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={trendData} margin={{ left: -10, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="Всего"  stroke={C.primary}  strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="Решено" stroke={C.success} strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Tab: Objects
+// ─────────────────────────────────────────────
+
+const ObjectsTab: React.FC<{ data: any; regions: RegionSummary[] }> = ({ data, regions }) => {
+  const byTypeData = useMemo(() =>
+    (data?.byType || []).map((t: any) => ({
+      name:  OBJECT_TYPE_LABELS[t._id] || t._id,
+      count: t.count,
+    }))
+  , [data]);
+
+  const byRegionData = useMemo(() =>
+    (data?.byRegion || []).slice(0, 12).map((r: any) => ({
+      name:  r._id || '—',
+      count: r.count,
+    }))
+  , [data]);
+
+  const regionRows = useMemo(() =>
+    [...(regions || [])].sort((a, b) => b.objectCount - a.objectCount)
+  , [regions]);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="По типу объекта">
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart>
+              <Pie data={byTypeData} dataKey="count" cx="50%" cy="50%" outerRadius={60} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                {byTypeData.map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={(v: any) => [v.toLocaleString(), 'Объектов']} />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="По вилояту (топ-12)">
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={byRegionData} margin={{ left: -20, right: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={45} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v: any) => [v.toLocaleString(), 'Объектов']} />
+              <Bar dataKey="count" fill={C.indigo} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <ChartCard title="Сводка по регионам">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-slate-800">
+                <th className="text-left py-2 font-black text-slate-400 uppercase tracking-wider">Регион</th>
+                <th className="text-right py-2 font-black text-slate-400 uppercase tracking-wider">Объектов</th>
+                <th className="text-right py-2 font-black text-slate-400 uppercase tracking-wider">Обращений</th>
+                <th className="text-right py-2 font-black text-slate-400 uppercase tracking-wider">Решено %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {regionRows.map(r => (
+                <tr key={r.code} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                  <td className="py-2 font-bold text-slate-700 dark:text-slate-300">
+                    {r.name?.ru || r.name?.en || `Регион ${r.code}`}
+                  </td>
+                  <td className="py-2 text-right font-bold text-indigo-600 dark:text-indigo-400">{r.objectCount.toLocaleString()}</td>
+                  <td className="py-2 text-right font-bold text-slate-600 dark:text-slate-400">{r.issueCount.toLocaleString()}</td>
+                  <td className="py-2 text-right font-bold">
+                    {r.resolutionRate != null
+                      ? <span style={{ color: r.resolutionRate >= 60 ? C.success : r.resolutionRate >= 30 ? C.warning : C.danger }}>
+                          {r.resolutionRate}%
+                        </span>
+                      : <span className="text-slate-400">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ChartCard>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Tab: Tasks
+// ─────────────────────────────────────────────
+
+const TasksTab: React.FC<{ data: any }> = ({ data }) => {
+  const statusData = useMemo(() =>
+    Object.entries(data?.byStatus || {}).map(([name, value]) => ({
+      name:  TASK_STATUS_LABELS[name] || name,
+      value: value as number,
+    }))
+  , [data]);
+
+  const verifData = useMemo(() => [
+    { name: 'Выполнено ✓',  value: data?.verifications?.done    || 0, color: C.success },
+    { name: 'Проблема ✗',   value: data?.verifications?.problem || 0, color: C.danger  },
+  ], [data]);
+
+  const total     = data?.total               || 0;
+  const completed = data?.byStatus?.Completed || 0;
+  const pending   = data?.byStatus?.['Pending Verification'] || 0;
+  const verifTotal = (data?.verifications?.done || 0) + (data?.verifications?.problem || 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={<Layers size={18} />}        label="Всего задач"     value={total}     color={C.indigo} />
+        <StatCard icon={<CheckCircle2 size={18} />}  label="Выполнено"       value={completed} sub={total > 0 ? `${Math.round(completed/total*100)}%` : ''} color={C.success} />
+        <StatCard icon={<Activity size={18} />}      label="На проверке"     value={pending}   color={C.warning} />
+        <StatCard icon={<Award size={18} />}         label="Верификаций"     value={verifTotal} sub={`✓ ${data?.verifications?.done || 0}  ✗ ${data?.verifications?.problem || 0}`} color={C.teal} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="Статусы задач">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={statusData} margin={{ left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="value" name="Задач" radius={[4, 4, 0, 0]}>
+                {statusData.map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Верификации граждан">
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={verifData} dataKey="value" innerRadius={50} outerRadius={75} paddingAngle={3}>
+                {verifData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip formatter={(v: any) => [v.toLocaleString(), '']} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex justify-center gap-6 mt-2">
+            {verifData.map(v => (
+              <div key={v.name} className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: v.color }} />
+                <span className="font-bold text-slate-600 dark:text-slate-400">{v.name}</span>
+                <span className="font-black text-slate-800 dark:text-slate-200">{v.value.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Tab: Districts
+// ─────────────────────────────────────────────
+
+const DistrictsTab: React.FC<{
+  data: DistrictScore[];
+  onDrilldown: (id: string, name: any, scores: any) => void;
+}> = ({ data, onDrilldown }) => {
+  const [sortBy, setSortBy] = useState<'composite' | 'issues' | 'objects' | 'verification'>('composite');
+
+  const sorted = useMemo(() =>
+    [...data].sort((a, b) => b.scores[sortBy] - a.scores[sortBy])
+  , [data, sortBy]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Сортировка:</span>
+        {(['composite', 'issues', 'objects', 'verification'] as const).map(s => (
+          <button
+            key={s}
+            onClick={() => setSortBy(s)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+              sortBy === s
+                ? 'bg-teal-600 text-white'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            {{ composite: 'Общий', issues: 'Обращения', objects: 'Объекты', verification: 'Верификация' }[s]}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <th className="text-left py-3 px-4 font-black text-slate-400 uppercase tracking-wider w-6">#</th>
+              <th className="text-left py-3 px-2 font-black text-slate-400 uppercase tracking-wider">Район</th>
+              <th className="py-3 px-2 font-black text-slate-400 uppercase tracking-wider text-center">Общий</th>
+              <th className="py-3 px-2 font-black text-slate-400 uppercase tracking-wider hidden lg:table-cell">Обращения</th>
+              <th className="py-3 px-2 font-black text-slate-400 uppercase tracking-wider hidden lg:table-cell">Объекты</th>
+              <th className="py-3 px-2 font-black text-slate-400 uppercase tracking-wider hidden lg:table-cell">Верификация</th>
+              <th className="text-right py-3 px-4 font-black text-slate-400 uppercase tracking-wider">Обр.</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((d, i) => (
+              <tr
+                key={d.districtId}
+                onClick={() => onDrilldown(d.districtId, d.districtName, d.scores)}
+                className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer"
+              >
+                <td className="py-2.5 px-4 text-slate-400 font-bold">{i + 1}</td>
+                <td className="py-2.5 px-2 font-bold text-slate-700 dark:text-slate-300">
+                  {d.districtName?.ru || d.districtName?.en || d.districtName?.uz || '—'}
+                </td>
+                <td className="py-2.5 px-2 text-center">
+                  <span className={`inline-block px-2 py-0.5 rounded-lg text-[11px] font-black ${
+                    d.scores.composite >= 60 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                    d.scores.composite >= 30 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {d.scores.composite}
+                  </span>
+                </td>
+                <td className="py-2.5 px-2 hidden lg:table-cell w-28">
+                  <ScoreBar value={d.scores.issues} color={C.danger} />
+                </td>
+                <td className="py-2.5 px-2 hidden lg:table-cell w-28">
+                  <ScoreBar value={d.scores.objects} color={C.indigo} />
+                </td>
+                <td className="py-2.5 px-2 hidden lg:table-cell w-28">
+                  <ScoreBar value={d.scores.verification} color={C.teal} />
+                </td>
+                <td className="py-2.5 px-4 text-right font-bold text-slate-500 dark:text-slate-400">
+                  {d.issueCount}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Tab: Crops
+// ─────────────────────────────────────────────
+
+const CropsTab: React.FC<{ data: any }> = ({ data }) => {
+  const cropData = useMemo(() =>
+    (data?.cropTotals || []).slice(0, 10).map((c: any) => ({
+      name:  c.name,
+      count: c.districtCount,
+      color: c.color || '#94a3b8',
+    }))
+  , [data]);
+
+  if (!data || cropData.length === 0) {
+    return <p className="text-sm text-slate-400 dark:text-slate-600 text-center py-16">Данные о культурах недоступны</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <ChartCard title="Топ культур по охвату районов">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={cropData} margin={{ left: -10, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} />
+            <YAxis tick={{ fontSize: 11 }} label={{ value: 'районов', angle: -90, position: 'insideLeft', style: { fontSize: 9 } }} />
+            <Tooltip formatter={(v: any) => [v, 'районов']} />
+            <Bar dataKey="count" name="Районов" radius={[4, 4, 0, 0]}>
+              {cropData.map((entry: any, i: number) => <Cell key={i} fill={entry.color || CHART_COLORS[i % CHART_COLORS.length]} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
     </div>
   );
 };
@@ -294,177 +557,32 @@ const DistrictTable: React.FC<{
 
 export const AnalyticsDashboard: React.FC = () => {
   const {
-    overview,
-    districtScoring,
-    regionSummary,
-    issueAnalytics,
-    cropAnalytics,
-    budgetAnalytics,
-    loading,
-    error,
-    refetch,
-    fetchDistrictDetail,
-    regionCode: selectedRegion,
-    setRegionCode: setSelectedRegion,
-    period,
-    setPeriod,
+    overview, issueAnalytics, objectAnalytics, districtScoring,
+    regionSummary, taskStats, cropAnalytics,
+    loading, error, refetch,
+    regionCode, setRegionCode,
   } = useAnalytics();
 
-  // New hooks for resolution times and efficiency/anomalies — filtered by selected region
-  const { data: resolution, loading: resLoading } =
-    useResolution(selectedRegion);
-  const { data: efficiency, loading: effLoading } =
-    useEfficiency(selectedRegion);
+  const [activeTab, setActiveTab] = useState('overview');
 
   // District drilldown
-  const [drilldownId, setDrilldownId] = useState<string | null>(null);
-  const [drilldownName, setDrilldownName] = useState<any>(null);
+  const [drilldownId,     setDrilldownId]     = useState<string | null>(null);
+  const [drilldownName,   setDrilldownName]   = useState<any>(null);
   const [drilldownScores, setDrilldownScores] = useState<any>(null);
 
-  const handleRegionChange = (code: number | null) => {
-    setSelectedRegion(code);
-  };
+  const regionOptions = useMemo(() =>
+    (regionSummary || []).map(r => ({
+      value: r.code,
+      label: r.name?.ru || r.name?.en || `Регион ${r.code}`,
+    }))
+  , [regionSummary]);
 
-  // ── Chart data transforms ──
-
-  const categoryData = useMemo(
-    () =>
-      (issueAnalytics?.byCategory || []).map((c) => ({
-        name: c._id || "Другое",
-        count: c.count,
-        avgVotes: Math.round(c.avgVotes || 0),
-      })),
-    [issueAnalytics]
-  );
-
-  const severityData = useMemo(
-    () =>
-      Object.entries(issueAnalytics?.bySeverity || {}).map(([name, value]) => ({
-        name,
-        value,
-        color: SEVERITY_COLORS[name] || "#94a3b8",
-      })),
-    [issueAnalytics]
-  );
-
-  const statusData = useMemo(
-    () =>
-      Object.entries(issueAnalytics?.byStatus || {}).map(([name, value]) => ({
-        name,
-        value,
-        color: STATUS_COLORS[name] || "#94a3b8",
-      })),
-    [issueAnalytics]
-  );
-
-  const trendData = useMemo(
-    () =>
-      (issueAnalytics?.trends || []).map((t) => ({
-        label: `${t.month}/${t.year}`,
-        Создано: t.count,
-        Решено: t.resolved,
-      })),
-    [issueAnalytics]
-  );
-
-  const regionChartData = useMemo(
-    () =>
-      regionSummary
-        .filter((r) => r.issueCount > 0 || r.orgCount > 0)
-        .sort((a, b) => b.issueCount - a.issueCount)
-        .slice(0, 10)
-        .map((r) => ({
-          name: r.regionName?.en?.replace(" region", "") || `R${r.regionCode}`,
-          issues: r.issueCount,
-          orgs: r.orgCount,
-          infra: r.infraCount,
-        })),
-    [regionSummary]
-  );
-
-  const topDistrictsRadar = useMemo(() => {
-    const top5 = districtScoring.slice(0, 5);
-    if (top5.length === 0) return [];
-    return ["infrastructure", "issues", "budget", "crops"].map((key) => {
-      const entry: Record<string, any> = {
-        metric:
-          key === "infrastructure"
-            ? "Объекты инф-ры"
-            : key === "issues"
-            ? "Обращения"
-            : key === "budget"
-            ? "Бюджет"
-            : "Агро",
-      };
-      top5.forEach((d) => {
-        entry[d.districtName?.en || d.districtId] =
-          d.scores[key as keyof typeof d.scores];
-      });
-      return entry;
-    });
-  }, [districtScoring]);
-
-  const cropTotalData = useMemo(
-    () =>
-      (cropAnalytics?.cropTotals || []).map((c) => ({
-        name: c.name || `Crop ${c._id}`,
-        districts: c.districtCount,
-        color: c.color || "#94a3b8",
-      })),
-    [cropAnalytics]
-  );
-
-  // Resolution by category chart data
-  const resByCategoryData = useMemo(
-    () =>
-      (resolution?.byCategory || [])
-        .filter((c) => c.avgDays != null)
-        .map((c) => ({
-          name: c.category || "Другое",
-          days: c.avgDays!,
-          count: c.count,
-        })),
-    [resolution]
-  );
-
-  // Resolution by district chart data
-  const resByDistrictData = useMemo(
-    () =>
-      (resolution?.byDistrict || [])
-        .filter((d) => d.avgDays != null)
-        .sort((a, b) => (b.avgDays || 0) - (a.avgDays || 0))
-        .slice(0, 12)
-        .map((d) => ({
-          name: (d.district || "").substring(0, 15),
-          days: d.avgDays!,
-          count: d.count,
-        })),
-    [resolution]
-  );
-
-  // Listen for district-drilldown events from the DistrictTable
-  React.useEffect(() => {
-    const handler = (e: any) => {
-      const { id, name, scores } = e.detail;
-      setDrilldownId(id);
-      setDrilldownName(name);
-      setDrilldownScores(scores);
-    };
-    window.addEventListener("district-drilldown", handler);
-    return () => window.removeEventListener("district-drilldown", handler);
-  }, []);
-
-  // ── Loading / Error ──
-
-  // Full spinner only on first load (no data yet)
-  if (loading && !overview) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
-            Загрузка аналитики...
-          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-bold">Загрузка аналитики...</p>
         </div>
       </div>
     );
@@ -472,14 +590,11 @@ export const AnalyticsDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <AlertCircle size={40} className="mx-auto mb-3 text-red-400" />
-          <p className="text-red-500 font-bold">{error}</p>
-          <button
-            onClick={() => refetch()}
-            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700"
-          >
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <AlertTriangle size={32} className="text-red-400 mx-auto" />
+          <p className="text-sm text-slate-500 dark:text-slate-400">{error}</p>
+          <button onClick={refetch} className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold">
             Повторить
           </button>
         </div>
@@ -487,974 +602,78 @@ export const AnalyticsDashboard: React.FC = () => {
     );
   }
 
-  const o = overview!;
-  const totalBudget = o.budget.committedUZS;
-  const spentBudget = o.budget.spentUZS;
+  // Derive stats for OverviewTab from objectAnalytics
+  const objectOverviewData = {
+    total:    (objectAnalytics?.byType || []).reduce((s: number, t: any) => s + t.count, 0),
+    byType:   objectAnalytics?.byType   || [],
+    byRegion: objectAnalytics?.byRegion || [],
+  };
 
   return (
-    <React.Fragment>
-      <div className="h-full overflow-y-auto">
-        {/* Subtle refetch indicator — visible only during filter changes */}
-        {loading && (
-          <div className="sticky top-0 z-10 h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div
-              className="h-full bg-blue-500 animate-[refetch_1.2s_ease-in-out_infinite] origin-left"
-              style={{ animation: "refetch 1.2s ease-in-out infinite" }}
-            />
-            <style>{`@keyframes refetch { 0% { width: 0%; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0%; margin-left: 100%; } }`}</style>
+    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Аналитика</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-bold uppercase tracking-widest">
+              Real Holat — Мониторинг социальной инфраструктуры
+            </p>
           </div>
-        )}
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                Аналитика геопортала
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                {o.counts.districts} районов ·{" "}
-                {o.counts.organizations + o.counts.infrastructure} объектов ·{" "}
-                {o.counts.issues} обращений
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <CustomSelect
-                options={[
-                  { value: 30, label: "30 дней" },
-                  { value: 90, label: "90 дней" },
-                  { value: 180, label: "6 месяцев" },
-                  { value: 365, label: "1 год" },
-                ]}
-                value={period}
-                onChange={setPeriod}
-                placeholder="Все время"
-                heading="Период"
-              />
-              <CustomSelect
-                options={regionSummary.map((r) => ({
-                  value: r.regionCode,
-                  label:
-                    r.regionName?.ru ||
-                    r.regionName?.en ||
-                    `Регион ${r.regionCode}`,
-                }))}
-                value={selectedRegion}
-                onChange={handleRegionChange}
-                placeholder="Все регионы"
-                heading="Регион"
-                icon={<MapPin size={14} />}
-              />
-            </div>
-          </div>
-
-          {/* ── Overview Cards ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <StatCard
-              title="Учреждения"
-              value={o.counts.organizations.toLocaleString()}
-              icon={<Building2 size={18} />}
-              color={COLORS.primary}
+          <div className="flex items-center gap-3">
+            <CustomSelect
+              options={regionOptions}
+              value={regionCode}
+              onChange={setRegionCode}
+              placeholder="Весь Узбекистан"
+              heading="Фильтр по региону"
+              icon={<MapPin size={13} />}
+              autoOpenKey="dashRegion"
             />
-            <StatCard
-              title="Инфраструктура"
-              value={o.counts.infrastructure.toLocaleString()}
-              icon={<Construction size={18} />}
-              color={COLORS.warning}
-            />
-            <StatCard
-              title="Обращения"
-              value={o.counts.issues.toLocaleString()}
-              subtitle={`${o.issues.byStatus?.["Open"] || 0} открыто`}
-              icon={<AlertTriangle size={18} />}
-              color={COLORS.danger}
-            />
-            <StatCard
-              title="Решено"
-              value={`${o.issues.resolutionRate}%`}
-              icon={<CheckCircle2 size={18} />}
-              color={COLORS.success}
-            />
-            <StatCard
-              title="Бюджет"
-              value={formatBudget(totalBudget) + " сум"}
-              subtitle={`Исп: ${o.budget.executionRate}%`}
-              icon={<DollarSign size={18} />}
-              color={COLORS.indigo}
-            />
-            <StatCard
-              title="Районы"
-              value={o.counts.districts}
-              icon={<MapPin size={18} />}
-              color={COLORS.purple}
-            />
+            <button
+              onClick={refetch}
+              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-colors"
+            >
+              Обновить
+            </button>
           </div>
-
-          {/* ── Row 1: Issues by Category + Severity + Status ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Section
-              title="По категориям"
-              icon={<BarChart3 size={16} />}
-              className="lg:col-span-2"
-            >
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={categoryData}
-                    layout="vertical"
-                    margin={{ left: 0, right: 10 }}
-                  >
-                    <XAxis type="number" tick={{ fontSize: 10 }} />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={120}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Bar
-                      dataKey="count"
-                      fill={COLORS.primary}
-                      radius={[0, 4, 4, 0]}
-                      name="Обращений"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Section>
-
-            <div className="space-y-4">
-              <Section title="По степени" icon={<AlertCircle size={16} />}>
-                <div className="h-32 flex justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={severityData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={50}
-                        dataKey="value"
-                        paddingAngle={3}
-                      >
-                        {severityData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ChartTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex justify-center gap-3 mt-2">
-                  {severityData.map((d) => (
-                    <div
-                      key={d.name}
-                      className="flex items-center gap-1.5 text-[10px]"
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: d.color }}
-                      />
-                      <span className="text-slate-500">{d.name}</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">
-                        {d.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-
-              <Section title="По статусу" icon={<Activity size={16} />}>
-                <div className="space-y-2">
-                  {statusData.map((d) => {
-                    const total = statusData.reduce((s, x) => s + x.value, 0);
-                    const pct =
-                      total > 0 ? Math.round((d.value / total) * 100) : 0;
-                    return (
-                      <div key={d.name} className="flex items-center gap-3">
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: d.color }}
-                        />
-                        <span className="text-xs text-slate-600 dark:text-slate-400 w-24">
-                          {d.name}
-                        </span>
-                        <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor: d.color,
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-10 text-right">
-                          {d.value}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Section>
-            </div>
-          </div>
-
-          {/* ── Row 1.5: Resolution Performance (NEW) ── */}
-          {resolution && (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard
-                  title="Ср. время решения"
-                  value={
-                    resolution.overall.avgDays != null
-                      ? `${resolution.overall.avgDays} дн`
-                      : "—"
-                  }
-                  subtitle={`${resolution.overall.count} решено`}
-                  icon={<Clock size={18} />}
-                  color={COLORS.teal}
-                />
-                <StatCard
-                  title="Медиана решения"
-                  value={
-                    resolution.overall.medianDays != null
-                      ? `${resolution.overall.medianDays} дн`
-                      : "—"
-                  }
-                  icon={<Clock size={18} />}
-                  color={COLORS.info}
-                />
-                <StatCard
-                  title="Самая быстрая категория"
-                  value={
-                    resolution.byCategory.length > 0
-                      ? `${
-                          Math.min(
-                            ...resolution.byCategory
-                              .filter((c) => c.avgDays != null)
-                              .map((c) => c.avgDays!)
-                          ) || "—"
-                        } дн`
-                      : "—"
-                  }
-                  subtitle={
-                    resolution.byCategory.length > 0
-                      ? resolution.byCategory.reduce(
-                          (best, c) =>
-                            !best ||
-                            (c.avgDays != null &&
-                              c.avgDays < (best.avgDays ?? Infinity))
-                              ? c
-                              : best,
-                          null as any
-                        )?.category
-                      : undefined
-                  }
-                  icon={<CheckCircle2 size={18} />}
-                  color={COLORS.success}
-                />
-                <StatCard
-                  title="Самая медленная"
-                  value={
-                    resolution.byCategory.length > 0
-                      ? `${
-                          Math.max(
-                            ...resolution.byCategory
-                              .filter((c) => c.avgDays != null)
-                              .map((c) => c.avgDays!)
-                          ) || "—"
-                        } дн`
-                      : "—"
-                  }
-                  subtitle={
-                    resolution.byCategory.length > 0
-                      ? resolution.byCategory.reduce(
-                          (worst, c) =>
-                            !worst ||
-                            (c.avgDays != null &&
-                              c.avgDays > (worst.avgDays ?? 0))
-                              ? c
-                              : worst,
-                          null as any
-                        )?.category
-                      : undefined
-                  }
-                  icon={<AlertTriangle size={18} />}
-                  color={COLORS.danger}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Resolution by category */}
-                {resByCategoryData.length > 0 && (
-                  <Section
-                    title="Время решения по категориям"
-                    icon={<Clock size={16} />}
-                  >
-                    <div className="h-56">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={resByCategoryData}
-                          layout="vertical"
-                          margin={{ left: 0, right: 10 }}
-                        >
-                          <XAxis
-                            type="number"
-                            tick={{ fontSize: 10 }}
-                            unit=" дн"
-                          />
-                          <YAxis
-                            dataKey="name"
-                            type="category"
-                            width={120}
-                            tick={{ fontSize: 10 }}
-                          />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Bar
-                            dataKey="days"
-                            fill={COLORS.teal}
-                            radius={[0, 4, 4, 0]}
-                            name="Ср. дней"
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </Section>
-                )}
-
-                {/* Resolution by severity */}
-                <Section
-                  title="Время решения по степени"
-                  icon={<AlertCircle size={16} />}
-                >
-                  <div className="space-y-3">
-                    {resolution.bySeverity.map((s) => {
-                      const maxDays = Math.max(
-                        ...resolution.bySeverity
-                          .filter((x) => x.avgDays != null)
-                          .map((x) => x.avgDays!),
-                        1
-                      );
-                      const pct =
-                        s.avgDays != null
-                          ? Math.round((s.avgDays / maxDays) * 100)
-                          : 0;
-                      return (
-                        <div key={s.severity} className="space-y-1.5">
-                          <div className="flex justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-2.5 h-2.5 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    SEVERITY_COLORS[s.severity] || "#94a3b8",
-                                }}
-                              />
-                              <span className="font-bold text-slate-700 dark:text-slate-300">
-                                {s.severity}
-                              </span>
-                            </div>
-                            <span className="text-slate-500">
-                              {s.avgDays != null ? `${s.avgDays} дн` : "—"}
-                              <span className="text-slate-400 ml-1">
-                                ({s.count})
-                              </span>
-                            </span>
-                          </div>
-                          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${pct}%`,
-                                backgroundColor:
-                                  SEVERITY_COLORS[s.severity] || "#94a3b8",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Resolution by district (compact) */}
-                  {resByDistrictData.length > 0 && (
-                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">
-                        По районам (топ-12)
-                      </div>
-                      <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={resByDistrictData}
-                            layout="vertical"
-                            margin={{ left: 0, right: 10 }}
-                          >
-                            <XAxis
-                              type="number"
-                              tick={{ fontSize: 9 }}
-                              unit=" дн"
-                            />
-                            <YAxis
-                              dataKey="name"
-                              type="category"
-                              width={100}
-                              tick={{ fontSize: 9 }}
-                            />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Bar
-                              dataKey="days"
-                              fill={COLORS.info}
-                              radius={[0, 3, 3, 0]}
-                              name="Ср. дней"
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
-                </Section>
-              </div>
-            </>
-          )}
-
-          {/* ── Row 2: Trends + Region Comparison ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Section title="Динамика обращений" icon={<TrendingUp size={16} />}>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="var(--tw-color-slate-100, #f1f5f9)"
-                    />
-                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="Создано"
-                      stroke={COLORS.danger}
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="Решено"
-                      stroke={COLORS.success}
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Section>
-
-            <Section
-              title="Регионы: объекты и обращения"
-              icon={<Layers size={16} />}
-            >
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={regionChartData}>
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 9 }}
-                      angle={-30}
-                      textAnchor="end"
-                      height={50}
-                    />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Bar
-                      dataKey="orgs"
-                      fill={COLORS.primary}
-                      name="Учреждения"
-                      radius={[2, 2, 0, 0]}
-                      stackId="stack"
-                    />
-                    <Bar
-                      dataKey="infra"
-                      fill={COLORS.warning}
-                      name="Инфраструктура"
-                      radius={[2, 2, 0, 0]}
-                      stackId="stack"
-                    />
-                    <Bar
-                      dataKey="issues"
-                      fill={COLORS.danger}
-                      name="Обращения"
-                      radius={[2, 2, 0, 0]}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Section>
-          </div>
-
-          {/* ── Row 3: District Scoring ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Section
-              title="Рейтинг районов"
-              icon={<Award size={16} />}
-              className="lg:col-span-2"
-            >
-              <DistrictTable districts={districtScoring} limit={15} />
-            </Section>
-
-            {topDistrictsRadar.length > 0 && (
-              <Section
-                title="Топ-5 районов: профиль"
-                icon={<Activity size={16} />}
-              >
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart
-                      data={topDistrictsRadar}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius="70%"
-                    >
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis
-                        dataKey="metric"
-                        tick={{ fontSize: 10 }}
-                      />
-                      <PolarRadiusAxis
-                        tick={{ fontSize: 8 }}
-                        domain={[0, 100]}
-                      />
-                      {districtScoring.slice(0, 5).map((d, i) => (
-                        <Radar
-                          key={d.districtId}
-                          name={d.districtName?.en || d.districtId}
-                          dataKey={d.districtName?.en || d.districtId}
-                          stroke={CHART_COLORS[i]}
-                          fill={CHART_COLORS[i]}
-                          fillOpacity={0.1}
-                          strokeWidth={2}
-                        />
-                      ))}
-                      <Legend wrapperStyle={{ fontSize: "10px" }} />
-                      <Tooltip content={<ChartTooltip />} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Section>
-            )}
-          </div>
-
-          {/* ── Row 4: Budget Analysis ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Section title="Бюджет по регионам" icon={<DollarSign size={16} />}>
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {regionSummary
-                  .filter((r) => r.budgetCommittedUZS > 0)
-                  .sort((a, b) => b.budgetCommittedUZS - a.budgetCommittedUZS)
-                  .map((r) => {
-                    const execRate =
-                      r.budgetCommittedUZS > 0
-                        ? Math.round(
-                            (r.budgetSpentUZS / r.budgetCommittedUZS) * 100
-                          )
-                        : 0;
-                    return (
-                      <div key={r.regionCode} className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-bold text-slate-700 dark:text-slate-300">
-                            {r.regionName?.en?.replace(" region", "") ||
-                              `R${r.regionCode}`}
-                          </span>
-                          <span className="text-slate-500">
-                            {formatBudget(r.budgetSpentUZS)} /{" "}
-                            {formatBudget(r.budgetCommittedUZS)} сум ({execRate}
-                            %)
-                          </span>
-                        </div>
-                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${execRate}%`,
-                              backgroundColor:
-                                execRate >= 80
-                                  ? COLORS.success
-                                  : execRate >= 50
-                                  ? COLORS.warning
-                                  : COLORS.danger,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </Section>
-
-            <Section
-              title="Выполнение бюджета по районам"
-              icon={<TrendingUp size={16} />}
-            >
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={districtScoring
-                      .filter((d) => d.budgetCommittedUZS > 0)
-                      .sort((a, b) => b.budgetExecution - a.budgetExecution)
-                      .slice(0, 12)
-                      .map((d) => ({
-                        name: (d.districtName?.en || "").substring(0, 12),
-                        rate: d.budgetExecution,
-                      }))}
-                    layout="vertical"
-                    margin={{ left: 0, right: 10 }}
-                  >
-                    <XAxis
-                      type="number"
-                      domain={[0, 100]}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={90}
-                      tick={{ fontSize: 9 }}
-                    />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Bar
-                      dataKey="rate"
-                      fill={COLORS.indigo}
-                      radius={[0, 4, 4, 0]}
-                      name="Исполнение %"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Section>
-          </div>
-
-          {/* ── Row 5: Crops ── */}
-          {cropTotalData.length > 0 && (
-            <Section
-              title="Сельскохозяйственные культуры"
-              icon={<Wheat size={16} />}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={cropTotalData}
-                      layout="vertical"
-                      margin={{ left: 0, right: 10 }}
-                    >
-                      <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis
-                        dataKey="name"
-                        type="category"
-                        width={100}
-                        tick={{ fontSize: 10 }}
-                      />
-                      <Tooltip content={<ChartTooltip />} />
-                      <Bar
-                        dataKey="districts"
-                        name="Районов"
-                        radius={[0, 4, 4, 0]}
-                      >
-                        {cropTotalData.map((d, i) => (
-                          <Cell
-                            key={i}
-                            fill={
-                              d.color || CHART_COLORS[i % CHART_COLORS.length]
-                            }
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">
-                    Топ районы по разнообразию культур
-                  </div>
-                  <div className="space-y-2 max-h-56 overflow-y-auto">
-                    {(cropAnalytics?.byDistrict || [])
-                      .slice(0, 10)
-                      .map((d: any) => (
-                        <div
-                          key={d._id}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {d.districtName?.en || d.districtName?.uz}
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {d.crops?.slice(0, 5).map((c: any, i: number) => (
-                              <div
-                                key={i}
-                                className="w-3 h-3 rounded-full border border-white dark:border-slate-800"
-                                style={{
-                                  backgroundColor: c.color || "#94a3b8",
-                                }}
-                                title={c.name}
-                              />
-                            ))}
-                            <span className="text-[10px] font-bold text-slate-400 ml-1">
-                              {d.cropCount}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </Section>
-          )}
-
-          {/* ── Row 6: Top voted issues ── */}
-          {issueAnalytics?.topVoted && issueAnalytics.topVoted.length > 0 && (
-            <Section
-              title="Топ обращения по поддержке"
-              icon={<TrendingUp size={16} />}
-            >
-              <div className="space-y-2">
-                {issueAnalytics.topVoted
-                  .slice(0, 8)
-                  .map((issue: any, i: number) => (
-                    <div
-                      key={issue._id}
-                      className="flex items-center gap-3 py-2 border-b border-slate-50 dark:border-slate-800/50 last:border-0"
-                    >
-                      <span className="text-lg font-black text-slate-200 dark:text-slate-700 w-6 text-right">
-                        {i + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                          {issue.title}
-                        </div>
-                        <div className="flex gap-2 mt-0.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                            {issue.category}
-                          </span>
-                          <span
-                            className="text-[10px] px-1.5 py-0.5 rounded"
-                            style={{
-                              backgroundColor:
-                                (SEVERITY_COLORS[issue.severity] || "#94a3b8") +
-                                "20",
-                              color:
-                                SEVERITY_COLORS[issue.severity] || "#94a3b8",
-                            }}
-                          >
-                            {issue.severity}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-black text-blue-600">
-                          {issue.votes}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          голосов
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </Section>
-          )}
-
-          {/* ── Row 7: Budget Efficiency ── */}
-          {budgetAnalytics && (
-            <Section
-              title="Эффективность бюджета"
-              icon={<DollarSign size={16} />}
-              className="lg:col-span-2"
-            >
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
-                    Выделено
-                  </p>
-                  <p className="text-sm font-black text-slate-800 dark:text-slate-100">
-                    {formatBudget(budgetAnalytics.totals.committedUZS)} сум
-                  </p>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
-                    Освоено
-                  </p>
-                  <p className="text-sm font-black text-emerald-600">
-                    {formatBudget(budgetAnalytics.totals.spentUZS)} сум
-                  </p>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
-                    Исполнение
-                  </p>
-                  <p className="text-sm font-black text-blue-600">
-                    {budgetAnalytics.totals.executionRate}%
-                  </p>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
-                    Цена решения
-                  </p>
-                  <p className="text-sm font-black text-amber-600">
-                    {budgetAnalytics.totals.costPerResolved
-                      ? formatBudget(budgetAnalytics.totals.costPerResolved) +
-                        " сум"
-                      : "—"}
-                  </p>
-                </div>
-              </div>
-
-              {budgetAnalytics.byDistrict.length > 0 && (
-                <div className="overflow-x-auto -mx-2">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                        <th className="text-left py-2 px-2 font-bold">Район</th>
-                        <th className="text-right py-2 px-2 font-bold">
-                          Выделено
-                        </th>
-                        <th className="text-right py-2 px-2 font-bold">
-                          Освоено
-                        </th>
-                        <th className="text-right py-2 px-2 font-bold">
-                          Исп. %
-                        </th>
-                        <th className="text-right py-2 px-2 font-bold">
-                          Решено
-                        </th>
-                        <th className="text-right py-2 px-2 font-bold">
-                          Цена/решение
-                        </th>
-                        <th className="text-right py-2 px-2 font-bold">
-                          Бюджет/км²
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {budgetAnalytics.byDistrict.slice(0, 20).map((d: any) => (
-                        <tr
-                          key={d.districtId}
-                          className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer"
-                          onClick={() => {
-                            setDrilldownId(d.districtId);
-                            setDrilldownName(d.districtName);
-                            setDrilldownScores(null);
-                          }}
-                        >
-                          <td className="py-2 px-2 font-bold text-slate-700 dark:text-slate-200">
-                            {d.districtName?.en || d.districtName?.uz || "—"}
-                          </td>
-                          <td className="py-2 px-2 text-right tabular-nums">
-                            {formatBudget(d.totalCommittedUZS)}
-                          </td>
-                          <td className="py-2 px-2 text-right tabular-nums text-emerald-600">
-                            {formatBudget(d.totalSpentUZS)}
-                          </td>
-                          <td className="py-2 px-2 text-right tabular-nums">
-                            <span
-                              className={`font-bold ${
-                                d.executionRate >= 70
-                                  ? "text-emerald-600"
-                                  : d.executionRate >= 40
-                                  ? "text-amber-600"
-                                  : "text-red-500"
-                              }`}
-                            >
-                              {d.executionRate}%
-                            </span>
-                          </td>
-                          <td className="py-2 px-2 text-right tabular-nums">
-                            {d.resolvedCount}
-                          </td>
-                          <td className="py-2 px-2 text-right tabular-nums text-amber-600">
-                            {d.costPerResolved
-                              ? formatBudget(d.costPerResolved)
-                              : "—"}
-                          </td>
-                          <td className="py-2 px-2 text-right tabular-nums text-slate-500">
-                            {formatBudget(d.budgetPerKm2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Section>
-          )}
-
-          {/* ── Row 8: Anomaly Detection (NEW) ── */}
-          {efficiency && efficiency.anomalies.length > 0 && (
-            <Section
-              title={`Аномалии бюджетной эффективности (${efficiency.anomalies.length})`}
-              icon={<AlertTriangle size={16} />}
-            >
-              <p className="text-xs text-slate-500 dark:text-slate-400 -mt-3 mb-4">
-                Учреждения с высоким исполнением бюджета (&gt;50%), но низким %
-                решённых проблем (&lt;30%)
-              </p>
-              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                {efficiency.anomalies.map((a) => (
-                  <div
-                    key={a.id}
-                    className={`flex items-center gap-3 p-3 rounded-xl border ${
-                      a.flag === "critical"
-                        ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40"
-                        : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40"
-                    }`}
-                  >
-                    <AlertTriangle
-                      size={14}
-                      className={`shrink-0 ${
-                        a.flag === "critical"
-                          ? "text-red-500"
-                          : "text-amber-500"
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                        {a.name}
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        {a.region} · {a.type}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="text-center">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">
-                          Бюджет
-                        </p>
-                        <p className="text-xs font-black text-emerald-600">
-                          {a.budget.executionRate}%
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">
-                          Решено
-                        </p>
-                        <p className="text-xs font-black text-red-500">
-                          {a.issues.resolutionRate}%
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">
-                          Проблем
-                        </p>
-                        <p className="text-xs font-black text-slate-600 dark:text-slate-400">
-                          {a.issues.total}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )}
         </div>
+
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 mb-6 bg-white dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-100 dark:border-slate-800 overflow-x-auto">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        {activeTab === 'overview'  && <OverviewTab  data={objectOverviewData} tasks={taskStats} regions={regionSummary} />}
+        {activeTab === 'issues'    && <IssuesTab    data={issueAnalytics} />}
+        {activeTab === 'objects'   && <ObjectsTab   data={objectAnalytics} regions={regionSummary} />}
+        {activeTab === 'tasks'     && <TasksTab     data={taskStats} />}
+        {activeTab === 'districts' && (
+          <DistrictsTab
+            data={districtScoring}
+            onDrilldown={(id, name, scores) => {
+              setDrilldownId(id);
+              setDrilldownName(name);
+              setDrilldownScores(scores);
+            }}
+          />
+        )}
+        {activeTab === 'crops'     && <CropsTab     data={cropAnalytics} />}
       </div>
 
       {/* District drilldown panel */}
@@ -1464,6 +683,6 @@ export const AnalyticsDashboard: React.FC = () => {
         scores={drilldownScores}
         onClose={() => setDrilldownId(null)}
       />
-    </React.Fragment>
+    </div>
   );
 };

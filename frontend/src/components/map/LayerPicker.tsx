@@ -126,21 +126,20 @@ export const LayerPicker: React.FC<LayerPickerProps> = ({
               <X size={14} className="text-slate-400" />
             </button>
           </div>
-
           <div className="p-2 space-y-0.5">
-            <LayerToggle
-              active={layers.showHeatmap}
-              label="Тепловая карта"
-              icon={<Flame size={16} />}
-              color="#ea580c"
-              onClick={onToggleHeatmap}
-            />
             <LayerToggle
               active={layers.showObjects}
               label="Объекты"
               icon={<Building2 size={16} />}
               color="#4f46e5"
               onClick={onToggleObjects}
+            />
+            <LayerToggle
+              active={layers.showHeatmap}
+              label="Тепловая карта"
+              icon={<Flame size={16} />}
+              color="#ea580c"
+              onClick={onToggleHeatmap}
             />
             <LayerToggle
               active={layers.showStandaloneIssues}

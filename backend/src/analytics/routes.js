@@ -14,9 +14,7 @@ import {
     getTrends,
     getResolution,
     getEfficiency,
-    getDistrictProfile,
-    getTaskAnalytics,
-    getProgramAnalytics
+    getDistrictProfile
 } from './controller.js';
 import { cacheMiddleware } from '../middleware/cache.js';
 
@@ -26,8 +24,6 @@ router.get('/overview', cacheMiddleware(300, 'analytics'), getOverview);
 router.get('/issues', cacheMiddleware(300, 'analytics'), getIssueAnalytics);
 router.get('/infrastructure', cacheMiddleware(300, 'analytics'), getInfraAnalytics);
 router.get('/crops', cacheMiddleware(300, 'analytics'), getCropAnalytics);
-router.get('/tasks', cacheMiddleware(120, 'analytics'), getTaskAnalytics);
-router.get('/programs', cacheMiddleware(120, 'analytics'), getProgramAnalytics);
 router.get('/districts/scoring', cacheMiddleware(300, 'analytics'), getDistrictScoring);
 router.get('/districts/:id', cacheMiddleware(120, 'analytics'), getDistrictDetail);
 router.get('/regions/summary', cacheMiddleware(300, 'analytics'), getRegionSummary);

@@ -1,103 +1,115 @@
-// backend/src/analytics/controller.js
-// objectType: 'school' | 'kindergarten' → education facilities
-// objectType: 'health_post'             → health facilities
-// Budget data now lives in BudgetAllocation, not on the Object_ documents.
+/**
+ * Analytics Controller
+ *
+ * All data comes from real MongoDB collections — no mock data.
+ * Architecture: Object_ (schools/kindergartens/health_posts) + Task + Issue
+ */
 
 import mongoose from 'mongoose';
 import Object_ from '../object/model.js';
+import Task from '../task/model.js';
 import Issue from '../issue/model.js';
 import District from '../district/model.js';
 import Region from '../region/model.js';
-import Task from '../task/model.js';
-import Program from '../program/model.js';
-import BudgetAllocation from '../budgetAllocation/model.js';
 
-const EDUCATION_TYPES = ['school', 'kindergarten'];
-const HEALTH_TYPES = ['health_post'];
-
-// ── GET /api/analytics/overview ───────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/overview
+// System-wide summary
 // Query: ?regionCode=17
+// ─────────────────────────────────────────────
+
 export const getOverview = async (req, res) => {
     try {
         const { regionCode } = req.query;
         const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
-        const issueFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
 
-        const [
-            totalObjects,
-            totalIssues,
-            openIssues,
-            resolvedIssues,
-            totalTasks,
-            completedTasks,
-            totalPrograms,
-            activePrograms
-        ] = await Promise.all([
+        const [objectCount, issueStats, taskStats] = await Promise.all([
             Object_.countDocuments(regionFilter),
-            Issue.countDocuments(issueFilter),
-            Issue.countDocuments({ ...issueFilter, status: 'Open' }),
-            Issue.countDocuments({ ...issueFilter, status: 'Resolved' }),
-            Task.countDocuments(),
-            Task.countDocuments({ status: 'Completed' }),
-            Program.countDocuments(),
-            Program.countDocuments({ status: 'active' })
+
+            Issue.aggregate([
+                { $match: regionFilter },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: 1 },
+                        open: { $sum: { $cond: [{ $eq: ['$status', 'Open'] }, 1, 0] } },
+                        inProgress: { $sum: { $cond: [{ $eq: ['$status', 'In Progress'] }, 1, 0] } },
+                        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+                        totalVotes: { $sum: '$votes' }
+                    }
+                }
+            ]),
+
+            Task.aggregate([
+                {
+                    $lookup: {
+                        from: 'objects', localField: 'targetId', foreignField: '_id', as: 'object'
+                    }
+                },
+                { $unwind: { path: '$object', preserveNullAndEmptyArrays: false } },
+                { $match: Object.keys(regionFilter).length ? { 'object.regionCode': parseInt(regionCode) } : {} },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: 1 },
+                        completed: { $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] } }
+                    }
+                }
+            ])
         ]);
 
-        const byObjectType = await Object_.aggregate([
-            { $match: regionFilter },
-            { $group: { _id: '$objectType', count: { $sum: 1 } } }
-        ]);
-
-        const objectTypeMap = {};
-        byObjectType.forEach(t => { objectTypeMap[t._id] = t.count; });
+        const issues = issueStats[0] || { total: 0, open: 0, inProgress: 0, resolved: 0, totalVotes: 0 };
+        const tasks = taskStats[0] || { total: 0, completed: 0 };
 
         res.json({
             success: true,
             data: {
                 objects: {
-                    total: totalObjects,
-                    byType: objectTypeMap
+                    total: objectCount
                 },
                 issues: {
-                    total: totalIssues,
-                    open: openIssues,
-                    resolved: resolvedIssues,
-                    resolutionRate: totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0
+                    total: issues.total,
+                    open: issues.open,
+                    inProgress: issues.inProgress,
+                    resolved: issues.resolved,
+                    totalVotes: issues.totalVotes
                 },
                 tasks: {
-                    total: totalTasks,
-                    completed: completedTasks,
-                    completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-                },
-                programs: {
-                    total: totalPrograms,
-                    active: activePrograms
+                    total: tasks.total,
+                    completed: tasks.completed,
+                    completionRate: tasks.total > 0
+                        ? Math.round((tasks.completed / tasks.total) * 100)
+                        : null
                 }
             }
         });
     } catch (err) {
-        console.error('Overview analytics error:', err);
+        console.error('Overview error:', err);
         res.status(500).json({ success: false, error: 'Failed to fetch overview' });
     }
 };
 
-// ── GET /api/analytics/issues ─────────────────────────────────────────────────
-// Query: ?regionCode=17&districtId=xxx&period=30
+// ─────────────────────────────────────────────
+// GET /api/analytics/issues
+// Issue analytics
+// Query: ?regionCode=17&districtId=xxx&category=Roads
+// ─────────────────────────────────────────────
+
 export const getIssueAnalytics = async (req, res) => {
     try {
-        const { regionCode, districtId, period = 90 } = req.query;
+        const { regionCode, districtId, category } = req.query;
 
         const match = {};
         if (regionCode) match.regionCode = parseInt(regionCode);
-        if (districtId && mongoose.isValidObjectId(districtId)) match.districtId = new mongoose.Types.ObjectId(districtId);
+        if (districtId && mongoose.isValidObjectId(districtId))
+            match.districtId = new mongoose.Types.ObjectId(districtId);
+        if (category) match.category = category;
 
-        const periodDate = new Date();
-        periodDate.setDate(periodDate.getDate() - parseInt(period));
-
-        const [byCategory, bySeverity, byStatus, monthlyTrend, topIssues] = await Promise.all([
+        const [byCategory, bySeverity, byStatus, byDistrict, trends, topVoted, totalCount] = await Promise.all([
             Issue.aggregate([
                 { $match: match },
-                { $group: { _id: '$category', total: { $sum: 1 }, resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } } } }
+                { $group: { _id: '$category', count: { $sum: 1 }, votes: { $sum: '$votes' } } },
+                { $sort: { count: -1 } }
             ]),
             Issue.aggregate([
                 { $match: match },
@@ -108,26 +120,51 @@ export const getIssueAnalytics = async (req, res) => {
                 { $group: { _id: '$status', count: { $sum: 1 } } }
             ]),
             Issue.aggregate([
-                { $match: { ...match, createdAt: { $gte: periodDate } } },
-                { $group: { _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } }, count: { $sum: 1 } } },
-                { $sort: { '_id.year': 1, '_id.month': 1 } }
+                { $match: { ...match, districtId: { $exists: true } } },
+                { $group: { _id: '$districtId', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 20 }
             ]),
-            Issue.find(match).sort({ votes: -1 }).limit(10).select('title category severity status votes createdAt').lean()
+            Issue.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+                        count: { $sum: 1 },
+                        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } }
+                    }
+                },
+                { $sort: { '_id.year': 1, '_id.month': 1 } },
+                { $limit: 12 }
+            ]),
+            Issue.find(match).sort({ votes: -1 }).limit(10)
+                .select('title category severity status votes createdAt').lean(),
+            Issue.countDocuments(match)
         ]);
 
-        const statusMap = {};
-        const severityMap = {};
-        byStatus.forEach(s => { statusMap[s._id] = s.count; });
-        bySeverity.forEach(s => { severityMap[s._id] = s.count; });
+        let density = null;
+        if (districtId) {
+            const dist = await District.findById(districtId).select('areaKm2').lean();
+            if (dist?.areaKm2) density = Math.round((totalCount / dist.areaKm2) * 100) / 100;
+        } else if (regionCode) {
+            const reg = await Region.findOne({ code: parseInt(regionCode) }).select('areaKm2').lean();
+            if (reg?.areaKm2) density = Math.round((totalCount / reg.areaKm2) * 100) / 100;
+        }
 
         res.json({
             success: true,
             data: {
+                total: totalCount,
+                density,
                 byCategory,
-                bySeverity: severityMap,
-                byStatus: statusMap,
-                monthlyTrend,
-                topIssues
+                bySeverity: Object.fromEntries(bySeverity.map(s => [s._id, s.count])),
+                byStatus: Object.fromEntries(byStatus.map(s => [s._id, s.count])),
+                byDistrict,
+                trends: trends.map(t => ({
+                    year: t._id.year, month: t._id.month,
+                    count: t.count, resolved: t.resolved
+                })),
+                topVoted
             }
         });
     } catch (err) {
@@ -136,8 +173,12 @@ export const getIssueAnalytics = async (req, res) => {
     }
 };
 
-// ── GET /api/analytics/objects ────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/infrastructure
+// Now shows object coverage (replaces old org+infra analytics)
 // Query: ?regionCode=17
+// ─────────────────────────────────────────────
+
 export const getInfraAnalytics = async (req, res) => {
     try {
         const { regionCode } = req.query;
@@ -146,21 +187,20 @@ export const getInfraAnalytics = async (req, res) => {
         const [byType, byRegion, byDistrict] = await Promise.all([
             Object_.aggregate([
                 { $match: match },
-                { $group: { _id: '$objectType', count: { $sum: 1 } } }
+                { $group: { _id: '$objectType', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
             ]),
             Object_.aggregate([
-                { $match: { ...match, viloyat: { $exists: true, $ne: null } } },
+                { $match: match },
                 { $group: { _id: '$viloyat', count: { $sum: 1 } } },
                 { $sort: { count: -1 } },
                 { $limit: 20 }
             ]),
             Object_.aggregate([
                 { $match: { ...match, districtId: { $exists: true } } },
-                { $group: { _id: '$districtId', regionCode: { $first: '$regionCode' }, count: { $sum: 1 } } },
-                { $lookup: { from: 'districts', localField: '_id', foreignField: '_id', as: 'district' } },
-                { $unwind: '$district' },
-                { $project: { districtId: '$_id', districtName: '$district.name', regionCode: 1, count: 1 } },
-                { $sort: { count: -1 } }
+                { $group: { _id: '$districtId', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 20 }
             ])
         ]);
 
@@ -169,262 +209,325 @@ export const getInfraAnalytics = async (req, res) => {
             data: { byType, byRegion, byDistrict }
         });
     } catch (err) {
-        console.error('Objects analytics error:', err);
+        console.error('Infra analytics error:', err);
         res.status(500).json({ success: false, error: 'Failed to fetch object analytics' });
     }
 };
 
-// ── GET /api/analytics/tasks ──────────────────────────────────────────────────
-// Query: ?programId=xxx&regionCode=17
-export const getTaskAnalytics = async (req, res) => {
+// ─────────────────────────────────────────────
+// GET /api/analytics/crops — kept for district crop data on drilldown
+// ─────────────────────────────────────────────
+
+export const getCropAnalytics = async (req, res) => {
     try {
-        const { programId, regionCode } = req.query;
+        const { regionCode } = req.query;
+        const match = { 'crops.0': { $exists: true } };
+        if (regionCode) match.regionCode = parseInt(regionCode);
 
-        const match = {};
-        if (programId && mongoose.isValidObjectId(programId)) match.programId = new mongoose.Types.ObjectId(programId);
-
-        const [byStatus, verificationStats, recentVerifications] = await Promise.all([
-            Task.aggregate([
-                { $match: match },
-                { $group: { _id: '$status', count: { $sum: 1 } } }
-            ]),
-            Task.aggregate([
-                { $match: match },
-                {
-                    $project: {
-                        doneCount: { $size: { $filter: { input: '$verifications', as: 'v', cond: { $eq: ['$$v.status', 'done'] } } } },
-                        problemCount: { $size: { $filter: { input: '$verifications', as: 'v', cond: { $eq: ['$$v.status', 'problem'] } } } },
-                        totalCount: { $size: '$verifications' }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalDone: { $sum: '$doneCount' },
-                        totalProblem: { $sum: '$problemCount' },
-                        totalVerifications: { $sum: '$totalCount' }
-                    }
-                }
-            ]),
-            Task.aggregate([
-                { $match: match },
-                { $unwind: '$verifications' },
-                { $sort: { 'verifications.createdAt': -1 } },
-                { $limit: 20 },
-                { $project: { title: 1, 'verifications.userName': 1, 'verifications.status': 1, 'verifications.comment': 1, 'verifications.createdAt': 1 } }
-            ])
-        ]);
-
-        const statusMap = {};
-        byStatus.forEach(s => { statusMap[s._id] = s.count; });
-
-        const vs = verificationStats[0] || { totalDone: 0, totalProblem: 0, totalVerifications: 0 };
-
-        res.json({
-            success: true,
-            data: {
-                byStatus: statusMap,
-                verifications: {
-                    total: vs.totalVerifications,
-                    done: vs.totalDone,
-                    problem: vs.totalProblem
-                },
-                recentVerifications
-            }
-        });
-    } catch (err) {
-        console.error('Task analytics error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch task analytics' });
-    }
-};
-
-// ── GET /api/analytics/programs ───────────────────────────────────────────────
-export const getProgramAnalytics = async (req, res) => {
-    try {
-        const programs = await Program.find().lean();
-
-        const programIds = programs.map(p => p._id);
-
-        const tasksByProgram = await Task.aggregate([
-            { $match: { programId: { $in: programIds } } },
+        const cropsByDistrict = await District.aggregate([
+            { $match: match },
+            { $unwind: '$crops' },
             {
                 $group: {
-                    _id: '$programId',
-                    total: { $sum: 1 },
-                    completed: { $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] } },
-                    pending: { $sum: { $cond: [{ $eq: ['$status', 'Pending Verification'] }, 1, 0] } },
-                    totalVerifications: { $sum: { $size: '$verifications' } },
-                    doneVerifications: {
-                        $sum: {
-                            $size: { $filter: { input: '$verifications', as: 'v', cond: { $eq: ['$$v.status', 'done'] } } }
-                        }
-                    }
+                    _id: '$_id',
+                    districtName: { $first: '$name' },
+                    regionCode: { $first: '$regionCode' },
+                    areaKm2: { $first: '$areaKm2' },
+                    cropCount: { $sum: 1 },
+                    crops: { $push: { apiId: '$crops.apiId', name: '$crops.name', color: '$crops.color' } }
                 }
-            }
+            },
+            { $sort: { cropCount: -1 } }
         ]);
 
-        const taskMap = {};
-        tasksByProgram.forEach(t => { taskMap[t._id.toString()] = t; });
-
-        const data = programs.map(p => {
-            const stats = taskMap[p._id.toString()] || { total: 0, completed: 0, pending: 0, totalVerifications: 0, doneVerifications: 0 };
-            return {
-                id: p._id.toString(),
-                name: p.name,
-                number: p.number,
-                status: p.status,
-                deadline: p.deadline,
-                totalBudget: p.totalBudget,
-                currency: p.currency,
-                objectCount: p.objectIds?.length || 0,
-                tasks: {
-                    total: stats.total,
-                    completed: stats.completed,
-                    pending: stats.pending,
-                    completionRate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
-                    verifications: stats.totalVerifications,
-                    doneVerifications: stats.doneVerifications
+        const cropTotals = await District.aggregate([
+            { $match: match },
+            { $unwind: '$crops' },
+            {
+                $group: {
+                    _id: '$crops.apiId',
+                    name: { $first: '$crops.name' },
+                    color: { $first: '$crops.color' },
+                    districtCount: { $sum: 1 }
                 }
-            };
-        });
+            },
+            { $sort: { districtCount: -1 } }
+        ]);
 
-        res.json({ success: true, data });
+        res.json({ success: true, data: { cropTotals, byDistrict: cropsByDistrict } });
     } catch (err) {
-        console.error('Program analytics error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch program analytics' });
+        console.error('Crop analytics error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch crop analytics' });
     }
 };
 
-// ── GET /api/analytics/districts/scoring ─────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/districts/scoring
+// Ranks districts by issue density + verification rate + object density
 // Query: ?regionCode=17
+// ─────────────────────────────────────────────
+
 export const getDistrictScoring = async (req, res) => {
     try {
         const { regionCode } = req.query;
         const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
 
-        const [objectsByDistrict, issuesByDistrict, districts] = await Promise.all([
-            Object_.aggregate([
-                { $match: { districtId: { $exists: true }, ...regionFilter } },
-                {
-                    $group: {
-                        _id: '$districtId',
-                        objectCount: { $sum: 1 },
-                        educationCount: { $sum: { $cond: [{ $in: ['$objectType', EDUCATION_TYPES] }, 1, 0] } },
-                        healthCount: { $sum: { $cond: [{ $in: ['$objectType', HEALTH_TYPES] }, 1, 0] } }
-                    }
-                }
-            ]),
+        const districts = await District.find(regionFilter)
+            .select('name regionCode areaKm2 centroid')
+            .lean();
+
+        if (!districts.length) {
+            return res.json({ success: true, data: { count: 0, districts: [] } });
+        }
+
+        const districtIds = districts.map(d => d._id);
+
+        const [issueStats, objectStats, verificationStats] = await Promise.all([
             Issue.aggregate([
-                { $match: { districtId: { $exists: true }, ...regionFilter } },
+                { $match: { districtId: { $in: districtIds } } },
                 {
                     $group: {
                         _id: '$districtId',
-                        totalIssues: { $sum: 1 },
-                        openIssues: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } }
+                        total: { $sum: 1 },
+                        open: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } },
+                        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+                        totalVotes: { $sum: '$votes' }
                     }
                 }
             ]),
-            District.find(regionFilter).select('code regionCode name areaKm2 centroid').lean()
+            Object_.aggregate([
+                { $match: { districtId: { $in: districtIds } } },
+                { $group: { _id: '$districtId', count: { $sum: 1 } } }
+            ]),
+            Task.aggregate([
+                { $match: { 'verifications.0': { $exists: true } } },
+                { $unwind: '$verifications' },
+                {
+                    $lookup: {
+                        from: 'objects', localField: 'targetId', foreignField: '_id', as: 'obj'
+                    }
+                },
+                { $unwind: { path: '$obj', preserveNullAndEmptyArrays: false } },
+                { $match: { 'obj.districtId': { $in: districtIds } } },
+                {
+                    $group: {
+                        _id: '$obj.districtId',
+                        doneCount: { $sum: { $cond: [{ $eq: ['$verifications.status', 'done'] }, 1, 0] } },
+                        totalCount: { $sum: 1 }
+                    }
+                }
+            ])
         ]);
 
-        const objMap = new Map(objectsByDistrict.map(d => [d._id?.toString(), d]));
-        const issueMap = new Map(issuesByDistrict.map(d => [d._id?.toString(), d]));
+        const issueMap = new Map(issueStats.map(s => [s._id.toString(), s]));
+        const objMap = new Map(objectStats.map(s => [s._id.toString(), s]));
+        const verifMap = new Map(verificationStats.map(s => [s._id.toString(), s]));
 
-        const maxObjects = Math.max(...objectsByDistrict.map(d => d.objectCount), 1);
-
-        const scored = districts.map(dist => {
+        const rawScores = districts.map(dist => {
             const id = dist._id.toString();
-            const objs = objMap.get(id) || { objectCount: 0, educationCount: 0, healthCount: 0 };
-            const issues = issueMap.get(id) || { totalIssues: 0, openIssues: 0 };
+            const area = dist.areaKm2 || 1;
 
-            const deficitScore = Math.round((1 - objs.objectCount / maxObjects) * 100);
-            const issuePressure = issues.totalIssues > 0
-                ? Math.round((issues.openIssues / issues.totalIssues) * 100)
-                : 0;
-            const composite = Math.round(deficitScore * 0.6 + issuePressure * 0.4);
+            const issues = issueMap.get(id) || { total: 0, open: 0, resolved: 0, totalVotes: 0 };
+            const objs = objMap.get(id) || { count: 0 };
+            const verif = verifMap.get(id) || { doneCount: 0, totalCount: 0 };
+
+            const openRatio = issues.total > 0 ? issues.open / issues.total : 0;
+            const resolutionRate = issues.total > 0 ? issues.resolved / issues.total : 0;
+            const issueDensity = issues.total / area;
+            const objectDensity = objs.count / area;
+            const verificationRate = verif.totalCount > 0 ? verif.doneCount / verif.totalCount : null;
 
             return {
-                districtId: id,
+                districtId: dist._id,
                 districtName: dist.name,
                 regionCode: dist.regionCode,
-                objectCount: objs.objectCount,
-                educationCount: objs.educationCount,
-                healthCount: objs.healthCount,
-                openIssues: issues.openIssues,
-                scores: { deficit: deficitScore, issuePressure, composite }
+                areaKm2: area,
+                centroid: dist.centroid?.coordinates,
+                issueCount: issues.total,
+                openCount: issues.open,
+                resolvedCount: issues.resolved,
+                totalVotes: issues.totalVotes,
+                objectCount: objs.count,
+                openRatio, resolutionRate, issueDensity, objectDensity, verificationRate
+            };
+        });
+
+        const maxIssueDensity = Math.max(...rawScores.map(d => d.issueDensity), 0.001);
+        const maxObjectDensity = Math.max(...rawScores.map(d => d.objectDensity), 0.001);
+
+        const scored = rawScores.map(d => {
+            const issueScore = Math.max(0, Math.round((1 - d.openRatio) * 100));
+            const objectScore = Math.min(100, Math.round((d.objectDensity / maxObjectDensity) * 100));
+            const verifScore = d.verificationRate !== null ? Math.round(d.verificationRate * 100) : 50;
+            const composite = Math.round(issueScore * 0.40 + verifScore * 0.35 + objectScore * 0.25);
+
+            return {
+                ...d,
+                scores: { composite, issues: issueScore, objects: objectScore, verification: verifScore }
             };
         });
 
         scored.sort((a, b) => b.scores.composite - a.scores.composite);
+        scored.forEach((d, i) => { d.rank = i + 1; });
 
-        res.json({ success: true, data: scored });
+        res.json({ success: true, data: { count: scored.length, districts: scored } });
     } catch (err) {
         console.error('District scoring error:', err);
         res.status(500).json({ success: false, error: 'Failed to compute district scoring' });
     }
 };
 
-// ── GET /api/analytics/districts/:id ─────────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/districts/:id
+// Deep-dive for a single district — used by DistrictDrilldown panel
+// ─────────────────────────────────────────────
+
 export const getDistrictDetail = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid district id' });
-        }
+        const districtId = new mongoose.Types.ObjectId(id);
 
-        const districtObjId = new mongoose.Types.ObjectId(id);
-
-        const [district, objects, issues] = await Promise.all([
+        const [district, issueResult, objectResult, taskResult] = await Promise.all([
             District.findById(id).lean(),
-            Object_.find({ districtId: districtObjId }).select('name objectType sourceApi viloyat').lean(),
-            Issue.find({ districtId: districtObjId }).select('title category severity status votes createdAt').sort({ createdAt: -1 }).limit(50).lean()
+
+            Issue.aggregate([
+                { $match: { districtId } },
+                {
+                    $facet: {
+                        totals: [{ $group: { _id: null, total: { $sum: 1 }, totalVotes: { $sum: '$votes' } } }],
+                        byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+                        list: [
+                            { $sort: { votes: -1 } }, { $limit: 15 },
+                            { $project: { title: 1, category: 1, severity: 1, status: 1, votes: 1 } }
+                        ]
+                    }
+                }
+            ]),
+
+            Object_.aggregate([
+                { $match: { districtId } },
+                {
+                    $facet: {
+                        byType: [{ $group: { _id: '$objectType', count: { $sum: 1 } } }],
+                        total: [{ $count: 'n' }],
+                        list: [
+                            { $sort: { name: 1 } }, { $limit: 20 },
+                            { $project: { name: 1, objectType: 1, tuman: 1 } }
+                        ]
+                    }
+                }
+            ]),
+
+            Task.aggregate([
+                {
+                    $lookup: {
+                        from: 'objects', localField: 'targetId', foreignField: '_id', as: 'object'
+                    }
+                },
+                { $unwind: { path: '$object', preserveNullAndEmptyArrays: false } },
+                { $match: { 'object.districtId': districtId } },
+                {
+                    $group: {
+                        _id: null,
+                        totalTasks: { $sum: 1 },
+                        completed: { $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] } },
+                        inProgress: { $sum: { $cond: [{ $eq: ['$status', 'In Progress'] }, 1, 0] } },
+                        doneVerifs: { $sum: '$doneCount' },
+                        totalVerifs: { $sum: '$totalCount' }
+                    }
+                }
+            ])
         ]);
 
         if (!district) {
-            return res.status(404).json({ success: false, message: 'District not found' });
+            return res.status(404).json({ success: false, error: 'District not found' });
         }
 
-        const byObjectType = {};
-        objects.forEach(o => { byObjectType[o.objectType] = (byObjectType[o.objectType] || 0) + 1; });
+        const issueData = issueResult[0] || {};
+        const objectData = objectResult[0] || {};
+        const taskData = taskResult[0] || null;
+
+        const byTypeMap = {};
+        (objectData.byType || []).forEach(t => { byTypeMap[t._id] = t.count; });
 
         res.json({
             success: true,
             data: {
-                district: { id, name: district.name, regionCode: district.regionCode, areaKm2: district.areaKm2 },
-                objects: { total: objects.length, byType: byObjectType, list: objects.slice(0, 100) },
-                issues: { total: issues.length, list: issues }
+                district: {
+                    id: district._id,
+                    name: district.name,
+                    regionCode: district.regionCode,
+                    areaKm2: district.areaKm2
+                },
+                issues: {
+                    total: issueData.totals?.[0]?.total || 0,
+                    totalVotes: issueData.totals?.[0]?.totalVotes || 0,
+                    byStatus: Object.fromEntries((issueData.byStatus || []).map(s => [s._id, s.count])),
+                    list: issueData.list || []
+                },
+                objects: {
+                    total: objectData.total?.[0]?.n || 0,
+                    byType: byTypeMap,
+                    list: (objectData.list || []).map(o => ({
+                        id: o._id.toString(), name: o.name, objectType: o.objectType, tuman: o.tuman
+                    }))
+                },
+                tasks: taskData ? {
+                    total: taskData.totalTasks,
+                    completed: taskData.completed,
+                    inProgress: taskData.inProgress,
+                    verificationRate: taskData.totalVerifs > 0
+                        ? Math.round((taskData.doneVerifs / taskData.totalVerifs) * 100)
+                        : null
+                } : null
             }
         });
     } catch (err) {
-        console.error('District detail error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch district detail' });
+        console.error('getDistrictDetail error:', err);
+        res.status(500).json({ success: false, error: 'Failed to load district detail' });
     }
 };
 
-// ── GET /api/analytics/regions/summary ───────────────────────────────────────
+// ─────────────────────────────────────────────
+// GET /api/analytics/regions/summary
+// ─────────────────────────────────────────────
+
 export const getRegionSummary = async (req, res) => {
     try {
-        const [objectsByRegion, issuesByRegion, regions] = await Promise.all([
+        const [regions, issuesByRegion, objectsByRegion] = await Promise.all([
+            Region.find({}).select('code name areaKm2').lean(),
+            Issue.aggregate([
+                { $match: { regionCode: { $exists: true } } },
+                {
+                    $group: {
+                        _id: '$regionCode',
+                        total: { $sum: 1 },
+                        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } }
+                    }
+                }
+            ]),
             Object_.aggregate([
                 { $match: { regionCode: { $exists: true } } },
                 { $group: { _id: '$regionCode', count: { $sum: 1 } } }
-            ]),
-            Issue.aggregate([
-                { $match: { regionCode: { $exists: true } } },
-                { $group: { _id: '$regionCode', total: { $sum: 1 }, open: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } } } }
-            ]),
-            Region.find().select('code name').lean()
+            ])
         ]);
 
-        const objMap = new Map(objectsByRegion.map(r => [r._id, r.count]));
         const issueMap = new Map(issuesByRegion.map(r => [r._id, r]));
+        const objMap = new Map(objectsByRegion.map(r => [r._id, r]));
 
-        const data = regions.map(r => ({
-            regionCode: r.code,
-            name: r.name,
-            objectCount: objMap.get(r.code) || 0,
-            issues: issueMap.get(r.code) || { total: 0, open: 0 }
-        }));
+        const data = regions.map(r => {
+            const issues = issueMap.get(r.code) || { total: 0, resolved: 0 };
+            const objects = objMap.get(r.code) || { count: 0 };
+            return {
+                code: r.code,
+                name: r.name,
+                areaKm2: r.areaKm2,
+                issueCount: issues.total,
+                resolvedCount: issues.resolved,
+                resolutionRate: issues.total > 0 ? Math.round((issues.resolved / issues.total) * 100) : null,
+                objectCount: objects.count
+            };
+        });
 
         res.json({ success: true, data });
     } catch (err) {
@@ -433,193 +536,275 @@ export const getRegionSummary = async (req, res) => {
     }
 };
 
-// ── GET /api/analytics/budget ─────────────────────────────────────────────────
-// Query: ?regionCode=17
+// ─────────────────────────────────────────────
+// GET /api/analytics/budget
+// Stub — no budget data on Objects from duasr.uz
+// ─────────────────────────────────────────────
+
 export const getBudgetAnalytics = async (req, res) => {
+    res.json({
+        success: true,
+        data: { totals: {}, byDistrict: [], note: 'Budget data not available for current data sources' }
+    });
+};
+
+// ─────────────────────────────────────────────
+// GET /api/analytics/choropleth
+// District scoring as GeoJSON for map layer
+// Query: ?metric=composite|issues|objects|verification&regionCode=17
+// ─────────────────────────────────────────────
+
+export const getChoropleth = async (req, res) => {
     try {
-        const { regionCode } = req.query;
+        const { metric = 'composite', regionCode } = req.query;
+        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
 
-        const allocFilter = {};
+        const districts = await District.find(regionFilter)
+            .select('name regionCode areaKm2 geometry centroid')
+            .lean();
 
-        const [allocationsByType, allocationsByPeriod, programBudgets] = await Promise.all([
-            BudgetAllocation.aggregate([
-                { $match: allocFilter },
-                { $group: { _id: '$targetType', totalAmount: { $sum: '$amount' }, count: { $sum: 1 }, currencies: { $addToSet: '$currency' } } }
-            ]),
-            BudgetAllocation.aggregate([
-                { $match: { ...allocFilter, period: { $exists: true, $ne: null } } },
-                { $group: { _id: '$period', totalAmount: { $sum: '$amount' }, count: { $sum: 1 } } },
-                { $sort: { _id: -1 } },
-                { $limit: 12 }
-            ]),
-            Program.aggregate([
-                { $match: regionCode ? { 'scope.regionCode': parseInt(regionCode) } : {} },
+        if (!districts.length) {
+            return res.json({ type: 'FeatureCollection', metric, features: [] });
+        }
+
+        const districtIds = districts.map(d => d._id);
+
+        const [issueStats, objectStats, verificationStats] = await Promise.all([
+            Issue.aggregate([
+                { $match: { districtId: { $in: districtIds } } },
                 {
                     $group: {
-                        _id: '$status',
-                        totalBudget: { $sum: '$totalBudget' },
-                        count: { $sum: 1 }
+                        _id: '$districtId',
+                        total: { $sum: 1 },
+                        open: { $sum: { $cond: [{ $ne: ['$status', 'Resolved'] }, 1, 0] } }
+                    }
+                }
+            ]),
+            Object_.aggregate([
+                { $match: { districtId: { $in: districtIds } } },
+                { $group: { _id: '$districtId', count: { $sum: 1 } } }
+            ]),
+            Task.aggregate([
+                { $match: { 'verifications.0': { $exists: true } } },
+                { $unwind: '$verifications' },
+                {
+                    $lookup: {
+                        from: 'objects', localField: 'targetId', foreignField: '_id', as: 'obj'
+                    }
+                },
+                { $unwind: { path: '$obj', preserveNullAndEmptyArrays: false } },
+                { $match: { 'obj.districtId': { $in: districtIds } } },
+                {
+                    $group: {
+                        _id: '$obj.districtId',
+                        doneCount: { $sum: { $cond: [{ $eq: ['$verifications.status', 'done'] }, 1, 0] } },
+                        totalCount: { $sum: 1 }
                     }
                 }
             ])
         ]);
 
-        const byType = {};
-        allocationsByType.forEach(a => { byType[a._id] = { total: a.totalAmount, count: a.count }; });
+        const issueMap = new Map(issueStats.map(s => [s._id.toString(), s]));
+        const objMap = new Map(objectStats.map(s => [s._id.toString(), s]));
+        const verifMap = new Map(verificationStats.map(s => [s._id.toString(), s]));
 
-        const programByStatus = {};
-        programBudgets.forEach(p => { programByStatus[p._id] = { totalBudget: p.totalBudget, count: p.count }; });
+        const raw = districts.map(dist => {
+            const id = dist._id.toString();
+            const area = dist.areaKm2 || 1;
+
+            const issues = issueMap.get(id) || { total: 0, open: 0 };
+            const objs = objMap.get(id) || { count: 0 };
+            const verif = verifMap.get(id) || { doneCount: 0, totalCount: 0 };
+
+            return {
+                dist,
+                openRatio: issues.total > 0 ? issues.open / issues.total : 0,
+                objectDensity: objs.count / area,
+                verificationRate: verif.totalCount > 0 ? verif.doneCount / verif.totalCount : null
+            };
+        });
+
+        const maxObjectDensity = Math.max(...raw.map(r => r.objectDensity), 0.001);
+
+        const features = raw.map(({ dist, openRatio, objectDensity, verificationRate }) => {
+            const issueScore = Math.max(0, Math.round((1 - openRatio) * 100));
+            const objectScore = Math.min(100, Math.round((objectDensity / maxObjectDensity) * 100));
+            const verifScore = verificationRate !== null ? Math.round(verificationRate * 100) : 50;
+            const composite = Math.round(issueScore * 0.40 + verifScore * 0.35 + objectScore * 0.25);
+
+            const scores = { composite, issues: issueScore, objects: objectScore, verification: verifScore };
+            const value = scores[metric] ?? scores.composite;
+
+            return {
+                type: 'Feature',
+                properties: {
+                    districtId: dist._id.toString(),
+                    name: dist.name,
+                    regionCode: dist.regionCode,
+                    areaKm2: dist.areaKm2,
+                    value,
+                    scores
+                },
+                geometry: dist.geometry
+            };
+        }).filter(f => f.geometry);
+
+        res.json({ type: 'FeatureCollection', metric, features });
+    } catch (err) {
+        console.error('Choropleth error:', err);
+        res.status(500).json({ success: false, error: 'Failed to generate choropleth' });
+    }
+};
+
+// ─────────────────────────────────────────────
+// GET /api/analytics/trends
+// Monthly issue time-series
+// Query: ?months=12&category=Roads&regionCode=17
+// ─────────────────────────────────────────────
+
+export async function getTrends(req, res) {
+    try {
+        const months = Math.min(parseInt(req.query.months) || 12, 36);
+        const category = req.query.category;
+        const regionCode = req.query.regionCode ? parseInt(req.query.regionCode) : null;
+
+        const since = new Date();
+        since.setMonth(since.getMonth() - months);
+
+        const match = { createdAt: { $gte: since } };
+        if (category) match.category = category;
+        if (regionCode) match.regionCode = regionCode;
+
+        const [monthly, categoryBreakdown] = await Promise.all([
+            Issue.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+                        total: { $sum: 1 },
+                        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+                        avgResolutionMs: {
+                            $avg: {
+                                $cond: [
+                                    { $and: [{ $eq: ['$status', 'Resolved'] }, { $ifNull: ['$resolvedAt', false] }] },
+                                    { $subtract: ['$resolvedAt', '$createdAt'] },
+                                    null
+                                ]
+                            }
+                        }
+                    }
+                },
+                { $sort: { '_id.year': 1, '_id.month': 1 } }
+            ]),
+            Issue.aggregate([
+                { $match: match },
+                { $group: { _id: '$category', total: { $sum: 1 }, resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } } } },
+                { $sort: { total: -1 } }
+            ])
+        ]);
 
         res.json({
             success: true,
             data: {
-                allocationsByType: byType,
-                allocationsByPeriod,
-                programsByStatus: programByStatus
+                monthly: monthly.map(m => ({
+                    label: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+                    total: m.total,
+                    resolved: m.resolved,
+                    resolutionRate: m.total > 0 ? Math.round((m.resolved / m.total) * 100) : 0,
+                    avgResolutionDays: m.avgResolutionMs
+                        ? Math.round(m.avgResolutionMs / (1000 * 60 * 60 * 24) * 10) / 10
+                        : null
+                })),
+                byCategory: categoryBreakdown
             }
         });
-    } catch (err) {
-        console.error('Budget analytics error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch budget analytics' });
-    }
-};
-
-// ── GET /api/analytics/choropleth ─────────────────────────────────────────────
-// Query: ?metric=objects|issues|tasks&regionCode=17
-export const getChoropleth = async (req, res) => {
-    try {
-        const { metric = 'objects', regionCode } = req.query;
-        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
-
-        let aggregation;
-        if (metric === 'issues') {
-            aggregation = Issue.aggregate([
-                { $match: { districtId: { $exists: true }, ...regionFilter } },
-                { $group: { _id: '$districtId', value: { $sum: 1 } } }
-            ]);
-        } else if (metric === 'tasks') {
-            aggregation = Task.aggregate([
-                { $group: { _id: '$targetId', total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] } } } }
-            ]);
-        } else {
-            // default: objects per district
-            aggregation = Object_.aggregate([
-                { $match: { districtId: { $exists: true }, ...regionFilter } },
-                { $group: { _id: '$districtId', value: { $sum: 1 } } }
-            ]);
-        }
-
-        const rows = await aggregation;
-        const data = rows.map(r => ({ districtId: r._id?.toString(), value: r.value ?? r.total ?? 0 }));
-
-        res.json({ success: true, data });
-    } catch (err) {
-        console.error('Choropleth error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch choropleth data' });
-    }
-};
-
-// ── GET /api/analytics/trends ─────────────────────────────────────────────────
-export const getTrends = async (req, res) => {
-    try {
-        const { regionCode, period = 90 } = req.query;
-        const since = new Date();
-        since.setDate(since.getDate() - parseInt(period));
-
-        const match = { createdAt: { $gte: since } };
-        if (regionCode) match.regionCode = parseInt(regionCode);
-
-        const [issueTrend, taskTrend] = await Promise.all([
-            Issue.aggregate([
-                { $match: match },
-                { $group: { _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' }, day: { $dayOfMonth: '$createdAt' } }, count: { $sum: 1 } } },
-                { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-            ]),
-            Task.aggregate([
-                { $match: { updatedAt: { $gte: since }, status: 'Completed' } },
-                { $group: { _id: { year: { $year: '$updatedAt' }, month: { $month: '$updatedAt' }, day: { $dayOfMonth: '$updatedAt' } }, count: { $sum: 1 } } },
-                { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-            ])
-        ]);
-
-        res.json({ success: true, data: { issueTrend, taskTrend } });
     } catch (err) {
         console.error('Trends error:', err);
         res.status(500).json({ success: false, error: 'Failed to fetch trends' });
     }
-};
+}
 
-// ── GET /api/analytics/efficiency ────────────────────────────────────────────
-export const getEfficiency = async (req, res) => {
+// ─────────────────────────────────────────────
+// GET /api/analytics/resolution
+// Resolution time stats
+// ─────────────────────────────────────────────
+
+export async function getResolution(req, res) {
     try {
-        const { regionCode } = req.query;
-        const objFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
+        const regionCode = req.query.regionCode ? parseInt(req.query.regionCode) : null;
+        const match = {};
+        if (regionCode) match.regionCode = regionCode;
 
-        const [taskStats, verificationStats, programStats] = await Promise.all([
-            Task.aggregate([
-                {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 }
-                    }
+        const stats = await Issue.aggregate([
+            { $match: { ...match, status: 'Resolved' } },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 },
+                    avgResolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+                    totalVotes: { $sum: '$votes' }
                 }
-            ]),
-            Task.aggregate([
-                {
-                    $project: {
-                        doneCount: { $size: { $filter: { input: '$verifications', as: 'v', cond: { $eq: ['$$v.status', 'done'] } } } },
-                        problemCount: { $size: { $filter: { input: '$verifications', as: 'v', cond: { $eq: ['$$v.status', 'problem'] } } } }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalDone: { $sum: '$doneCount' },
-                        totalProblem: { $sum: '$problemCount' }
-                    }
-                }
-            ]),
-            Program.aggregate([
-                { $group: { _id: '$status', count: { $sum: 1 }, totalBudget: { $sum: '$totalBudget' } } }
-            ])
+            },
+            { $sort: { count: -1 } }
         ]);
 
-        const statusMap = {};
-        taskStats.forEach(t => { statusMap[t._id] = t.count; });
-
-        const totalTasks = Object.values(statusMap).reduce((a, b) => a + b, 0);
-        const completed = statusMap['Completed'] || 0;
-
-        const vs = verificationStats[0] || { totalDone: 0, totalProblem: 0 };
-
-        const pgByStatus = {};
-        programStats.forEach(p => { pgByStatus[p._id] = { count: p.count, totalBudget: p.totalBudget }; });
-
-        res.json({
-            success: true,
-            data: {
-                summary: {
-                    totalTasks,
-                    completedTasks: completed,
-                    completionRate: totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0,
-                    totalVerifications: (vs.totalDone + vs.totalProblem),
-                    doneVerifications: vs.totalDone,
-                    citizenSatisfactionRate: (vs.totalDone + vs.totalProblem) > 0
-                        ? Math.round((vs.totalDone / (vs.totalDone + vs.totalProblem)) * 100)
-                        : 0
-                },
-                tasksByStatus: statusMap,
-                programsByStatus: pgByStatus
+        const bySeverity = await Issue.aggregate([
+            { $match: match },
+            {
+                $group: {
+                    _id: '$severity',
+                    total: { $sum: 1 },
+                    resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } }
+                }
             }
-        });
-    } catch (err) {
-        console.error('Efficiency error:', err);
-        res.status(500).json({ success: false, error: 'Failed to fetch efficiency data' });
-    }
-};
+        ]);
 
-// Keep remaining endpoints exported so analytics/routes.js doesn't break.
-// These are stubs that can be fleshed out as needed.
-export const getCropAnalytics = (req, res) => res.json({ success: true, data: [] });
-export const getResolution = getEfficiency;  // alias
-export const getDistrictProfile = getDistrictDetail; // alias
+        res.json({ success: true, data: { byCategory: stats, bySeverity } });
+    } catch (err) {
+        console.error('Resolution error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch resolution stats' });
+    }
+}
+
+// ─────────────────────────────────────────────
+// GET /api/analytics/efficiency — stub (no budget data)
+// ─────────────────────────────────────────────
+
+export async function getEfficiency(req, res) {
+    res.json({
+        success: true,
+        data: {
+            summary: {}, districts: [], anomalies: [], objects: [],
+            note: 'Budget efficiency not available for current data sources'
+        }
+    });
+}
+
+// ─────────────────────────────────────────────
+// GET /api/analytics/district/:name — legacy endpoint
+// Kept for backwards compat; redirects logic to getDistrictDetail via name lookup
+// ─────────────────────────────────────────────
+
+export async function getDistrictProfile(req, res) {
+    try {
+        const name = decodeURIComponent(req.params.name);
+        const district = await District.findOne({
+            $or: [
+                { 'name.ru': name },
+                { 'name.en': name },
+                { 'name.uz': name }
+            ]
+        }).lean();
+
+        if (!district) {
+            return res.status(404).json({ success: false, error: 'District not found' });
+        }
+
+        // Delegate to the main detail handler by faking params
+        req.params.id = district._id.toString();
+        return getDistrictDetail(req, res);
+    } catch (err) {
+        console.error('getDistrictProfile error:', err);
+        res.status(500).json({ success: false, error: 'Failed to load district profile' });
+    }
+}

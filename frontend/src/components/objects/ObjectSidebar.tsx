@@ -123,12 +123,10 @@ const TASK_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 // ── InfoField ─────────────────────────────────────────────────────────────────
 
 function InfoField({
-  key,
   icon: Icon,
   label,
   value,
 }: {
-  key: string;
   icon: React.ElementType;
   label: string;
   value?: string | number | null;
@@ -293,12 +291,10 @@ function VerifyForm({
 // ── Task card ─────────────────────────────────────────────────────────────────
 
 function TaskCard({
-  key,
   task,
   currentUser,
   onRefresh,
 }: {
-  key: string;
   task: Task;
   currentUser: User | null;
   onRefresh: () => void;
@@ -451,9 +447,11 @@ function TaskCard({
 function TasksSection({
   objectId,
   currentUser,
+  onVerificationDone,
 }: {
   objectId: string;
   currentUser: User | null;
+  onVerificationDone?: () => void;
 }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,6 +469,11 @@ function TasksSection({
   useEffect(() => {
     load();
   }, [objectId]);
+
+  const handleRefresh = () => {
+    load();
+    onVerificationDone?.();
+  };
 
   if (loading)
     return (
@@ -490,10 +493,9 @@ function TasksSection({
     <div className="space-y-2">
       {tasks.map((t) => (
         <TaskCard
-          key={t.id}
           task={t}
           currentUser={currentUser}
-          onRefresh={load}
+          onRefresh={handleRefresh}
         />
       ))}
     </div>
@@ -509,6 +511,8 @@ interface ObjectSidebarProps {
   onClose: () => void;
   onIssueClick: (issue: Issue) => void;
   onReportIssue: (obj: FacilityObject) => void;
+  // Called after a citizen submits a verification — lets App refresh the stats bar + marker colors
+  onVerificationDone?: () => void;
 }
 
 export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
@@ -518,6 +522,7 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
   onClose,
   onIssueClick,
   onReportIssue,
+  onVerificationDone,
 }) => {
   if (!object) return null;
 
@@ -629,7 +634,6 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
                 const Icon = CONDITION_ICONS[key] || Info;
                 return (
                   <InfoField
-                    key={key}
                     icon={Icon}
                     label={CONDITION_LABELS[key] || key}
                     value={String(val)}
@@ -646,7 +650,11 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
             <ClipboardCheck size={11} />
             Задачи и проверки
           </div>
-          <TasksSection objectId={object.id} currentUser={currentUser} />
+          <TasksSection
+            objectId={object.id}
+            currentUser={currentUser}
+            onVerificationDone={onVerificationDone}
+          />
         </div>
 
         {/* Budget allocations (admin only) */}

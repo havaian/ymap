@@ -150,6 +150,9 @@ export const tasksAPI = {
   getByTarget: (targetId: string): Promise<AxiosResponse> =>
     api.get("/tasks", { params: { targetId } }),
   getStats: (): Promise<AxiosResponse> => api.get("/tasks/stats"),
+  // Public — per-object verification counts for map marker coloring
+  getVerificationSummary: (): Promise<AxiosResponse> =>
+    api.get("/tasks/verification-summary"),
 
   // Admin writes
   create: (data: Record<string, any>): Promise<AxiosResponse> =>

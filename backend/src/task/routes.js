@@ -2,8 +2,9 @@
 
 import express from 'express';
 import {
-    getTasks, getStats, createTask, updateStatus, updateTask,
-    vote, verify, uploadPhoto, deleteTask
+    getTasks, getStats, getVerificationSummary,
+    createTask, updateStatus, updateTask, deleteTask,
+    vote, uploadPhoto, verify
 } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
@@ -11,13 +12,14 @@ import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
-// Public — no auth needed, used by the public dashboard widget
+// Public — stats banner and marker colors use these without auth
 router.get('/stats', getStats);
+router.get('/verification-summary', getVerificationSummary);
 
 // Authenticated reads
 router.get('/', authMiddleware, getTasks);
 
-// Photo upload — any authenticated user (citizen needs this before verify)
+// Photo upload — any authenticated user (needed before verify)
 router.post('/upload-photo', authMiddleware, upload.single('photo'), uploadPhoto);
 
 // Admin writes
@@ -26,10 +28,8 @@ router.patch('/:id/status', authMiddleware, adminOnly, updateStatus);
 router.patch('/:id', authMiddleware, adminOnly, updateTask);
 router.delete('/:id', authMiddleware, adminOnly, deleteTask);
 
-// Citizen vote (only while status = 'Pending Verification')
+// Citizen vote and verification
 router.post('/:id/vote', authMiddleware, vote);
-
-// Citizen verification — done ✓ / problem ✗ + optional photo
 router.post('/:id/verify', authMiddleware, verify);
 
 export default router;

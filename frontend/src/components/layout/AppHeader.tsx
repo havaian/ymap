@@ -16,16 +16,15 @@ import { CustomSelect } from "../common/CustomSelect";
 import { regionsAPI } from "../../services/api";
 import { User, UserRole } from "../../../types";
 
+// Metrics match the new analytics controller
 const SCORE_METRICS = [
   { value: "composite", label: "Общий" },
-  { value: "infrastructure", label: "Инфраструктура" },
   { value: "issues", label: "Обращения" },
-  { value: "budget", label: "Бюджет" },
+  { value: "objects", label: "Объекты" },
+  { value: "verification", label: "Верификация" },
 ];
 
 // ── ScorePicker ────────────────────────────────────────────────────────────────
-// Choropleth toggle — separate from LayerPicker so the district scoring overlay
-// can be combined with any other layer.
 function ScorePicker({
   show,
   metric,
@@ -87,9 +86,7 @@ function ScorePicker({
               <X size={14} className="text-slate-400" />
             </button>
           </div>
-
           <div className="p-3 space-y-3">
-            {/* Toggle row */}
             <button
               onClick={onToggle}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
@@ -120,8 +117,6 @@ function ScorePicker({
                 />
               </div>
             </button>
-
-            {/* Metric chips */}
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">
                 Метрика
@@ -132,7 +127,7 @@ function ScorePicker({
                     key={m.value}
                     onClick={() => {
                       onMetricChange(m.value);
-                      if (!show) onToggle(); // auto-enable on metric pick
+                      if (!show) onToggle();
                     }}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                       metric === m.value
@@ -158,17 +153,14 @@ interface AppHeaderProps {
   currentUser: User;
   onMenuOpen: () => void;
   activeView: string;
-  // Map layers
   layers: LayerState;
   onToggleHeatmap: () => void;
   onToggleObjects: () => void;
   onToggleStandaloneIssues: () => void;
-  // Choropleth — separate from layers
   showChoropleth: boolean;
   choroplethMetric: string;
   onToggleChoropleth: () => void;
   onChoroplethMetricChange: (metric: string) => void;
-  // Region filter
   selectedRegionCode: number | null;
   onRegionChange: (code: number | null) => void;
 }
@@ -211,7 +203,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 shadow-sm z-[400] px-6 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-100">
-      {/* Left */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuOpen}
@@ -237,7 +228,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right — only on map view */}
       {activeView === "MAP" && (
         <div className="flex items-center gap-2">
           <CustomSelect
@@ -249,14 +239,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             icon={<MapPin size={14} />}
             autoOpenKey="regionChosen"
           />
-
           <ScorePicker
             show={showChoropleth}
             metric={choroplethMetric}
             onToggle={onToggleChoropleth}
             onMetricChange={onChoroplethMetricChange}
           />
-
           <LayerPicker
             layers={layers}
             onToggleHeatmap={onToggleHeatmap}

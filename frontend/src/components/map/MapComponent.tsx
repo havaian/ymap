@@ -789,6 +789,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         <ChoroplethLayer
           show={showChoropleth && !showHeatmap}
           metric={choroplethMetric}
+          regionCode={selectedRegionCode ?? undefined}
           onDistrictClick={onDistrictClick}
         />
 

@@ -40,7 +40,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   // activeView is now derived from props, not state
   const activeView = view;
 
-  const [selectedRegionCode, setSelectedRegionCode] = useState<number | null>(null);
+  const [selectedRegionCode, setSelectedRegionCode] = useState<number | null>(10);
 
   // Use backend hooks instead of mock data
   const {

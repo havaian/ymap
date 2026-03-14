@@ -381,7 +381,7 @@ function TaskCard({
             </div>
           )}
 
-          {/* Recent verifications */}
+          {/* Recent verifications — visible to everyone (admin sees responses, citizen sees context) */}
           {task.verifications?.slice(0, 3).map((v) => (
             <div key={v._id} className="flex items-start gap-2 text-xs">
               <span
@@ -392,17 +392,14 @@ function TaskCard({
                 {v.status === "done" ? "✓" : "✗"}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="font-bold text-slate-700 dark:text-slate-300">
-                  {v.userName}
-                </span>
                 {v.comment && (
-                  <p className="text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-slate-500 dark:text-slate-400">
                     {v.comment}
                   </p>
                 )}
                 {v.photoUrl && (
                   <a
-                    href={`/api/uploads/${v.photoUrl}`}
+                    href={`/api/uploads/photos/${v.photoUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-blue-500 hover:underline mt-0.5"
@@ -410,12 +407,17 @@ function TaskCard({
                     <ImageIcon size={10} /> Фото
                   </a>
                 )}
+                {!v.comment && !v.photoUrl && (
+                  <p className="text-slate-400 dark:text-slate-600 italic">
+                    без комментария
+                  </p>
+                )}
               </div>
             </div>
           ))}
 
-          {/* Verify button */}
-          {currentUser && (
+          {/* Verify button — citizens only, not admin */}
+          {currentUser && currentUser.role !== UserRole.ADMIN && (
             <div className="pt-1">
               {verifying ? (
                 <VerifyForm

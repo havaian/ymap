@@ -8,7 +8,7 @@ import {
 } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
-import { upload } from '../middleware/upload.js';
+import { photoUpload } from '../utils/photoConfig.js'; // stores to uploads/photos/ subdir
 
 const router = express.Router();
 
@@ -19,8 +19,9 @@ router.get('/verification-summary', getVerificationSummary);
 // Authenticated reads
 router.get('/', authMiddleware, getTasks);
 
-// Photo upload — any authenticated user (needed before verify)
-router.post('/upload-photo', authMiddleware, upload.single('photo'), uploadPhoto);
+// Photo upload — citizen only, stores to uploads/photos/<filename>
+// Served at GET /api/uploads/photos/<filename>
+router.post('/upload-photo', authMiddleware, photoUpload.single('photo'), uploadPhoto);
 
 // Admin writes
 router.post('/', authMiddleware, adminOnly, createTask);

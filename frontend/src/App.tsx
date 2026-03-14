@@ -44,8 +44,18 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const activeView = view;
 
   const [selectedRegionCode, setSelectedRegionCode] = useState<number | null>(
-    10
+    () => {
+      const saved = localStorage.getItem("map_region");
+      return saved ? parseInt(saved) : null;
+    }
   );
+
+  // Persist region selection
+  useEffect(() => {
+    if (selectedRegionCode != null)
+      localStorage.setItem("map_region", String(selectedRegionCode));
+    else localStorage.removeItem("map_region");
+  }, [selectedRegionCode]);
 
   // ── Data hooks ────────────────────────────────────────
   const {
@@ -127,11 +137,39 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   // Layer toggles — all three are fully independent, no mutual exclusions
-  const [showObjects, setShowObjects] = useState(true);
-  const [showStandaloneIssues, setShowStandaloneIssues] = useState(false);
-  const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showChoropleth, setShowChoropleth] = useState(false);
-  const [choroplethMetric, setChoroplethMetric] = useState("composite");
+  const [showObjects, setShowObjects] = useState(() => {
+    const v = localStorage.getItem("layer_objects");
+    return v !== null ? v === "true" : true; // default on
+  });
+  const [showStandaloneIssues, setShowStandaloneIssues] = useState(
+    () => localStorage.getItem("layer_standalone") === "true"
+  );
+  const [showHeatmap, setShowHeatmap] = useState(
+    () => localStorage.getItem("layer_heatmap") === "true"
+  );
+  const [showChoropleth, setShowChoropleth] = useState(
+    () => localStorage.getItem("layer_choropleth") === "true"
+  );
+  const [choroplethMetric, setChoroplethMetric] = useState(
+    () => localStorage.getItem("layer_choropleth_metric") || "composite"
+  );
+
+  // Persist layer state changes
+  useEffect(() => {
+    localStorage.setItem("layer_objects", String(showObjects));
+  }, [showObjects]);
+  useEffect(() => {
+    localStorage.setItem("layer_standalone", String(showStandaloneIssues));
+  }, [showStandaloneIssues]);
+  useEffect(() => {
+    localStorage.setItem("layer_heatmap", String(showHeatmap));
+  }, [showHeatmap]);
+  useEffect(() => {
+    localStorage.setItem("layer_choropleth", String(showChoropleth));
+  }, [showChoropleth]);
+  useEffect(() => {
+    localStorage.setItem("layer_choropleth_metric", choroplethMetric);
+  }, [choroplethMetric]);
 
   // District drilldown
   const [drilldownDistrictId, setDrilldownDistrictId] = useState<string | null>(

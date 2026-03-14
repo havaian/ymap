@@ -1,35 +1,27 @@
-// backend/src/task/routes.js
+// backend/src/program/routes.js
 
-import express from 'express';
+import { Router } from 'express';
 import {
-    getTasks, getStats, createTask, updateStatus, updateTask,
-    vote, verify, uploadPhoto, deleteTask
+    getPrograms, getProgram, createProgram, updateProgram, deleteProgram,
+    assignObjects, addObject, removeObject
 } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
-import { upload } from '../middleware/upload.js';
 
-const router = express.Router();
+const router = Router();
 
-// Public — no auth needed, used by the public dashboard widget
-router.get('/stats', getStats);
-
-// Authenticated reads
-router.get('/', authMiddleware, getTasks);
-
-// Photo upload — any authenticated user (citizen needs this before verify)
-router.post('/upload-photo', authMiddleware, upload.single('photo'), uploadPhoto);
+// Authenticated reads — citizens can browse programs
+router.get('/', authMiddleware, getPrograms);
+router.get('/:id', authMiddleware, getProgram);
 
 // Admin writes
-router.post('/', authMiddleware, adminOnly, createTask);
-router.patch('/:id/status', authMiddleware, adminOnly, updateStatus);
-router.patch('/:id', authMiddleware, adminOnly, updateTask);
-router.delete('/:id', authMiddleware, adminOnly, deleteTask);
+router.post('/', authMiddleware, adminOnly, createProgram);
+router.patch('/:id', authMiddleware, adminOnly, updateProgram);
+router.delete('/:id', authMiddleware, adminOnly, deleteProgram);
 
-// Citizen vote (only while status = 'Pending Verification')
-router.post('/:id/vote', authMiddleware, vote);
-
-// Citizen verification — done ✓ / problem ✗ + optional photo
-router.post('/:id/verify', authMiddleware, verify);
+// Object assignment
+router.post('/:id/assign-objects', authMiddleware, adminOnly, assignObjects);
+router.post('/:id/objects/:objectId', authMiddleware, adminOnly, addObject);
+router.delete('/:id/objects/:objectId', authMiddleware, adminOnly, removeObject);
 
 export default router;

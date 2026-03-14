@@ -28,6 +28,7 @@ import openBudgetRoutes from './openbudget/routes.js';
 import taskRoutes from './task/routes.js';
 import allocationRoutes from './budgetAllocation/routes.js';
 import programRoutes from './program/routes.js';
+import indicatorVerifRoutes from './indicatorVerification/routes.js';
 import { PATHS as UPLOAD_PATHS } from './utils/uploadPaths.js';
 
 validateEnv();
@@ -116,6 +117,9 @@ app.use('/api/markers', apiLimiter, authMiddleware, markerRoutes);
 
 // ── Open Budget (public) ──────────────────────────────────────────────────────
 app.use('/api/openbudget', apiLimiter, authMiddleware, openBudgetRoutes);
+
+// ── Indicator verification routes (public) ──────────────────────────────────────────────────────
+app.use('/api/objects/:id/indicator-verifications', apiLimiter, indicatorVerifRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

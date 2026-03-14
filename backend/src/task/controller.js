@@ -1,6 +1,7 @@
 // backend/src/task/controller.js
 
 import Task from './model.js';
+import User from '../user/model.js';
 import mongoose from 'mongoose';
 
 const VOTE_ALLOWED_STATUS = 'Pending Verification';
@@ -208,6 +209,10 @@ export const vote = async (req, res) => {
         const { id } = req.params;
         const { verdict } = req.body; // 'confirmed' | 'rejected'
 
+        if (req.user.role === 'ADMIN') {
+            return res.status(403).json({ success: false, message: 'Admins cannot vote on tasks' });
+        }
+
         if (!['confirmed', 'rejected'].includes(verdict))
             return res.status(400).json({ success: false, message: "verdict must be 'confirmed' or 'rejected'" });
         if (!mongoose.isValidObjectId(id))
@@ -282,6 +287,8 @@ export const verify = async (req, res) => {
         });
 
         await task.save();
+
+        await User.findByIdAndUpdate(req.user._id, { $inc: { points: 1 } });
 
         const obj = task.toJSON();
         obj.totalCount = task.totalCount;

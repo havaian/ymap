@@ -127,6 +127,14 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
               <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                 Ташкент, Узбекистан
               </p>
+              {/* Points — citizens only */}
+              {currentUser?.role !== UserRole.ADMIN && (currentUser?.points ?? 0) > 0 && (
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider">
+                    ★ {currentUser.points} баллов
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

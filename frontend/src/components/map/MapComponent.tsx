@@ -95,10 +95,12 @@ function getVerificationColor(
 function createObjectIcon(
   objectType: string,
   unresolvedCount: number,
-  verif?: { doneCount: number; problemCount: number; totalCount: number }
+  verif?: { doneCount: number; problemCount: number; totalCount: number },
+  isOvercrowded?: boolean
 ) {
   const verifColor = getVerificationColor(verif);
-  const color = verifColor ?? getObjectTypeColor(objectType);
+  const overcrowdColor = isOvercrowded && !verifColor ? "#f97316" : null;
+  const color = verifColor ?? overcrowdColor ?? getObjectTypeColor(objectType);
   const countKey = Math.min(unresolvedCount, 99);
   const verifKey = verif
     ? verif.doneCount >= verif.totalCount * 0.7
@@ -107,7 +109,9 @@ function createObjectIcon(
       ? "r"
       : "y"
     : "n";
-  const cacheKey = `obj_${objectType}_${countKey}_${verifKey}`;
+  const cacheKey = `obj_${objectType}_${countKey}_${verifKey}_${
+    isOvercrowded ? "oc" : ""
+  }`;
 
   return getCachedIcon(cacheKey, () => {
     const size = 40;
@@ -472,7 +476,8 @@ function ObjectClusterGroup({
         icon: createObjectIcon(
           obj.objectType || "school",
           unresolvedCount,
-          verif
+          verif,
+          (obj.capacity ?? 0) > 0 && (obj.enrollment ?? 0) > (obj.capacity ?? 0) // ← добавить
         ),
       });
 
@@ -536,7 +541,12 @@ function ObjectClusterGroup({
       const unresolvedCount = objectUnresolvedCounts[obj.id] || 0;
       const verif = verificationSummary.get(obj.id);
       marker.setIcon(
-        createObjectIcon(obj.objectType || "school", unresolvedCount, verif)
+        createObjectIcon(
+          obj.objectType || "school",
+          unresolvedCount,
+          verif,
+          (obj.capacity ?? 0) > 0 && (obj.enrollment ?? 0) > (obj.capacity ?? 0) // ← добавить
+        )
       );
     });
     // Clear cache entries for these objects so next createObjectIcon picks fresh colors

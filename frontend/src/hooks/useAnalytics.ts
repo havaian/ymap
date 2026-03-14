@@ -119,6 +119,7 @@ export const useAnalytics = () => {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [problematicFacilities, setProblematicFacilities] = useState<any[]>([]);
 
   const [regionCode, setRegionCode] = useState<number | null>(null);
 
@@ -137,6 +138,7 @@ export const useAnalytics = () => {
         scoringRes,
         regionsRes,
         cropsRes,
+        problematicRes
       ] = await Promise.all([
         api.get("/analytics/overview", { params }),
         api.get("/analytics/issues", { params }),
@@ -144,6 +146,7 @@ export const useAnalytics = () => {
         api.get("/analytics/districts/scoring", { params }),
         api.get("/analytics/regions/summary"),
         api.get("/analytics/crops", { params }),
+        api.get("/analytics/problematic-facilities", { params }),
       ]);
 
       setOverview(overviewRes.data.data);
@@ -152,6 +155,7 @@ export const useAnalytics = () => {
       setDistrictScoring(scoringRes.data.data?.districts || []);
       setRegionSummary(regionsRes.data.data || []);
       setCropAnalytics(cropsRes.data.data);
+      setProblematicFacilities(problematicRes.data?.data?.facilities || []);
 
       // Task stats — public endpoint on /api/tasks/stats
       try {
@@ -186,5 +190,6 @@ export const useAnalytics = () => {
     refetch: () => fetchAll(regionCode),
     regionCode,
     setRegionCode,
+    problematicFacilities,
   };
 };

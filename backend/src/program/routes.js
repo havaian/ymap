@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import {
     getPrograms, getProgram, createProgram, updateProgram, deleteProgram,
-    assignObjects, addObject, removeObject
+    assignObjects, addObject, removeObject, bulkCreateTasks
 } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
@@ -21,6 +21,7 @@ router.delete('/:id', authMiddleware, adminOnly, deleteProgram);
 
 // Object assignment
 router.post('/:id/assign-objects', authMiddleware, adminOnly, assignObjects);
+router.post('/:id/bulk-tasks', authMiddleware, adminOnly, bulkCreateTasks);
 router.post('/:id/objects/:objectId', authMiddleware, adminOnly, addObject);
 router.delete('/:id/objects/:objectId', authMiddleware, adminOnly, removeObject);
 

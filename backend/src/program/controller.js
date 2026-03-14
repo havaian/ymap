@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import Program from './model.js';
+import Task from '../task/model.js';
 import Object_ from '../object/model.js';
 
 // ── GET /api/programs ─────────────────────────────────────────────────────────
@@ -217,4 +218,48 @@ export const removeObject = async (req, res) => {
     await program.save();
 
     res.json({ success: true, data: program.toJSON() });
+};
+
+// POST /api/programs/:id/bulk-tasks
+// Создаёт одну задачу с одинаковыми title/description/deadline
+// для каждого objectId в программе. Уже существующие задачи с тем же
+// programId + targetId + title — не дублируются.
+export const bulkCreateTasks = async (req, res) => {
+    const { id } = req.params;
+    const { title, description, deadline } = req.body;
+
+    if (!title)
+        return res.status(400).json({ success: false, message: 'title is required' });
+    if (!mongoose.isValidObjectId(id))
+        return res.status(400).json({ success: false, message: 'Invalid id' });
+
+    const program = await Program.findById(id);
+    if (!program)
+        return res.status(404).json({ success: false, message: 'Program not found' });
+    if (program.objectIds.length === 0)
+        return res.status(400).json({ success: false, message: 'Program has no assigned objects' });
+
+    // Находим уже существующие задачи этой программы с таким же title
+    const existing = await Task.find({ programId: id, title }).select('targetId').lean();
+    const existingTargets = new Set(existing.map(t => t.targetId.toString()));
+
+    const toCreate = program.objectIds
+        .filter(oid => !existingTargets.has(oid.toString()))
+        .map(oid => ({
+            targetId: oid,
+            programId: program._id,
+            title,
+            description: description || null,
+            deadline: deadline ? new Date(deadline) : null,
+            status: 'Planned',
+            createdBy: req.user._id,
+            votes: { confirmed: [], rejected: [] }
+        }));
+
+    if (toCreate.length === 0)
+        return res.json({ success: true, data: { created: 0, skipped: existing.length } });
+
+    await Task.insertMany(toCreate);
+
+    res.json({ success: true, data: { created: toCreate.length, skipped: existing.length } });
 };

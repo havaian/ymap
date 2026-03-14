@@ -1,6 +1,7 @@
 // backend/src/issue/controller.js
 
 import Issue from './model.js';
+import User from '../user/model.js';
 import Comment from '../comment/model.js';
 import Vote from '../vote/model.js';
 import Object_ from '../object/model.js';
@@ -136,6 +137,8 @@ export const createIssue = async (req, res) => {
         objectName,
         userId: req.user._id
     });
+
+    await User.findByIdAndUpdate(req.user._id, { $inc: { points: 1 } });
 
     const issueObj = issue.toJSON();
     issueObj.comments = [];

@@ -808,3 +808,120 @@ export async function getDistrictProfile(req, res) {
         res.status(500).json({ success: false, error: 'Failed to load district profile' });
     }
 }
+
+export const getOvercrowdedFacilities = async (req, res) => {
+    try {
+        const { regionCode } = req.query;
+        const match = {
+            'details.sigimi': { $gt: 0 },
+            'details.umumiyUquvchi': { $gt: 0 }
+        };
+        if (regionCode) match.regionCode = parseInt(regionCode);
+
+        const docs = await Object_.find(match)
+            .select('name objectType viloyat tuman regionCode details lat lng')
+            .lean();
+
+        const overcrowded = docs
+            .map(d => ({
+                id: d._id.toString(),
+                name: d.name,
+                objectType: d.objectType,
+                viloyat: d.viloyat,
+                tuman: d.tuman,
+                lat: d.lat,
+                lng: d.lng,
+                capacity: d.details.sigimi,
+                enrollment: d.details.umumiyUquvchi,
+                overloadPct: Math.round((d.details.umumiyUquvchi / d.details.sigimi) * 100)
+            }))
+            .filter(d => d.overloadPct > 100)
+            .sort((a, b) => b.overloadPct - a.overloadPct);
+
+        res.json({ success: true, data: { overcrowded, total: overcrowded.length } });
+    } catch (err) {
+        console.error('getOvercrowdedFacilities error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch overcrowded facilities' });
+    }
+};
+
+// GET /api/analytics/problematic-facilities
+// Объекты у которых: задачи с problem-верификациями ИЛИ оспоренные показатели
+// Query: ?regionCode=17
+export const getProblematicFacilities = async (req, res) => {
+    try {
+        const { regionCode } = req.query;
+        const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
+
+        // 1. Объекты с задачами где проблемных верификаций >= 50%
+        const taskProblems = await Task.aggregate([
+            { $match: { 'verifications.0': { $exists: true } } },
+            { $unwind: '$verifications' },
+            {
+                $group: {
+                    _id: '$targetId',
+                    totalVerif: { $sum: 1 },
+                    problemVerif: { $sum: { $cond: [{ $eq: ['$verifications.status', 'problem'] }, 1, 0] } }
+                }
+            },
+            { $match: { $expr: { $gte: ['$problemVerif', { $divide: ['$totalVerif', 2] }] } } }
+        ]);
+        const taskProblemIds = taskProblems.map(t => t._id);
+
+        // 2. Объекты с оспоренными показателями (indicator verifications disputed >= 50%)
+        const IndicatorVerification = mongoose.model('IndicatorVerification');
+        const indicatorProblems = await IndicatorVerification.aggregate([
+            { $group: {
+                _id: '$objectId',
+                total: { $sum: 1 },
+                disputed: { $sum: { $cond: [{ $eq: ['$status', 'disputed'] }, 1, 0] } }
+            }},
+            { $match: { $expr: { $gte: ['$disputed', { $divide: ['$total', 2] }] } } }
+        ]);
+        const indicatorProblemIds = indicatorProblems.map(i => i._id);
+
+        // Объединяем уникальные ID
+        const allProblemIds = [...new Set([
+            ...taskProblemIds.map(id => id.toString()),
+            ...indicatorProblemIds.map(id => id.toString())
+        ])].map(id => new mongoose.Types.ObjectId(id));
+
+        if (allProblemIds.length === 0) {
+            return res.json({ success: true, data: { facilities: [], total: 0 } });
+        }
+
+        const facilities = await Object_.find({
+            _id: { $in: allProblemIds },
+            ...regionFilter
+        })
+        .select('name objectType viloyat tuman regionCode lat lng details')
+        .lean();
+
+        // Обогащаем данными о проблемах
+        const taskProblemMap = new Map(taskProblems.map(t => [t._id.toString(), t]));
+        const indicatorProblemMap = new Map(indicatorProblems.map(i => [i._id.toString(), i]));
+
+        const result = facilities.map(f => {
+            const id = f._id.toString();
+            const tp = taskProblemMap.get(id);
+            const ip = indicatorProblemMap.get(id);
+            return {
+                id,
+                name: f.name,
+                objectType: f.objectType,
+                viloyat: f.viloyat,
+                tuman: f.tuman,
+                lat: f.lat,
+                lng: f.lng,
+                isOvercrowded: (f.details?.sigimi > 0 && f.details?.umumiyUquvchi > f.details?.sigimi),
+                taskProblems: tp ? { problemVerif: tp.problemVerif, totalVerif: tp.totalVerif } : null,
+                indicatorProblems: ip ? { disputed: ip.disputed, total: ip.total } : null,
+            };
+        });
+
+        res.json({ success: true, data: { facilities: result, total: result.length } });
+    } catch (err) {
+        console.error('getProblematicFacilities error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch problematic facilities' });
+    }
+};

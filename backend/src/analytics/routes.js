@@ -14,7 +14,9 @@ import {
     getTrends,
     getResolution,
     getEfficiency,
-    getDistrictProfile
+    getDistrictProfile,
+    getOvercrowdedFacilities,
+    getProblematicFacilities
 } from './controller.js';
 import { cacheMiddleware } from '../middleware/cache.js';
 
@@ -33,5 +35,7 @@ router.get('/trends', cacheMiddleware(300, 'analytics'), getTrends);
 router.get('/resolution', cacheMiddleware(300, 'analytics'), getResolution);
 router.get('/efficiency', cacheMiddleware(300, 'analytics'), getEfficiency);
 router.get('/district/:name', cacheMiddleware(120, 'analytics'), getDistrictProfile);
+router.get('/overcrowded', cacheMiddleware(300, 'analytics'), getOvercrowdedFacilities);
+router.get('/problematic-facilities', cacheMiddleware(180, 'analytics'), getProblematicFacilities);
 
 export default router;

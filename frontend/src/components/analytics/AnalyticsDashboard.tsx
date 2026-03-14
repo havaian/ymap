@@ -109,6 +109,7 @@ const TABS = [
   { id: 'tasks',     label: 'Задачи',     icon: <CheckCircle2 size={14} /> },
   { id: 'districts', label: 'Районы',     icon: <MapPin size={14} /> },
   { id: 'crops',     label: 'Агро',       icon: <Wheat size={14} /> },
+  { id: 'problematic', label: 'Проблемные', icon: <AlertTriangle size={14} /> },
 ];
 
 // ─────────────────────────────────────────────
@@ -551,6 +552,78 @@ const CropsTab: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
+// ── Tab: Problematic facilities ──────────────────────────────────────────────
+
+const ProblematicTab: React.FC<{ data: any[] }> = ({ data }) => {
+  const TYPE_LABELS: Record<string, string> = {
+    school: 'Школа', kindergarten: 'Дет. сад', health_post: 'ФАП/СВП'
+  };
+
+  if (data.length === 0) {
+    return (
+      <div className="py-16 text-center text-slate-400 dark:text-slate-600">
+        <CheckCircle2 size={32} className="mx-auto mb-3 opacity-40" />
+        <p className="font-bold text-sm">Проблемных учреждений не обнаружено</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-900/30">
+        <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />
+        <p className="text-xs font-bold text-red-700 dark:text-red-400">
+          {data.length} учреждений имеют верифицированные проблемы или оспоренные показатели
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {data.map((f) => (
+          <div
+            key={f.id}
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200/60 dark:border-red-900/30 p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                    {TYPE_LABELS[f.objectType] || f.objectType}
+                  </span>
+                  {f.isOvercrowded && (
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600">
+                      Переполнено
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-snug">
+                  {f.name}
+                </p>
+                {(f.tuman || f.viloyat) && (
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {[f.tuman, f.viloyat].filter(Boolean).join(', ')}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1 flex-shrink-0 text-right">
+                {f.taskProblems && (
+                  <span className="text-[10px] font-black text-red-500">
+                    ✗ {f.taskProblems.problemVerif}/{f.taskProblems.totalVerif} задач
+                  </span>
+                )}
+                {f.indicatorProblems && (
+                  <span className="text-[10px] font-black text-amber-500">
+                    ⚠ {f.indicatorProblems.disputed}/{f.indicatorProblems.total} показат.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ─────────────────────────────────────────────
 // Main Dashboard
 // ─────────────────────────────────────────────
@@ -558,7 +631,7 @@ const CropsTab: React.FC<{ data: any }> = ({ data }) => {
 export const AnalyticsDashboard: React.FC = () => {
   const {
     overview, issueAnalytics, objectAnalytics, districtScoring,
-    regionSummary, taskStats, cropAnalytics,
+    regionSummary, taskStats, cropAnalytics, problematicFacilities,
     loading, error, refetch,
     regionCode, setRegionCode,
   } = useAnalytics();
@@ -674,6 +747,9 @@ export const AnalyticsDashboard: React.FC = () => {
           />
         )}
         {activeTab === 'crops'     && <CropsTab     data={cropAnalytics} />}
+        {activeTab === 'problematic' && (
+            <ProblematicTab data={problematicFacilities} />
+        )}
       </div>
 
       {/* District drilldown panel */}

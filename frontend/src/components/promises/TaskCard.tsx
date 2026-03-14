@@ -136,7 +136,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
 
       {/* Voting — only when Pending Verification */}
-      {task.status === "Pending Verification" && onVote && (
+      {task.status === "Pending Verification" && onVote && !isAdmin && (
         <div className="px-4 pb-3 flex items-center gap-2">
           <button
             onClick={() => handleVote("confirmed")}

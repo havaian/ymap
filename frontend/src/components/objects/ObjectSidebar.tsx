@@ -13,7 +13,7 @@ import {
   BudgetAllocation,
 } from "../../../types";
 import { AllocationSection } from "../promises/AllocationSection";
-import { tasksAPI } from "../../services/api";
+import { tasksAPI, indicatorVerifAPI } from "../../services/api";
 import {
   Building2,
   MapPin,
@@ -94,6 +94,205 @@ const CONDITION_ICONS: Record<string, React.ElementType> = {
   aktivZalHolati: Info,
   oshhonaHolati: Info,
 };
+
+// Поля, которые граждане могут верифицировать со звёздами
+const VERIFIABLE_FIELDS = new Set([
+  "sportZalHolati",
+  "aktivZalHolati",
+  "oshhonaHolati",
+  "kapitalTamir",
+  "materialSten",
+]);
+
+// ── IndicatorVerifyRow ────────────────────────────────────────────────────────
+
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number) => void;
+}) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          onMouseEnter={() => setHovered(n)}
+          onMouseLeave={() => setHovered(null)}
+          className="p-0.5"
+        >
+          <Star
+            size={14}
+            className={
+              n <= (hovered ?? value ?? 0)
+                ? "text-amber-400 fill-amber-400"
+                : "text-slate-300 dark:text-slate-600"
+            }
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function IndicatorVerifyRow({
+  fieldKey,
+  value,
+  objectId,
+  currentUser,
+  summary,
+  onSubmitted,
+}: {
+  fieldKey: string;
+  value: string | number;
+  objectId: string;
+  currentUser: User | null;
+  summary: {
+    confirmed: number;
+    disputed: number;
+    total: number;
+    avgRating: number | null;
+  } | null;
+  onSubmitted: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<"confirmed" | "disputed" | null>(null);
+  const [rating, setRating] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const Icon = CONDITION_ICONS[fieldKey] || Info;
+  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isCitizen = currentUser && !isAdmin;
+
+  const handleSubmit = async () => {
+    if (!status) return;
+    setSubmitting(true);
+    try {
+      await indicatorVerifAPI.submit(objectId, {
+        field: fieldKey,
+        status,
+        rating: rating ?? undefined,
+        comment: comment.trim() || undefined,
+      });
+      setOpen(false);
+      setStatus(null);
+      setRating(null);
+      setComment("");
+      onSubmitted();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="border-b border-slate-100/60 dark:border-slate-800/60 last:border-0">
+      <div className="flex items-start gap-3 py-2.5">
+        <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Icon size={13} className="text-slate-500 dark:text-slate-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            {CONDITION_LABELS[fieldKey] || fieldKey}
+          </div>
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 leading-snug">
+            {String(value)}
+          </div>
+          {/* Summary badge */}
+          {summary && summary.total > 0 && (
+            <div className="flex items-center gap-2 mt-1">
+              {summary.confirmed > 0 && (
+                <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">
+                  ✓ {summary.confirmed}
+                </span>
+              )}
+              {summary.disputed > 0 && (
+                <span className="text-[9px] font-black text-red-500">
+                  ✗ {summary.disputed}
+                </span>
+              )}
+              {summary.avgRating && (
+                <span className="text-[9px] font-black text-amber-500 flex items-center gap-0.5">
+                  <Star size={9} className="fill-amber-400 text-amber-400" />
+                  {summary.avgRating}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Verify button — citizens only */}
+        {isCitizen && (
+          <button
+            onClick={() => setOpen((p) => !p)}
+            className={`flex-shrink-0 text-[9px] font-black uppercase px-2 py-1 rounded-lg transition-colors ${
+              open
+                ? "bg-blue-600 text-white"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            }`}
+          >
+            {open ? "Отмена" : "Верифиц."}
+          </button>
+        )}
+      </div>
+
+      {open && isCitizen && (
+        <div className="pb-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setStatus("confirmed")}
+              className={`py-2 rounded-xl text-xs font-black transition-colors ${
+                status === "confirmed"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700"
+              }`}
+            >
+              ✓ Верно
+            </button>
+            <button
+              onClick={() => setStatus("disputed")}
+              className={`py-2 rounded-xl text-xs font-black transition-colors ${
+                status === "disputed"
+                  ? "bg-red-500 text-white"
+                  : "bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700"
+              }`}
+            >
+              ✗ Не соответствует
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400">
+              Оценка:
+            </span>
+            <StarRating value={rating} onChange={setRating} />
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Комментарий (необязательно)"
+            rows={2}
+            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs resize-none outline-none focus:ring-2 focus:ring-blue-400 dark:text-white"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={!status || submitting}
+            className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <CheckCircle2 size={12} />
+            )}
+            {submitting ? "Отправка..." : "Отправить"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Task status config ────────────────────────────────────────────────────────
 
@@ -462,7 +661,7 @@ function TaskCard({
                 )}
                 {v.photoUrl && (
                   <a
-                    href={`/api/uploads/photos/${v.photoUrl}`}
+                    href={`/api/uploads/${v.photoUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-blue-500 hover:underline mt-0.5"
@@ -593,6 +792,21 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
 
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
+  const [indicatorSummary, setIndicatorSummary] = useState<Record<string, any>>(
+    {}
+  );
+
+  const loadIndicatorSummary = async () => {
+    try {
+      const res = await indicatorVerifAPI.getForObject(object.id);
+      if (res.data?.success) setIndicatorSummary(res.data.data);
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadIndicatorSummary();
+  }, [object.id]);
+
   // Issues linked to this object, sorted by severity then votes
   const objectIssues = useMemo(() => {
     return issues
@@ -697,6 +911,20 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
               {Object.entries(object.details).map(([key, val]) => {
                 if (!val && val !== 0) return null;
                 const Icon = CONDITION_ICONS[key] || Info;
+
+                if (VERIFIABLE_FIELDS.has(key)) {
+                  return (
+                    <IndicatorVerifyRow
+                      fieldKey={key}
+                      value={val as string | number}
+                      objectId={object.id}
+                      currentUser={currentUser}
+                      summary={indicatorSummary[key] ?? null}
+                      onSubmitted={loadIndicatorSummary}
+                    />
+                  );
+                }
+
                 return (
                   <InfoField
                     icon={Icon}

@@ -135,6 +135,14 @@ export const programsAPI = {
     api.post(`/programs/${programId}/objects/${objectId}`),
   removeObject: (programId: string, objectId: string): Promise<AxiosResponse> =>
     api.delete(`/programs/${programId}/objects/${objectId}`),
+  bulkCreateTasks: (
+    id: string,
+    data: {
+      title: string;
+      description?: string;
+      deadline?: string;
+    }
+  ): Promise<AxiosResponse> => api.post(`/programs/${id}/bulk-tasks`, data),
 };
 
 // ── Tasks (replaces promisesAPI) ──────────────────────────────────────────────
@@ -263,6 +271,21 @@ export const infrastructureAPI = {
       return { success: false, error: e.message };
     }
   },
+};
+
+export const indicatorVerifAPI = {
+  getForObject: (objectId: string): Promise<AxiosResponse> =>
+    api.get(`/objects/${objectId}/indicator-verifications`),
+  submit: (
+    objectId: string,
+    data: {
+      field: string;
+      status: "confirmed" | "disputed";
+      rating?: number;
+      comment?: string;
+    }
+  ): Promise<AxiosResponse> =>
+    api.post(`/objects/${objectId}/indicator-verifications`, data),
 };
 
 export default api;

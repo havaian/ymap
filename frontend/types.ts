@@ -114,6 +114,8 @@ export interface FacilityObject {
   lastSyncedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  capacity?: number;    // details.sigimi из маркер-эндпоинта
+  enrollment?: number;  // details.umumiyUquvchi из маркер-эндпоинта
 }
 
 // ── Program ───────────────────────────────────────────────────────────────────
@@ -159,6 +161,7 @@ export interface TaskVerification {
   comment?: string;
   photoUrl?: string;
   createdAt: string;
+  points?: number;
 }
 
 export interface Task {

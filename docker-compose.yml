@@ -36,11 +36,11 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - UPLOADS_DIR=${UPLOADS_DIR}
+      - UPLOADS_DIR=/app/uploads
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
     volumes:
-      - ${UPLOADS_DIR:-./uploads}:/app/uploads
+      - ./uploads/:/usr/src/app/uploads:rw,Z
     ports:
       - "${BACKEND_EXPOSE:-127.0.0.1:4000}:${BACKEND_PORT:-4000}"
     depends_on:

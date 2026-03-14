@@ -18,7 +18,7 @@ export const getObjectMarkers = async (req, res) => {
     if (regionCode) filter.regionCode = parseInt(regionCode);
 
     const docs = await Object_.find(filter)
-        .select('lat lng name objectType sourceApi')
+        .select('lat lng name objectType sourceApi details')
         .lean();
 
     res.json({
@@ -30,7 +30,9 @@ export const getObjectMarkers = async (req, res) => {
             lng: d.lng,
             name: d.name,
             objectType: d.objectType,
-            sourceApi: d.sourceApi
+            sourceApi: d.sourceApi,
+            capacity: d.details?.sigimi ?? null,
+            enrollment: d.details?.umumiyUquvchi ?? null,
         }))
     });
 };

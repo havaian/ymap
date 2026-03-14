@@ -13,7 +13,7 @@ import {
   BudgetAllocation,
 } from "../../../types";
 import { AllocationSection } from "../promises/AllocationSection";
-import { tasksAPI, indicatorVerifAPI } from "../../services/api";
+import { tasksAPI, indicatorVerifAPI, issuesAPI } from "../../services/api";
 import {
   Building2,
   MapPin,
@@ -807,22 +807,39 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
     loadIndicatorSummary();
   }, [object.id]);
 
-  // Issues linked to this object, sorted by severity then votes
-  const objectIssues = useMemo(() => {
-    return issues
-      .filter((i) => i.objectId === object.id)
-      .sort((a, b) => {
-        if (SEVERITY_WEIGHT[a.severity] !== SEVERITY_WEIGHT[b.severity])
-          return SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity];
-        return b.votes - a.votes;
-      });
-  }, [issues, object.id]);
+  // Issues linked to this object — fetched directly by objectId, independent of region filter
+const [objectIssues, setObjectIssues] = useState<Issue[]>([]);
+const [issuesLoading, setIssuesLoading] = useState(false);
 
-  const stats = useMemo(() => {
+useEffect(() => {
+    let isMounted = true;
+    const fetchObjectIssues = async () => {
+        setIssuesLoading(true);
+        try {
+            const res = await issuesAPI.getAll({ objectId: object.id } as any);
+            if (isMounted) {
+                const sorted = (res.data?.data || []).sort((a: Issue, b: Issue) => {
+                    if (SEVERITY_WEIGHT[a.severity] !== SEVERITY_WEIGHT[b.severity])
+                        return SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity];
+                    return b.votes - a.votes;
+                });
+                setObjectIssues(sorted);
+            }
+        } catch {
+            if (isMounted) setObjectIssues([]);
+        } finally {
+            if (isMounted) setIssuesLoading(false);
+        }
+    };
+    fetchObjectIssues();
+    return () => { isMounted = false; };
+}, [object.id]);
+
+const stats = useMemo(() => {
     const total = objectIssues.length;
     const resolved = objectIssues.filter((i) => i.status === "Resolved").length;
     return { total, resolved, active: total - resolved };
-  }, [objectIssues]);
+}, [objectIssues]);
 
   const typeColor = OBJECT_TYPE_COLOR[object.objectType] || "#4f46e5";
   const typeLabel = OBJECT_TYPE_LABEL[object.objectType] || object.objectType;

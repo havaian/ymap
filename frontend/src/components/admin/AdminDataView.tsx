@@ -13,7 +13,6 @@ import {
   Layers
 } from "lucide-react";
 import { adminAPI } from "../../services/api";
-import { ProgramsSection } from "./ProgramsSection";
 
 interface AdminDataViewProps {
   onDataImported?: () => void;
@@ -574,26 +573,6 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
                   )}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* ── Programs ── */}
-          <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20">
-              <div className="flex items-center gap-3">
-                <Layers className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                <div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white">
-                    Региональные программы
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Создание программ с массовым назначением задач на объекты
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6">
-              <ProgramsSection />
             </div>
           </div>
         </div>

@@ -18,6 +18,9 @@ import { AdminDataView } from "./components/admin/AdminDataView";
 import { AppHeader } from "./components/layout/AppHeader";
 import { DistrictDrilldown } from "./components/analytics/DistrictDrilldown";
 import { PublicStatsBar } from "./components/layout/PublicStatsBar";
+import { ProgramsView } from "./components/programs/ProgramsView";
+import { ProfileView } from "./components/profile/ProfileView";
+import { LeaderboardView } from "./components/leaderboard/LeaderboardView";
 import { LayerState } from "./components/map/LayerPicker";
 import {
   Issue,
@@ -35,7 +38,7 @@ import { Plus, Navigation, Locate } from "lucide-react";
 interface AppProps {
   currentUser: User;
   onLogout: () => void;
-  view: "MAP" | "LIST" | "STATISTICS" | "USERS" | "DATA";
+  view: "MAP" | "LIST" | "STATISTICS" | "USERS" | "DATA" | "PROGRAMS" | "PROFILE" | "LEADERBOARD";
 }
 
 const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
@@ -552,6 +555,12 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
         ) : activeView === "DATA" ? (
           <AdminDataView onDataImported={() => window.location.reload()} />
+        ) : activeView === "PROFILE" ? (
+          <ProfileView currentUser={currentUser} />
+        ) : activeView === "LEADERBOARD" ? (
+          <LeaderboardView currentUser={currentUser} />
+        ) : activeView === "PROGRAMS" ? (
+          <ProgramsView currentUser={currentUser} />
         ) : (
           <AnalyticsDashboard />
         )}

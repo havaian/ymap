@@ -15,6 +15,9 @@ import {
   User as UserIcon,
   Users,
   Database,
+  Layers,
+  Trophy,
+  UserCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { User, UserRole } from "../../../types";
@@ -22,10 +25,27 @@ import { User, UserRole } from "../../../types";
 interface BurgerMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  activeView: "MAP" | "LIST" | "STATISTICS" | "USERS" | "DATA";
+  activeView:
+    | "MAP"
+    | "LIST"
+    | "STATISTICS"
+    | "USERS"
+    | "DATA"
+    | "PROGRAMS"
+    | "PROFILE"
+    | "LEADERBOARD";
   onSelectView: (
-    view: "MAP" | "LIST" | "STATISTICS" | "USERS" | "DATA"
+    view:
+      | "MAP"
+      | "LIST"
+      | "STATISTICS"
+      | "USERS"
+      | "DATA"
+      | "PROGRAMS"
+      | "PROFILE"
+      | "LEADERBOARD"
   ) => void;
+
   theme: "light" | "dark" | "system";
   setTheme: (theme: "light" | "dark" | "system") => void;
   fontSize: "small" | "medium" | "large";
@@ -55,7 +75,15 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
 
   const handleNavigate = (
     path: string,
-    view: "MAP" | "LIST" | "STATISTICS" | "USERS" | "DATA"
+    view:
+      | "MAP"
+      | "LIST"
+      | "STATISTICS"
+      | "USERS"
+      | "DATA"
+      | "PROGRAMS"
+      | "PROFILE"
+      | "LEADERBOARD"
   ) => {
     navigate(path);
     onSelectView(view);
@@ -128,13 +156,14 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
                 Ташкент, Узбекистан
               </p>
               {/* Points — citizens only */}
-              {currentUser?.role !== UserRole.ADMIN && (currentUser?.points ?? 0) > 0 && (
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider">
-                    ★ {currentUser.points} баллов
-                  </span>
-                </div>
-              )}
+              {currentUser?.role !== UserRole.ADMIN &&
+                (currentUser?.points ?? 0) > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider">
+                      ★ {currentUser.points} баллов
+                    </span>
+                  </div>
+                )}
             </div>
           </div>
         </div>
@@ -157,6 +186,48 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
             <Map className="w-5 h-5" />
             Интерактивная карта
           </button>
+
+          <button
+            onClick={() => handleNavigate("/programs", "PROGRAMS")}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
+              ${
+                activeView === "PROGRAMS"
+                  ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              }
+            `}
+          >
+            <Layers className="w-5 h-5" />
+            Региональные программы
+          </button>
+
+          <button
+            onClick={() => handleNavigate("/leaderboard", "LEADERBOARD")}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
+    ${
+      activeView === "LEADERBOARD"
+        ? "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+        : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+    }`}
+          >
+            <Trophy className="w-5 h-5" />
+            Лидерборд
+          </button>
+
+          {!isAdmin && (
+            <button
+              onClick={() => handleNavigate("/profile", "PROFILE")}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition font-bold text-sm
+      ${
+        activeView === "PROFILE"
+          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+      }`}
+            >
+              <UserCircle className="w-5 h-5" />
+              Мой профиль
+            </button>
+          )}
 
           {isAdmin && (
             <>

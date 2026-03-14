@@ -94,7 +94,7 @@ export const getChoropleth = async (req, res) => {
 
         const features = raw.map(({ dist, openRatio, issueDensity, objectDensity, verificationRate }) => {
             // Issue score: fewer open issues = better (0-100)
-            const issueScore = Math.max(0, Math.round((1 - openRatio) * 100));
+            const issueScore = issues.total === 0 ? 0 : Math.max(0, Math.round((1 - openRatio) * 100));
 
             // Object score: denser = better (0-100)
             const objectScore = Math.min(100, Math.round((objectDensity / maxObjectDensity) * 100));

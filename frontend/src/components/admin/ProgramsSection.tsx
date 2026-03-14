@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { programsAPI } from "../../services/api";
+import { regionsAPI, programsAPI, districtsAPI } from "../../services/api";
 import { Program } from "../../../types";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -39,6 +39,15 @@ const TYPE_LABELS: Record<string, string> = {
   health_post: "ФАП/СВП",
 };
 
+interface RegionOption {
+  value: number;
+  label: string;
+}
+interface DistrictOption {
+  value: string;
+  label: string;
+}
+
 // ── Create program form ───────────────────────────────────────────────────────
 
 function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
@@ -51,6 +60,56 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
   const [regionCode, setRegionCode] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [districtId, setDistrictId] = useState("");
+  const [totalBudget, setTotalBudget] = useState("");
+  const [currency, setCurrency] = useState<"UZS" | "USD">("UZS");
+
+  const [regions, setRegions] = useState<RegionOption[]>([]);
+  const [districts, setDistricts] = useState<DistrictOption[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+
+  // Загружаем регионы при открытии формы:
+  useEffect(() => {
+    if (!open) return;
+    regionsAPI
+      .getAll()
+      .then((res) => {
+        if (res.data?.success) {
+          setRegions(
+            (res.data.data || []).map((r: any) => ({
+              value: r.code,
+              label: r.name?.ru || r.name?.en || `Регион ${r.code}`,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, [open]);
+
+  // Загружаем районы при выборе региона:
+  useEffect(() => {
+    if (!regionCode) {
+      setDistricts([]);
+      setDistrictId("");
+      return;
+    }
+    setLoadingDistricts(true);
+    districtsAPI
+      .getAll({ regionCode: parseInt(regionCode) })
+      .then((res) => {
+        if (res.data?.success) {
+          setDistricts(
+            (res.data.data || []).map((d: any) => ({
+              value: d.id,
+              label: d.name?.ru || d.name?.en || d.name?.uz || d.id,
+            }))
+          );
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDistricts(false));
+  }, [regionCode]);
 
   const toggleType = (t: string) =>
     setObjectTypes((prev) =>
@@ -70,10 +129,12 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
         number: number.trim() || undefined,
         description: description.trim() || undefined,
         deadline: deadline || undefined,
+        totalBudget: totalBudget ? parseFloat(totalBudget) : undefined,
+        currency,
         scope: {
           objectTypes,
           regionCode: regionCode ? parseInt(regionCode) : null,
-          districtId: null,
+          districtId: districtId || null,
         },
       });
       if (res.data?.success) {
@@ -85,6 +146,9 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
         setDeadline("");
         setObjectTypes([]);
         setRegionCode("");
+        setDistrictId("");
+        setTotalBudget("");
+        setCurrency("UZS");
       }
     } catch (e: any) {
       setError(e.response?.data?.message || "Ошибка создания");
@@ -189,15 +253,70 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
 
       <div>
         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-          Код региона (пусто = все регионы)
+          Регион (пусто = все регионы)
         </label>
-        <input
-          type="number"
+        <select
           value={regionCode}
           onChange={(e) => setRegionCode(e.target.value)}
-          placeholder="Напр. 17 (Ташкент)"
           className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
-        />
+        >
+          <option value="">Все регионы</option>
+          {regions.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Район — только если выбран регион */}
+      {regionCode && (
+        <div>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+            Район{" "}
+            {loadingDistricts && (
+              <span className="text-indigo-400">загрузка...</span>
+            )}
+          </label>
+          <select
+            value={districtId}
+            onChange={(e) => setDistrictId(e.target.value)}
+            disabled={loadingDistricts}
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white disabled:opacity-50"
+          >
+            <option value="">Весь регион</option>
+            {districts.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Бюджет */}
+      <div className="col-span-2">
+        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+          Бюджет программы
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min="0"
+            value={totalBudget}
+            onChange={(e) => setTotalBudget(e.target.value)}
+            placeholder="Сумма (необязательно)"
+            className="flex-1 px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+          />
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as "UZS" | "USD")}
+            className="px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+          >
+            <option value="UZS">UZS</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
       </div>
 
       {error && <p className="text-xs font-bold text-red-500">{error}</p>}
@@ -223,9 +342,11 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
 function ProgramRow({
   program,
   onDeleted,
+  isAdmin = false,
 }: {
   program: Program;
   onDeleted: (id: string) => void;
+  isAdmin?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -322,18 +443,23 @@ function ProgramRow({
             {program.scope.regionCode && (
               <> · регион {program.scope.regionCode}</>
             )}
+            {program.totalBudget && (
+              <> · {(program.totalBudget / 1_000_000).toFixed(1)} млн {program.currency}</>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete();
-            }}
-            className="p-1.5 text-slate-300 hover:text-red-500 transition-colors rounded-lg"
-          >
-            <Trash2 size={13} />
-          </button>
+          {isAdmin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
+              className="p-1.5 text-slate-300 hover:text-red-500 transition-colors rounded-lg"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
           {expanded ? (
             <ChevronUp size={15} className="text-slate-400" />
           ) : (
@@ -441,7 +567,9 @@ function ProgramRow({
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export const ProgramsSection: React.FC = () => {
+export const ProgramsSection: React.FC<{ isAdmin?: boolean }> = ({
+  isAdmin = false,
+}) => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -470,6 +598,7 @@ export const ProgramsSection: React.FC = () => {
           {programs.map((p) => (
             <ProgramRow
               program={p}
+              isAdmin={isAdmin}
               onDeleted={(id) =>
                 setPrograms((prev) => prev.filter((x) => x.id !== id))
               }
@@ -482,9 +611,11 @@ export const ProgramsSection: React.FC = () => {
           )}
         </>
       )}
-      <CreateProgramForm
-        onCreated={(p) => setPrograms((prev) => [p, ...prev])}
-      />
+      {isAdmin && (
+        <CreateProgramForm
+          onCreated={(p) => setPrograms((prev) => [p, ...prev])}
+        />
+      )}
     </div>
   );
 };

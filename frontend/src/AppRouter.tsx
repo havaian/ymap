@@ -176,6 +176,60 @@ const AppWrapper: React.FC = () => {
           }
         />
 
+        {/* Programs — all authenticated users */}
+        <Route
+          path="/programs"
+          element={
+            currentUser ? (
+              <Suspense fallback={<ViewLoader />}>
+                <App
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  view="PROGRAMS"
+                />
+              </Suspense>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Profile */}
+        <Route
+          path="/profile"
+          element={
+            currentUser ? (
+              <Suspense fallback={<ViewLoader />}>
+                <App
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  view="PROFILE"
+                />
+              </Suspense>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Leaderboard */}
+        <Route
+          path="/leaderboard"
+          element={
+            currentUser ? (
+              <Suspense fallback={<ViewLoader />}>
+                <App
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  view="LEADERBOARD"
+                />
+              </Suspense>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

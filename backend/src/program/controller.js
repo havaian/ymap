@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import Program from './model.js';
 import Task from '../task/model.js';
 import Object_ from '../object/model.js';
+import BudgetAllocation from '../budgetAllocation/model.js';
 
 // ── GET /api/programs ─────────────────────────────────────────────────────────
 
@@ -81,6 +82,18 @@ export const createProgram = async (req, res) => {
         objectIds: [],
         createdBy: req.user._id
     });
+
+    // Если указан бюджет — сразу создать аллокацию на программу
+    if (totalBudget) {
+        await BudgetAllocation.create({
+            targetType: 'program',
+            targetId:   program._id,
+            amount:     totalBudget,
+            currency:   currency || 'UZS',
+            note:       `Бюджет программы: ${program.name}`,
+            createdBy:  req.user._id
+        });
+    }
 
     res.status(201).json({ success: true, data: program.toJSON() });
 };

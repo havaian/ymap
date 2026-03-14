@@ -13,12 +13,13 @@ import { validateCoordinates } from '../utils/validators.js';
  * Uses $lookup aggregation to fetch all comments in one query.
  */
 export const getIssues = async (req, res) => {
-    const { category, status, severity, limit = 1000 } = req.query;
+    const { category, status, severity, limit = 1000, objectId } = req.query;
 
     const match = {};
     if (category) match.category = category;
     if (status) match.status = status;
     if (severity) match.severity = severity;
+    if (objectId) match.objectId = objectId;
 
     const issues = await Issue.aggregate([
         { $match: match },
@@ -116,9 +117,15 @@ export const createIssue = async (req, res) => {
 
     // Look up the linked object name if objectId provided
     let objectName = null;
+    let objectRegionCode = null;
+    let objectDistrictId = null;
     if (objectId) {
-        const obj = await Object_.findById(objectId).select('name').lean();
-        if (obj) objectName = obj.name;
+        const obj = await Object_.findById(objectId).select('name regionCode districtId').lean();
+        if (obj) {
+            objectName = obj.name;
+            if (obj.regionCode) objectRegionCode = obj.regionCode;
+            if (obj.districtId) objectDistrictId = obj.districtId;
+        }
     }
 
     const issue = await Issue.create({
@@ -135,7 +142,12 @@ export const createIssue = async (req, res) => {
         aiSummary: aiSummary || null,
         objectId: objectId || null,
         objectName,
-        userId: req.user._id
+        userId: req.user._id,
+        objectId: objectId || null,
+        objectName,
+        userId: req.user._id,
+        regionCode: objectRegionCode || null,
+        districtId: objectDistrictId || null,
     });
 
     await User.findByIdAndUpdate(req.user._id, { $inc: { points: 1 } });

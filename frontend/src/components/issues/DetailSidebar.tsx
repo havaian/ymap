@@ -73,25 +73,6 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
 
   return (
     <div className="h-full flex flex-col pb-24">
-      <div className="relative h-32 bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-sm flex-shrink-0 rounded-t-2xl overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `linear-gradient(135deg, ${
-              CATEGORY_COLORS[issue.category]
-            } 0%, #ffffff 100%)`,
-          }}
-        />
-        <div className="absolute -bottom-6 left-6 flex items-end">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg text-white font-bold"
-            style={{ backgroundColor: CATEGORY_COLORS[issue.category] }}
-          >
-            {issue.category.substring(0, 2).toUpperCase()}
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-y-auto pt-8 px-6 pb-6 custom-scrollbar">
         {/* Admin moderation panel */}
         {isAdmin && (

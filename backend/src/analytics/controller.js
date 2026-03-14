@@ -356,9 +356,11 @@ export const getDistrictScoring = async (req, res) => {
         const maxObjectDensity = Math.max(...rawScores.map(d => d.objectDensity), 0.001);
 
         const scored = rawScores.map(d => {
-            const issueScore = Math.max(0, Math.round((1 - d.openRatio) * 100));
+            // Нет обращений → 0 (активность не проявлялась, не "идеальный" район)
+            const issueScore = d.issueCount === 0 ? 0 : Math.max(0, Math.round((1 - d.openRatio) * 100));
             const objectScore = Math.min(100, Math.round((d.objectDensity / maxObjectDensity) * 100));
-            const verifScore = d.verificationRate !== null ? Math.round(d.verificationRate * 100) : 50;
+            // Нет верификаций → 0, не нейтральные 50
+            const verifScore = d.verificationRate !== null ? Math.round(d.verificationRate * 100) : 0;
             const composite = Math.round(issueScore * 0.40 + verifScore * 0.35 + objectScore * 0.25);
 
             return {
@@ -366,6 +368,9 @@ export const getDistrictScoring = async (req, res) => {
                 scores: { composite, issues: issueScore, objects: objectScore, verification: verifScore }
             };
         });
+
+        // Сортировка по активности пользователей (кол-во обращений), не по composite
+        scored.sort((a, b) => b.issueCount - a.issueCount);
 
         scored.sort((a, b) => b.scores.composite - a.scores.composite);
         scored.forEach((d, i) => { d.rank = i + 1; });
@@ -627,9 +632,9 @@ export const getChoropleth = async (req, res) => {
         const maxObjectDensity = Math.max(...raw.map(r => r.objectDensity), 0.001);
 
         const features = raw.map(({ dist, openRatio, objectDensity, verificationRate }) => {
-            const issueScore = Math.max(0, Math.round((1 - openRatio) * 100));
+            const issueScore = issues.total === 0 ? 0 : Math.max(0, Math.round((1 - openRatio) * 100));
             const objectScore = Math.min(100, Math.round((objectDensity / maxObjectDensity) * 100));
-            const verifScore = verificationRate !== null ? Math.round(verificationRate * 100) : 50;
+            const verifScore = verificationRate !== null ? Math.round(verificationRate * 100) : 0;
             const composite = Math.round(issueScore * 0.40 + verifScore * 0.35 + objectScore * 0.25);
 
             const scores = { composite, issues: issueScore, objects: objectScore, verification: verifScore };

@@ -49,6 +49,7 @@ interface IssueFilterParams {
   status?: string;
   severity?: string;
   regionCode?: number;
+  objectId?: string;
 }
 
 interface ObjectFilterParams {
@@ -210,6 +211,13 @@ export const regionsAPI = {
     api.get(`/regions/${code}`),
 };
 
+// ── Districts ───────────────────────────────────────────────────────────────────
+
+export const districtsAPI = {
+  getAll: (params?: { regionCode?: number }): Promise<AxiosResponse> =>
+    api.get("/districts", { params }),
+};
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export const adminAPI = {
@@ -222,6 +230,17 @@ export const adminAPI = {
   seedData: (data: Record<string, any>): Promise<AxiosResponse> =>
     api.post("/admin/seed/generate", data),
   clearSeeded: (): Promise<AxiosResponse> => api.delete("/admin/seed/clear"),
+  getUserActivity: (id: string): Promise<AxiosResponse> =>
+    api.get(`/users/${id}/activity`),
+};
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+export const usersAPI = {
+  getMyActivity: (): Promise<AxiosResponse> =>
+    api.get("/users/me/activity"),
+  getLeaderboard: (): Promise<AxiosResponse> =>
+    api.get("/users/leaderboard"),
 };
 
 // ── Backward-compat aliases — prevent import errors in components not yet migrated ──

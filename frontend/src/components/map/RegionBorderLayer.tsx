@@ -13,47 +13,63 @@
 // Both layers are non-interactive — they don't intercept clicks.
 // Cleans up completely when regionCode becomes null.
 
-import React, { useEffect, useRef } from 'react';
-import { useMap } from 'react-leaflet';
-import L from 'leaflet';
-import { regionsAPI } from '../../services/api';
-import { analyticsAPI } from '../../services/analyticsApi';
+import React, { useEffect, useRef } from "react";
+import { useMap } from "react-leaflet";
+import L from "leaflet";
+import { regionsAPI } from "../../services/api";
+import { analyticsAPI } from "../../services/analyticsApi";
 
 interface RegionBorderLayerProps {
   regionCode: number | null;
 }
 
-export const RegionBorderLayer: React.FC<RegionBorderLayerProps> = ({ regionCode }) => {
+export const RegionBorderLayer: React.FC<RegionBorderLayerProps> = ({
+  regionCode,
+}) => {
   const map = useMap();
   const outerRef = useRef<L.GeoJSON | null>(null);
   const innerRef = useRef<L.GeoJSON | null>(null);
 
   useEffect(() => {
     // Always clean up first
-    if (outerRef.current) { map.removeLayer(outerRef.current); outerRef.current = null; }
-    if (innerRef.current) { map.removeLayer(innerRef.current); innerRef.current = null; }
+    if (outerRef.current) {
+      map.removeLayer(outerRef.current);
+      outerRef.current = null;
+    }
+    if (innerRef.current) {
+      map.removeLayer(innerRef.current);
+      innerRef.current = null;
+    }
 
     if (regionCode == null) return;
 
     let cancelled = false;
 
     // ── Outer region border ──────────────────────────────
-    regionsAPI.getByCode(regionCode)
-      .then(res => {
+    regionsAPI
+      .getByCode(regionCode)
+      .then((res) => {
         if (cancelled) return;
         const geom = res.data?.data?.geometry;
         if (!geom) return;
 
-        const layer = L.geoJSON({ type: 'Feature', properties: {}, geometry: geom } as GeoJSON.Feature, {
-          style: {
-            color: '#3b82f6',     // blue-500
-            weight: 2.5,
-            opacity: 1,
-            fillOpacity: 0,
-            dashArray: '10 6',
-          },
-          interactive: false,
-        });
+        const layer = L.geoJSON(
+          {
+            type: "Feature",
+            properties: {},
+            geometry: geom,
+          } as GeoJSON.Feature,
+          {
+            style: {
+              color: "#3b82f6", // blue-500
+              weight: 2.5,
+              opacity: 1,
+              fillOpacity: 0,
+              dashArray: "10 6",
+            },
+            interactive: false,
+          }
+        );
 
         layer.addTo(map);
         outerRef.current = layer;
@@ -62,26 +78,36 @@ export const RegionBorderLayer: React.FC<RegionBorderLayerProps> = ({ regionCode
         try {
           const bounds = layer.getBounds();
           if (bounds.isValid()) {
-            map.flyToBounds(bounds, { padding: [48, 48], duration: 1.0, maxZoom: 10 });
+            map.flyToBounds(bounds, {
+              padding: [48, 48],
+              duration: 1.0,
+              maxZoom: 10,
+            });
           }
-        } catch { /* edge-case geometry */ }
+        } catch {
+          /* edge-case geometry */
+        }
       })
-      .catch(() => { /* non-critical */ });
+      .catch(() => {
+        /* non-critical */
+      });
 
     // ── Inner district grid ──────────────────────────────
-    analyticsAPI.getChoropleth({ regionCode, metric: 'composite' })
-      .then(res => {
+    analyticsAPI
+      .getChoropleth({ regionCode, metric: "composite" })
+      .then((res) => {
         if (cancelled) return;
-        const data = res.data?.type === 'FeatureCollection' ? res.data : res.data?.data;
+        const data =
+          res.data?.type === "FeatureCollection" ? res.data : res.data?.data;
         if (!data?.features?.length) return;
 
         const layer = L.geoJSON(data, {
           style: {
-            color: '#60a5fa',     // blue-400 — lighter than outer ring
+            color: "#60a5fa", // blue-400 — lighter than outer ring
             weight: 1,
             opacity: 0.55,
             fillOpacity: 0,
-            dashArray: '',
+            dashArray: "",
           },
           interactive: false,
         });
@@ -90,10 +116,14 @@ export const RegionBorderLayer: React.FC<RegionBorderLayerProps> = ({ regionCode
         layer.bringToBack();
         innerRef.current = layer;
       })
-      .catch(() => { /* non-critical */ });
+      .catch(() => {
+        /* non-critical */
+      });
 
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionCode]);
 
   return null;

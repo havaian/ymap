@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import { IssueCategory, Severity, IssueSubCategory } from '../../types';
+import { IssueCategory, Severity, IssueSubCategory } from "../../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -12,10 +11,12 @@ interface AnalysisResult {
   summary: string;
 }
 
-export const analyzeReportWithGemini = async (userDescription: string): Promise<AnalysisResult> => {
+export const analyzeReportWithGemini = async (
+  userDescription: string
+): Promise<AnalysisResult> => {
   try {
     const model = "gemini-3-flash-preview";
-    
+
     const prompt = `
       You are an AI assistant for a civic infrastructure app in Uzbekistan called 'Y.Map'.
       Analyze the following user report description about a city problem.
@@ -39,47 +40,51 @@ export const analyzeReportWithGemini = async (userDescription: string): Promise<
           type: Type.OBJECT,
           properties: {
             title: { type: Type.STRING },
-            category: { 
-              type: Type.STRING, 
+            category: {
+              type: Type.STRING,
               enum: [
-                'Roads', 'Water & Sewage', 'Electricity', 'Schools & Kindergartens', 
-                'Hospitals & Clinics', 'Waste Management', 'Other'
-              ] 
+                "Roads",
+                "Water & Sewage",
+                "Electricity",
+                "Schools & Kindergartens",
+                "Hospitals & Clinics",
+                "Waste Management",
+                "Other",
+              ],
             },
             subCategory: {
               type: Type.STRING,
-              enum: ['Water', 'Electricity', 'General/Other'],
-              description: 'Only for Education or Health categories'
+              enum: ["Water", "Electricity", "General/Other"],
+              description: "Only for Education or Health categories",
             },
-            severity: { 
+            severity: {
               type: Type.STRING,
-              enum: ['Low', 'Medium', 'High', 'Critical']
+              enum: ["Low", "Medium", "High", "Critical"],
             },
-            summary: { type: Type.STRING }
+            summary: { type: Type.STRING },
           },
-          required: ["title", "category", "severity", "summary"]
-        }
-      }
+          required: ["title", "category", "severity", "summary"],
+        },
+      },
     });
 
-    const jsonStr = response.text || '{}';
+    const jsonStr = response.text || "{}";
     const result = JSON.parse(jsonStr);
-    
+
     return {
       title: result.title,
       category: result.category as IssueCategory,
       subCategory: result.subCategory as IssueSubCategory,
       severity: result.severity as Severity,
-      summary: result.summary
+      summary: result.summary,
     };
-
   } catch (error) {
     console.error("Gemini Analysis Failed:", error);
     return {
       title: "New Issue Report",
       category: IssueCategory.OTHER,
       severity: Severity.MEDIUM,
-      summary: "User reported an issue. AI analysis unavailable."
+      summary: "User reported an issue. AI analysis unavailable.",
     };
   }
 };

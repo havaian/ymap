@@ -1,25 +1,37 @@
 // frontend/src/components/layout/AppHeader.tsx
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Menu, ShieldCheck, MapPin, BarChart2, ChevronDown, X } from 'lucide-react';
-import { MapPlusIcon } from '../map/MapPlusIcon';
-import { LayerPicker, LayerState } from '../map/LayerPicker';
-import { CustomSelect } from '../common/CustomSelect';
-import { regionsAPI } from '../../services/api';
-import { User, UserRole } from '../../../types';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Menu,
+  ShieldCheck,
+  MapPin,
+  BarChart2,
+  ChevronDown,
+  X,
+} from "lucide-react";
+import { MapPlusIcon } from "../map/MapPlusIcon";
+import { LayerPicker, LayerState } from "../map/LayerPicker";
+import { CustomSelect } from "../common/CustomSelect";
+import { regionsAPI } from "../../services/api";
+import { User, UserRole } from "../../../types";
 
 const SCORE_METRICS = [
-  { value: 'composite',      label: 'Общий' },
-  { value: 'infrastructure', label: 'Инфраструктура' },
-  { value: 'issues',         label: 'Обращения' },
-  { value: 'budget',         label: 'Бюджет' },
+  { value: "composite", label: "Общий" },
+  { value: "infrastructure", label: "Инфраструктура" },
+  { value: "issues", label: "Обращения" },
+  { value: "budget", label: "Бюджет" },
 ];
 
 // ── ScorePicker ────────────────────────────────────────────────────────────────
 // Choropleth toggle — separate from LayerPicker so the district scoring overlay
 // can be combined with any other layer.
-function ScorePicker({ show, metric, onToggle, onMetricChange }: {
+function ScorePicker({
+  show,
+  metric,
+  onToggle,
+  onMetricChange,
+}: {
   show: boolean;
   metric: string;
   onToggle: () => void;
@@ -31,34 +43,47 @@ function ScorePicker({ show, metric, onToggle, onMetricChange }: {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const activeLabel = SCORE_METRICS.find(m => m.value === metric)?.label ?? 'Скоринг';
+  const activeLabel =
+    SCORE_METRICS.find((m) => m.value === metric)?.label ?? "Скоринг";
 
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(p => !p)}
+        onClick={() => setOpen((p) => !p)}
         className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition duration-100 ${
           open || show
-            ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            ? "bg-teal-600 text-white shadow-lg shadow-teal-500/20"
+            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
         }`}
       >
         <BarChart2 className="w-4 h-4" />
-        <span className="hidden sm:inline">{show ? activeLabel : 'Скоринг'}</span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <span className="hidden sm:inline">
+          {show ? activeLabel : "Скоринг"}
+        </span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       {open && (
         <div className="absolute top-full right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[500]">
           <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Районный скоринг</p>
-            <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Районный скоринг
+            </p>
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+            >
               <X size={14} className="text-slate-400" />
             </button>
           </div>
@@ -68,27 +93,41 @@ function ScorePicker({ show, metric, onToggle, onMetricChange }: {
             <button
               onClick={onToggle}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                show ? 'text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                show
+                  ? "text-white"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
-              style={show ? { backgroundColor: '#0d9488' } : undefined}
+              style={show ? { backgroundColor: "#0d9488" } : undefined}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${show ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800'}`}
-                style={!show ? { color: '#0d9488' } : undefined}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  show ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
+                }`}
+                style={!show ? { color: "#0d9488" } : undefined}
               >
                 <BarChart2 size={16} />
               </div>
               <span className="flex-1 text-left">Показать на карте</span>
-              <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${show ? 'bg-white/30' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${show ? 'translate-x-4' : 'translate-x-0'}`} />
+              <div
+                className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
+                  show ? "bg-white/30" : "bg-slate-200 dark:bg-slate-700"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${
+                    show ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
               </div>
             </button>
 
             {/* Metric chips */}
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Метрика</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">
+                Метрика
+              </p>
               <div className="flex flex-wrap gap-1.5">
-                {SCORE_METRICS.map(m => (
+                {SCORE_METRICS.map((m) => (
                   <button
                     key={m.value}
                     onClick={() => {
@@ -97,8 +136,8 @@ function ScorePicker({ show, metric, onToggle, onMetricChange }: {
                     }}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                       metric === m.value
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        ? "bg-teal-600 text-white"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                     }`}
                   >
                     {m.label}
@@ -135,17 +174,29 @@ interface AppHeaderProps {
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  currentUser, onMenuOpen, activeView,
-  layers, onToggleHeatmap, onToggleObjects, onToggleStandaloneIssues,
-  showChoropleth, choroplethMetric, onToggleChoropleth, onChoroplethMetricChange,
-  selectedRegionCode, onRegionChange,
+  currentUser,
+  onMenuOpen,
+  activeView,
+  layers,
+  onToggleHeatmap,
+  onToggleObjects,
+  onToggleStandaloneIssues,
+  showChoropleth,
+  choroplethMetric,
+  onToggleChoropleth,
+  onChoroplethMetricChange,
+  selectedRegionCode,
+  onRegionChange,
 }) => {
   const navigate = useNavigate();
-  const [regionOptions, setRegionOptions] = useState<{ value: number; label: string }[]>([]);
+  const [regionOptions, setRegionOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
 
   useEffect(() => {
-    regionsAPI.getAll()
-      .then(res => {
+    regionsAPI
+      .getAll()
+      .then((res) => {
         if (res.data?.success) {
           setRegionOptions(
             res.data.data.map((r: any) => ({
@@ -168,7 +219,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         >
           <Menu className="w-5 h-5" />
         </button>
-        <MapPlusIcon onClick={() => navigate('/map')} />
+        <MapPlusIcon onClick={() => navigate("/map")} />
         <div className="hidden sm:block">
           <div className="flex items-center gap-2">
             <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">
@@ -187,7 +238,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       {/* Right — only on map view */}
-      {activeView === 'MAP' && (
+      {activeView === "MAP" && (
         <div className="flex items-center gap-2">
           <CustomSelect
             options={regionOptions}

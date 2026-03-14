@@ -1,13 +1,11 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { AppRouter } from './src/AppRouter';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { AppRouter } from "./src/AppRouter";
 
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
 const root = ReactDOM.createRoot(rootElement);
-root.render(
-    <AppRouter />
-);
+root.render(<AppRouter />);

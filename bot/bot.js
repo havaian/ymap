@@ -37,7 +37,7 @@ async function ensureToken() {
 
 async function analyzeWithGemini(description) {
     const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17',
+        model: 'gemini-3-flash-preview',
         contents: `You are an AI assistant for a civic infrastructure app in Uzbekistan called 'Y.Map'.
 Analyze the following user report description about a city problem.
 
@@ -67,7 +67,7 @@ Determine:
 
     const result = JSON.parse(response.text || '{}');
     return {
-        title: result.title || description.slice(0, 80),
+        title: result.title || description,
         category: result.category || 'Other',
         subCategory: result.subCategory || undefined,
         severity: result.severity || 'Medium',

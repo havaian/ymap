@@ -23,14 +23,14 @@ bot.use(session({
 let authToken = null;
 
 async function ensureToken() {
-  if (authToken) return authToken;
-  const { data } = await axios.post(`${API_BASE}/auth/login`, {
-    email: process.env.BOT_EMAIL,
-    password: process.env.BOT_PASSWORD,
-  });
-  authToken = data.data.token;
-  console.log(`🔑 Bot logged in as ${data.data.user.email} (${data.data.user.role})`);
-  return authToken;
+    if (authToken) return authToken;
+    const { data } = await axios.post(`${API_BASE}/auth/login`, {
+        email: process.env.BOT_EMAIL,
+        password: process.env.BOT_PASSWORD,
+    });
+    authToken = data.data.token;
+    console.log(`🔑 Bot logged in as ${data.data.user.email} (${data.data.user.role})`);
+    return authToken;
 }
 
 // ── Gemini — точно такой же промпт и схема как в geminiService.ts ──────────────
@@ -79,7 +79,7 @@ Determine:
 
 async function createIssue(session) {
     await ensureToken();
-    
+
     const { data } = await axios.post(`${API_BASE}/issues`, {
         lat: session.lat,
         lng: session.lng,
@@ -140,6 +140,15 @@ bot.command('cancel', (ctx) => {
 bot.on('message', async (ctx) => {
     const s = ctx.session;
 
+    // ── Шаг 0: обработка клавиатуры ─────────────────────────────────────────────
+    if (ctx.message.text === '🔄 Новое обращение') {
+        ctx.session = { step: 'waiting_desc', description: null, lat: null, lng: null, analysis: null };
+        return ctx.reply(
+            `📝 *Опишите проблему*\n\nРасскажите подробно что произошло — Gemini AI автоматически определит категорию и серьёзность\\.`,
+            { parse_mode: 'MarkdownV2', reply_markup: { remove_keyboard: true } }
+        );
+    }
+
     // ── Шаг 1: получить описание ────────────────────────────────────────────────
     if (s.step === 'waiting_desc') {
         if (!ctx.message.text || ctx.message.text.startsWith('/')) return;
@@ -152,6 +161,7 @@ bot.on('message', async (ctx) => {
 
         const keyboard = new Keyboard()
             .requestLocation('📍 Отправить мою локацию')
+            .text('🔄 Новое обращение')
             .resized()
             .oneTime();
 
@@ -219,10 +229,14 @@ bot.callbackQuery('confirm', async (ctx) => {
         ctx.reply(
             `🎉 *Обращение создано!*\n\n` +
             `📋 ${issue.title || s.analysis.title}\n\n` +
-            `Вы можете отслеживать статус на платформе Y.Map.\n` +
-            `Используйте /report для нового обращения.`,
-            { parse_mode: 'Markdown' }
-        );
+            `Вы можете отслеживать статус на платформе Y\\.Map\\.`,
+            {
+                parse_mode: 'Markdown',
+                reply_markup: { remove_keyboard: true },
+            }
+        ).then(() => {
+            ctx.reply('🙌 Спасибо за ваше активное участие в благоустройстве города!', { reply_markup: newReportKb });
+        });
     } catch (e) {
         console.error('Create issue error:', e?.response?.data || e.message);
         ctx.reply(`❌ Ошибка: ${e?.response?.data?.message || e.message}\n\nПопробуйте /report снова.`);

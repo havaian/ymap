@@ -68,6 +68,7 @@ export function CustomSelect<T extends string | number>({
   maxHeightClass = "max-h-80",
 }: CustomSelectProps<T>) {
   const [open, setOpen] = useState(false);
+  const [panelSide, setPanelSide] = useState<"left" | "right">("right");
   const ref = useRef<HTMLDivElement>(null);
 
   // Auto-open on first ever interaction if autoOpenKey is provided
@@ -89,6 +90,19 @@ export function CustomSelect<T extends string | number>({
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+// Определяем сторону открытия чтобы не выйти за экран
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const panelWidth = Math.min(288, window.innerWidth - 8);
+    // right-0: левый край панели = rect.right - panelWidth
+    if (rect.right - panelWidth < 0) {
+      setPanelSide("left");
+    } else {
+      setPanelSide("right");
+    }
   }, [open]);
 
   const handleSelect = (next: T | null) => {
@@ -126,7 +140,7 @@ export function CustomSelect<T extends string | number>({
 
       {/* ── Panel ────────────────────────────────────────────────── */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 z-[500] overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className={`absolute ${panelSide === "right" ? "right-0" : "left-0"} top-full mt-2 w-72 max-w-[calc(100vw-0.75rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 z-[500] overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150`}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">

@@ -11,7 +11,6 @@ const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const API_BASE = process.env.YMAP_API_URL || 'https://map.ytech.space/api';
-const BOT_USER_TOKEN = process.env.BOT_USER_TOKEN;
 
 // ── Session ────────────────────────────────────────────────────────────────────
 
@@ -79,6 +78,8 @@ Determine:
 // ── API ────────────────────────────────────────────────────────────────────────
 
 async function createIssue(session) {
+    await ensureToken();
+    
     const { data } = await axios.post(`${API_BASE}/issues`, {
         lat: session.lat,
         lng: session.lng,
@@ -89,7 +90,7 @@ async function createIssue(session) {
         severity: session.analysis.severity,
         aiSummary: session.analysis.summary,
     }, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
     });
     return data.data;
 }
@@ -124,7 +125,7 @@ bot.command('start', (ctx) => {
 bot.command('report', (ctx) => {
     ctx.session = { step: 'waiting_desc', description: null, lat: null, lng: null, analysis: null };
     ctx.reply(
-        `📝 *Опишите проблему*\n\nРасскажите подробно что произошло — Gemini AI автоматически определит категорию и серьёзность\\.`,
+        `📝 *Опишите проблему*\n\nРасскажите подробно что произошло`,
         { parse_mode: 'MarkdownV2' }
     );
 });
@@ -180,7 +181,7 @@ bot.on('message', async (ctx) => {
         s.lng = lng;
         s.step = 'confirming';
 
-        const thinking = await ctx.reply('🤖 Gemini AI анализирует обращение...');
+        const thinking = await ctx.reply('🤖 Анализируем обращение...');
 
         try {
             s.analysis = await analyzeWithGemini(s.description);

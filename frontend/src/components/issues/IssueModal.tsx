@@ -8,7 +8,14 @@ import {
   IssueSubCategory,
   FacilityObject,
 } from "../../../types";
-import { analyzeReportWithGemini } from "../../services/geminiService";
+import {
+  analyzeReportWithGemini,
+  AnalysisResult,
+  AnalysisContext,
+  TaskSignal,
+  FieldSignal,
+} from "../../services/geminiService";
+import { tasksAPI } from "../../services/api";
 import { useObjects } from "../../hooks/useBackendData";
 import {
   Loader2,
@@ -22,6 +29,9 @@ import {
   Droplets,
   Zap,
   MoreHorizontal,
+  ClipboardList,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 
 interface IssueModalProps {
@@ -36,6 +46,34 @@ const OBJECT_TYPE_CATEGORY: Record<string, IssueCategory> = {
   school: IssueCategory.EDUCATION,
   kindergarten: IssueCategory.EDUCATION,
   health_post: IssueCategory.HEALTH,
+};
+
+// ── Метаданные верифицируемых полей (для контекста Gemini) ─────────────────────
+
+const VERIFIABLE_FIELD_LABELS: Record<string, string> = {
+  materialSten:      "Стены",
+  elektrKunDavomida: "Электричество",
+  ichimlikSuviManbaa:"Водоснабжение",
+  internet:          "Интернет",
+  binoIchidaSuv:     "Вода в здании",
+  kapitalTamir:      "Капремонт",
+  smena:             "Смены",
+  sportZalHolati:    "Спортзал",
+  aktivZalHolati:    "Актовый зал",
+  oshhonaHolati:     "Столовая",
+};
+
+const FIELD_VALUE_TRANSLATIONS_FOR_CONTEXT: Record<string, Record<string, string>> = {
+  materialSten:       { gisht: "Кирпич", beton: "Бетон", paxsa: "Глинобит", tosh: "Камень" },
+  aktivZalHolati:     { aktiv_zal_umuman_yuq: "Актового зала нет", aktiv_zal_qoniqarli: "Удовлетворительное состояние", aktiv_zal_bor_mebel_yuq: "Отсутствует мебель", aktiv_zal_qisman_tamir: "Частичный ремонт" },
+  oshhonaHolati:      { oshhona_bor_ishlamaydi: "Столовая не работает", oshhona_holati_qoniqarli: "Удовлетворительное состояние", oshhona_holati_qisman_tamir: "Частичный ремонт", oshhona_umuman_yuq: "Столовой нет" },
+  elektrKunDavomida:  { elektr_qisman: "Частично", elektr_bor: "Электричество есть", elektr_yuq: "Электричества нет" },
+  ichimlikSuviManbaa: { ichimlik_suvi_manbaa_lokal: "Локальный источник", ichimlik_suvi_manbaa_markaz: "Центральный источник", ichimlik_suvi_manbaa_olib_kelinadi: "Привозная вода", ichimlik_suvi_yuq: "Питьевой воды нет", yuq: "Воды нет", vodoprovod_suvi: "Водопровод", yer_osti_suvi: "Скважина", avtosisterna: "Автоцистерна", qadoqlangan_suv: "Бутилированная вода" },
+  internet:           { internet_optika: "Оптоволокно", internet_mobil: "Мобильный интернет", umuman_yuq: "Интернета нет", shisha_tola: "Оптоволоконный", shaxsiy: "Личный", yuq: "Отсутствует" },
+  kapitalTamir:       { yuq_remont: "Ремонта не было", ha_joriy: "Текущий ремонт", ha_kapital: "Капитальный", ha_rekon: "Реконструкция" },
+  smena:              { "1": "Первая", "2": "Вторая" },
+  sportZalHolati:     { sport_zal_umuman_yuq: "Спортзала нет", sport_zal_qisman_tamir: "Частичный ремонт", sport_zal_qoniqarli: "Удовлетворительное состояние" },
+  binoIchidaSuv:      { quvur_yuq_suv_yuq: "Трубы нет, воды нет", kran_orqali: "Вода есть, посредством крана", quvur_bor_suv_yuq: "Труба есть, воды нет" },
 };
 
 export const IssueModal: React.FC<IssueModalProps> = ({
@@ -57,13 +95,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
 
   const { objects } = useObjects();
 
-  const [analysis, setAnalysis] = useState<{
-    title: string;
-    category: IssueCategory;
-    subCategory?: IssueSubCategory;
-    severity: Severity;
-    summary: string;
-  } | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
 
   // Reset / pre-fill when modal opens or preSelectedObject changes
   useEffect(() => {
@@ -92,7 +124,44 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const handleAnalyze = async () => {
     if (!description.trim()) return;
     setIsAnalyzing(true);
-    const result = await analyzeReportWithGemini(description);
+
+    let context: AnalysisContext | undefined;
+
+    if (selectedObjectId) {
+      try {
+        // Fetch active tasks for the object
+        const tasksRes = await tasksAPI.getByObject(selectedObjectId);
+        const tasks = (tasksRes.data?.data || [])
+          .filter((t: any) => t.status !== "Completed" && t.status !== "Failed")
+          .map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description || undefined,
+            status: t.status,
+          }));
+
+        // Build verifiable fields list from selected object's details
+        const obj = objects.find((o) => o.id === selectedObjectId);
+        const fields: AnalysisContext["fields"] = [];
+        if (obj?.details) {
+          for (const [key, val] of Object.entries(obj.details)) {
+            if (val !== undefined && val !== null && VERIFIABLE_FIELD_LABELS[key]) {
+              const map = FIELD_VALUE_TRANSLATIONS_FOR_CONTEXT[key];
+              const translated = map ? (map[String(val)] ?? String(val)) : String(val);
+              fields.push({ key, label: VERIFIABLE_FIELD_LABELS[key], value: translated });
+            }
+          }
+        }
+
+        if (tasks.length > 0 || fields.length > 0) {
+          context = { tasks, fields };
+        }
+      } catch {
+        // context остаётся undefined — анализ продолжается без него
+      }
+    }
+
+    const result = await analyzeReportWithGemini(description, context);
     setAnalysis(result);
     setIsAnalyzing(false);
   };
@@ -258,6 +327,74 @@ export const IssueModal: React.FC<IssueModalProps> = ({
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     {analysis.summary}
                   </p>
+                )}
+
+                {/* Task signals */}
+                {analysis.taskSignals && analysis.taskSignals.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <ClipboardList size={11} className="text-slate-400" />
+                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        Связь с задачами
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {analysis.taskSignals.map((s: TaskSignal) => (
+                        <div
+                          key={s.taskId}
+                          className={`flex items-start gap-2 px-2.5 py-2 rounded-xl text-xs ${
+                            s.signal === "confirms"
+                              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200"
+                              : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200"
+                          }`}
+                        >
+                          {s.signal === "confirms" ? (
+                            <ShieldCheck size={12} className="flex-shrink-0 mt-0.5 text-emerald-500" />
+                          ) : (
+                            <ShieldAlert size={12} className="flex-shrink-0 mt-0.5 text-red-500" />
+                          )}
+                          <div className="min-w-0">
+                            <span className="font-black">{s.taskTitle}</span>
+                            <span className="opacity-70"> — {s.reason}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Field signals */}
+                {analysis.fieldSignals && analysis.fieldSignals.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <ShieldCheck size={11} className="text-slate-400" />
+                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        Верификация полей
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {analysis.fieldSignals.map((s: FieldSignal) => (
+                        <div
+                          key={s.field}
+                          className={`flex items-start gap-2 px-2.5 py-2 rounded-xl text-xs ${
+                            s.signal === "confirms"
+                              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200"
+                              : "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200"
+                          }`}
+                        >
+                          {s.signal === "confirms" ? (
+                            <ShieldCheck size={12} className="flex-shrink-0 mt-0.5 text-emerald-500" />
+                          ) : (
+                            <ShieldAlert size={12} className="flex-shrink-0 mt-0.5 text-amber-500" />
+                          )}
+                          <div className="min-w-0">
+                            <span className="font-black">{s.fieldLabel}</span>
+                            <span className="opacity-70"> — {s.reason}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {/* Sub-category picker */}

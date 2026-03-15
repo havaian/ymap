@@ -239,7 +239,13 @@ bot.callbackQuery('confirm', async (ctx) => {
         });
     } catch (e) {
         console.error('Create issue error:', e?.response?.data || e.message);
-        ctx.reply(`❌ Ошибка: ${e?.response?.data?.message || e.message}\n\nПопробуйте /report снова.`);
+        const newReportKb = new InlineKeyboard().text('🔄 Отправить новое обращение', 'new_report');
+        ctx.reply(
+            `❌ Ошибка: ${e?.response?.data?.message || e.message}`,
+            { reply_markup: { remove_keyboard: true } }
+        ).then(() => {
+            ctx.reply('Хотите попробовать снова?', { reply_markup: newReportKb });
+        });
     }
 });
 
@@ -248,6 +254,16 @@ bot.callbackQuery('cancel', async (ctx) => {
     await ctx.answerCallbackQuery('Отменено');
     await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() });
     ctx.reply('❌ Отменено. Используйте /report чтобы начать заново.');
+});
+
+bot.callbackQuery('new_report', async (ctx) => {
+  ctx.session = { step: 'waiting_desc', description: null, lat: null, lng: null, analysis: null };
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() });
+  ctx.reply(
+    `📝 *Опишите проблему*\n\nРасскажите подробно что произошло\\. Gemini AI автоматически определит категорию и серьёзность\\.`,
+    { parse_mode: 'MarkdownV2' }
+  );
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────

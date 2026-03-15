@@ -745,24 +745,26 @@ const TasksTab: React.FC<{ data: any }> = ({ data }) => {
 
 const DistrictsTab: React.FC<{
   data: DistrictScore[];
+  regions: RegionSummary[];
   onDrilldown: (id: string, name: any, scores: any) => void;
-}> = ({ data, onDrilldown }) => {
+}> = ({ data, regions, onDrilldown }) => {
   const [sortBy, setSortBy] = useState<
     "issueCount" | "composite" | "issues" | "objects" | "verification"
   >("issueCount");
   const [filterRegion, setFilterRegion] = useState<number | null>(null);
 
   const regionOptions = useMemo(() => {
+    const nameMap = new Map(regions.map(r => [r.code, r.name?.ru || r.name?.en || `Регион ${r.code}`]));
     const seen = new Set<number>();
     const opts: { value: number; label: string }[] = [];
     data.forEach((d) => {
       if (!seen.has(d.regionCode)) {
         seen.add(d.regionCode);
-        opts.push({ value: d.regionCode, label: String(d.regionCode) });
+        opts.push({ value: d.regionCode, label: String(nameMap.get(d.regionCode) ?? d.regionCode) });
       }
     });
     return opts.sort((a, b) => a.value - b.value);
-  }, [data]);
+  }, [data, regions]);
 
   const sorted = useMemo(() => {
     const filtered =
@@ -1184,6 +1186,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ initialR
         {activeTab === "districts" && (
           <DistrictsTab
             data={districtScoring}
+            regions={regionSummary}
             onDrilldown={(id, name, scores) => {
               setDrilldownId(id);
               setDrilldownName(name);

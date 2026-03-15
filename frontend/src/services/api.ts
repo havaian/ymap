@@ -216,6 +216,8 @@ export const regionsAPI = {
 export const districtsAPI = {
   getAll: (params?: { regionCode?: number }): Promise<AxiosResponse> =>
     api.get("/districts", { params }),
+  getById: (id: string): Promise<AxiosResponse> =>
+    api.get(`/districts/${id}`),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────────

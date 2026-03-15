@@ -87,11 +87,11 @@ export const createProgram = async (req, res) => {
     if (totalBudget) {
         await BudgetAllocation.create({
             targetType: 'program',
-            targetId:   program._id,
-            amount:     totalBudget,
-            currency:   currency || 'UZS',
-            note:       `Бюджет программы: ${program.name}`,
-            createdBy:  req.user._id
+            targetId: program._id,
+            amount: totalBudget,
+            currency: currency || 'UZS',
+            note: `Бюджет программы: ${program.name}`,
+            createdBy: req.user._id
         });
     }
 
@@ -275,4 +275,60 @@ export const bulkCreateTasks = async (req, res) => {
     await Task.insertMany(toCreate);
 
     res.json({ success: true, data: { created: toCreate.length, skipped: existing.length } });
+};
+
+// GET /api/programs/:id/objects — объекты программы с их задачами
+export const getProgramObjects = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid id' });
+    }
+
+    const program = await Program.findById(id).lean();
+    if (!program) {
+        return res.status(404).json({ success: false, message: 'Program not found' });
+    }
+
+    if (!program.objectIds?.length) {
+        return res.json({ success: true, data: [] });
+    }
+
+    const [objects, tasks] = await Promise.all([
+        Object_.find({ _id: { $in: program.objectIds } })
+            .select('name objectType viloyat tuman lat lng regionCode')
+            .lean(),
+        Task.find({ programId: id })
+            .select('targetId title status deadline doneCount problemCount totalCount verifications')
+            .lean()
+    ]);
+
+    // Attach tasks to their objects
+    const tasksByObject = new Map();
+    tasks.forEach(t => {
+        const key = t.targetId.toString();
+        if (!tasksByObject.has(key)) tasksByObject.set(key, []);
+        tasksByObject.get(key).push({
+            id: t._id.toString(),
+            title: t.title,
+            status: t.status,
+            deadline: t.deadline,
+            doneCount: t.verifications?.filter(v => v.status === 'done').length || 0,
+            problemCount: t.verifications?.filter(v => v.status === 'problem').length || 0,
+            totalCount: t.verifications?.length || 0,
+        });
+    });
+
+    const data = objects.map(o => ({
+        id: o._id.toString(),
+        name: o.name,
+        objectType: o.objectType,
+        viloyat: o.viloyat,
+        tuman: o.tuman,
+        lat: o.lat,
+        lng: o.lng,
+        tasks: tasksByObject.get(o._id.toString()) || [],
+    }));
+
+    res.json({ success: true, data });
 };

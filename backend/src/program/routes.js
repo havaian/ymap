@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import {
     getPrograms, getProgram, createProgram, updateProgram, deleteProgram,
-    assignObjects, addObject, removeObject, bulkCreateTasks
+    assignObjects, addObject, removeObject, bulkCreateTasks, getProgramObjects
 } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
@@ -13,6 +13,7 @@ const router = Router();
 // Authenticated reads — citizens can browse programs
 router.get('/', authMiddleware, getPrograms);
 router.get('/:id', authMiddleware, getProgram);
+router.get('/:id/objects', authMiddleware, getProgramObjects);
 
 // Admin writes
 router.post('/', authMiddleware, adminOnly, createProgram);

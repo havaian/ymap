@@ -1,6 +1,7 @@
 // frontend/src/components/admin/ProgramsSection.tsx
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Loader2,
   Plus,
@@ -14,7 +15,7 @@ import {
   MapPin,
   X,
 } from "lucide-react";
-import { regionsAPI, programsAPI, districtsAPI } from "../../services/api";
+import { regionsAPI, programsAPI, districtsAPI, tasksAPI } from "../../services/api";
 import { CustomSelect } from "../common/CustomSelect";
 import { Program } from "../../../types";
 
@@ -325,6 +326,121 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
   );
 }
 
+// ── Program objects list ──────────────────────────────────────────────────────
+
+const TASK_STATUS_COLOR: Record<string, string> = {
+  Planned:              'text-slate-400',
+  'In Progress':        'text-blue-500',
+  'Pending Verification': 'text-amber-500',
+  Completed:            'text-emerald-500',
+  Failed:               'text-red-500',
+};
+
+const TASK_STATUS_LABEL: Record<string, string> = {
+  Planned:              'Запланировано',
+  'In Progress':        'В работе',
+  'Pending Verification': 'На проверке',
+  Completed:            'Выполнено',
+  Failed:               'Не выполнено',
+};
+
+const TYPE_SHORT: Record<string, string> = {
+  school: 'Школа', kindergarten: 'Дет.сад', health_post: 'ФАП',
+};
+
+function ProgramObjectsList({ programId }: { programId: string }) {
+  const [objects, setObjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    (programsAPI as any).getProgramObjects(programId)
+      .then((res: any) => { if (mounted && res.data?.success) setObjects(res.data.data); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [programId]);
+
+  if (loading) return (
+    <div className="flex items-center gap-2 text-slate-400 text-xs py-3 justify-center">
+      <Loader2 size={12} className="animate-spin" /> Загрузка объектов...
+    </div>
+  );
+
+  if (!objects.length) return (
+    <p className="text-xs text-slate-400 text-center py-3">Нет объектов</p>
+  );
+
+  return (
+    <div className="space-y-1.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+      {objects.map(obj => (
+        <div key={obj.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          {/* Object header */}
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-black text-slate-800 dark:text-white truncate">{obj.name}</p>
+              <p className="text-[10px] text-slate-400">{TYPE_SHORT[obj.objectType] || obj.objectType} · {obj.tuman || obj.viloyat || '—'}</p>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Map button */}
+              <button
+                onClick={() => navigate(`/map/objects/${obj.id}`)}
+                className="px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-black hover:bg-blue-100 transition-colors flex items-center gap-1"
+                title="Открыть на карте"
+              >
+                <MapPin size={10} /> Карта
+              </button>
+              {/* Toggle tasks */}
+              {obj.tasks.length > 0 && (
+                <button
+                  onClick={() => setExpandedId(expandedId === obj.id ? null : obj.id)}
+                  className="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                >
+                  <Layers size={10} /> {obj.tasks.length} задач
+                  {expandedId === obj.id ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tasks list */}
+          {expandedId === obj.id && (
+            <div className="border-t border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700/50">
+              {obj.tasks.map((task: any) => (
+                <div key={task.id} className="px-3 py-2 flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{task.title}</p>
+                    {task.deadline && (
+                      <p className="text-[10px] text-slate-400">
+                        до {new Date(task.deadline).toLocaleDateString('ru-RU')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {task.totalCount > 0 && (
+                      <span className="text-[10px] font-bold text-slate-400">
+                        <span className="text-emerald-500">{task.doneCount}✓</span>
+                        {task.problemCount > 0 && <span className="text-red-500 ml-1">{task.problemCount}✗</span>}
+                        /{task.totalCount}
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-black uppercase ${TASK_STATUS_COLOR[task.status] || 'text-slate-400'}`}>
+                      {TASK_STATUS_LABEL[task.status] || task.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Program row ───────────────────────────────────────────────────────────────
 
 function ProgramRow({
@@ -547,6 +663,16 @@ function ProgramRow({
               )}
             </div>
           </div>
+
+          {/* Objects list */}
+          {program.objectIds.length > 0 && (
+            <div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                Объекты программы ({program.objectIds.length})
+              </div>
+              <ProgramObjectsList programId={program.id} />
+            </div>
+          )}
         </div>
       )}
     </div>

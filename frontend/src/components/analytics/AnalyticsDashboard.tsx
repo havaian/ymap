@@ -745,37 +745,18 @@ const TasksTab: React.FC<{ data: any }> = ({ data }) => {
 
 const DistrictsTab: React.FC<{
   data: DistrictScore[];
-  regions: RegionSummary[];
   onDrilldown: (id: string, name: any, scores: any) => void;
 }> = ({ data, regions, onDrilldown }) => {
   const [sortBy, setSortBy] = useState<
     "issueCount" | "composite" | "issues" | "objects" | "verification"
   >("issueCount");
-  const [filterRegion, setFilterRegion] = useState<number | null>(null);
-
-  const regionOptions = useMemo(() => {
-    const nameMap = new Map(regions.map(r => [r.code, r.name?.ru || r.name?.en || `Регион ${r.code}`]));
-    const seen = new Set<number>();
-    const opts: { value: number; label: string }[] = [];
-    data.forEach((d) => {
-      if (!seen.has(d.regionCode)) {
-        seen.add(d.regionCode);
-        opts.push({ value: d.regionCode, label: String(nameMap.get(d.regionCode) ?? d.regionCode) });
-      }
-    });
-    return opts.sort((a, b) => a.value - b.value);
-  }, [data, regions]);
 
   const sorted = useMemo(() => {
-    const filtered =
-      filterRegion != null
-        ? data.filter((d) => d.regionCode === filterRegion)
-        : data;
-    return [...filtered].sort((a, b) => {
-      if (sortBy === "issueCount") return b.issueCount - a.issueCount;
-      return b.scores[sortBy] - a.scores[sortBy];
+    return [...data].sort((a, b) => {
+        if (sortBy === "issueCount") return b.issueCount - a.issueCount;
+        return b.scores[sortBy] - a.scores[sortBy];
     });
-  }, [data, sortBy, filterRegion]);
+    }, [data, sortBy]);
 
   return (
     <div className="space-y-4">
@@ -812,16 +793,6 @@ const DistrictsTab: React.FC<{
             }
           </button>
         ))}
-        <div className="ml-auto">
-            <CustomSelect
-                options={regionOptions}
-                value={filterRegion}
-                onChange={setFilterRegion}
-                placeholder="Все регионы"
-                heading="Фильтр по региону"
-                icon={<MapPin size={13} />}
-            />
-        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">

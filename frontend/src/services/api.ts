@@ -144,6 +144,8 @@ export const programsAPI = {
       deadline?: string;
     }
   ): Promise<AxiosResponse> => api.post(`/programs/${id}/bulk-tasks`, data),
+  getProgramObjects: (id: string): Promise<AxiosResponse> =>
+    api.get(`/programs/${id}/objects`),
 };
 
 // ── Tasks (replaces promisesAPI) ──────────────────────────────────────────────
@@ -216,8 +218,7 @@ export const regionsAPI = {
 export const districtsAPI = {
   getAll: (params?: { regionCode?: number }): Promise<AxiosResponse> =>
     api.get("/districts", { params }),
-  getById: (id: string): Promise<AxiosResponse> =>
-    api.get(`/districts/${id}`),
+  getById: (id: string): Promise<AxiosResponse> => api.get(`/districts/${id}`),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
@@ -239,10 +240,8 @@ export const adminAPI = {
 // ── Users ─────────────────────────────────────────────────────────────────────
 
 export const usersAPI = {
-  getMyActivity: (): Promise<AxiosResponse> =>
-    api.get("/users/me/activity"),
-  getLeaderboard: (): Promise<AxiosResponse> =>
-    api.get("/users/leaderboard"),
+  getMyActivity: (): Promise<AxiosResponse> => api.get("/users/me/activity"),
+  getLeaderboard: (): Promise<AxiosResponse> => api.get("/users/leaderboard"),
 };
 
 // ── Backward-compat aliases — prevent import errors in components not yet migrated ──

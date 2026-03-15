@@ -5,6 +5,7 @@ import User from '../user/model.js';
 import Comment from '../comment/model.js';
 import Vote from '../vote/model.js';
 import Object_ from '../object/model.js';
+import District from '../district/model.js';
 import { validateCoordinates } from '../utils/validators.js';
 
 /**
@@ -119,12 +120,29 @@ export const createIssue = async (req, res) => {
     let objectName = null;
     let objectRegionCode = null;
     let objectDistrictId = null;
+
     if (objectId) {
+        // Linked to a facility — copy geo from the object
         const obj = await Object_.findById(objectId).select('name regionCode districtId').lean();
         if (obj) {
             objectName = obj.name;
             if (obj.regionCode) objectRegionCode = obj.regionCode;
             if (obj.districtId) objectDistrictId = obj.districtId;
+        }
+    }
+
+    // If still no district (standalone issue or object had no geo) — lookup by coordinates
+    if (!objectRegionCode || !objectDistrictId) {
+        const point = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
+        const district = await District.findOne({
+            geometry: { $geoIntersects: { $geometry: point } }
+        }).lean() || await District.findOne({
+            centroid: { $near: { $geometry: point, $maxDistance: 200000 } }
+        }).lean();
+
+        if (district) {
+            if (!objectRegionCode) objectRegionCode = district.regionCode;
+            if (!objectDistrictId) objectDistrictId = district._id;
         }
     }
 

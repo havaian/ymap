@@ -37,7 +37,7 @@ async function ensureToken() {
 
 async function analyzeWithGemini(description) {
     const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-preview-04-17',
         contents: `You are an AI assistant for a civic infrastructure app in Uzbekistan called 'Y.Map'.
 Analyze the following user report description about a city problem.
 
@@ -186,7 +186,7 @@ bot.on('message', async (ctx) => {
         try {
             s.analysis = await analyzeWithGemini(s.description);
         } catch (e) {
-            console.error('Gemini error:', e);
+            console.error('Gemini error full:', JSON.stringify(e?.message || e, null, 2));
             s.analysis = { title: s.description.slice(0, 80), category: 'Other', severity: 'Medium', summary: null };
         }
 

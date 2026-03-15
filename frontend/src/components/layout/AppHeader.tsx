@@ -60,7 +60,10 @@ onClick={() => {
           if (!open && ref.current) {
             const rect = ref.current.getBoundingClientRect();
             const w = Math.min(240, window.innerWidth - 8);
-            const right = Math.max(4, window.innerWidth - rect.right);
+            // Align right edge of panel with right edge of button,
+            // but clamp so left edge stays at least 4px from left viewport edge
+            const idealRight = window.innerWidth - rect.right;
+            const right = Math.max(4, Math.min(idealRight, window.innerWidth - w - 4));
             setPanelPos({ top: rect.bottom + 8, right, width: w });
           }
           setOpen((p) => !p);

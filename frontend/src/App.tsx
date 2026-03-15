@@ -535,7 +535,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
               objectUnresolvedCounts={objectUnresolvedCounts}
               verificationSummary={verificationSummary}
             />
-            <div className="absolute bottom-8 right-6 z-[400] flex flex-col items-end gap-4">
+            <div className="absolute bottom-20 right-4 sm:bottom-8 sm:right-6 z-[400] flex flex-col items-end gap-4">
               <button
                 onClick={handleLocateMe}
                 className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition duration-100 border border-slate-100 dark:border-slate-700"

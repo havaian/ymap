@@ -722,7 +722,7 @@ function TaskCard({
           )}
 
           {/* Recent verifications — visible to everyone (admin sees responses, citizen sees context) */}
-          {task.verifications?.slice(0, 3).map((v) => (
+          {task.verifications?.map((v) => (
             <div key={v._id} className="flex items-start gap-2 text-xs">
               <span
                 className={`font-black flex-shrink-0 ${

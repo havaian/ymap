@@ -738,13 +738,18 @@ function TaskCard({
                   </p>
                 )}
                 {v.photoUrl && (
-                  <a
+                  
                     href={`/api/uploads/${v.photoUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-500 hover:underline mt-0.5"
+                    className="block mt-1.5 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:opacity-90 transition-opacity"
                   >
-                    <ImageIcon size={10} /> Фото
+                    <img
+                      src={`/api/uploads/${v.photoUrl}`}
+                      alt="Фото верификации"
+                      className="w-full max-h-40 object-cover"
+                      loading="lazy"
+                    />
                   </a>
                 )}
                 {!v.comment && !v.photoUrl && (

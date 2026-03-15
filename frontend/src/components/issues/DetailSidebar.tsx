@@ -1,6 +1,7 @@
 // frontend/src/components/issues/DetailSidebar.tsx
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Issue,
   IssueSubCategory,
@@ -23,6 +24,7 @@ import {
   CheckCircle,
   RotateCcw,
   Play,
+  ExternalLink,
 } from "lucide-react";
 
 interface DetailSidebarProps {
@@ -60,6 +62,7 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
 }) => {
   const [newComment, setNewComment] = useState("");
   const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const navigate = useNavigate();
 
   if (!issue) return null;
 
@@ -191,6 +194,27 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
               {issue.severity}
             </span>
           </div>
+
+          {/* Object backlink */}
+          {issue.objectId && issue.objectName && (
+            <button
+              onClick={() => navigate(`/map/objects/${issue.objectId}`)}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 mb-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors text-left group"
+            >
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                <Building2 size={13} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-widest">
+                  Объект
+                </div>
+                <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300 truncate leading-snug">
+                  {issue.objectName}
+                </div>
+              </div>
+              <ExternalLink size={13} className="text-indigo-400 flex-shrink-0 group-hover:text-indigo-600 transition-colors" />
+            </button>
+          )}
 
           {issue.description && (
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">

@@ -37,7 +37,7 @@ function ScorePicker({
   onMetricChange: (m: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [panelSide, setPanelSide] = useState<"left" | "right">("right");
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,7 +68,15 @@ function ScorePicker({
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen((p) => !p)}
+onClick={() => {
+          if (!open && ref.current) {
+            const rect = ref.current.getBoundingClientRect();
+            const w = Math.min(240, window.innerWidth - 8);
+            const right = Math.max(4, window.innerWidth - rect.right);
+            setPanelPos({ top: rect.bottom + 8, right, width: w });
+          }
+          setOpen((p) => !p);
+        }}
         className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition duration-100 ${
           open || show
             ? "bg-teal-600 text-white shadow-lg shadow-teal-500/20"

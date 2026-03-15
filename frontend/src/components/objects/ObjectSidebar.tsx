@@ -104,6 +104,79 @@ const VERIFIABLE_FIELDS = new Set([
   "materialSten",
 ]);
 
+// ── Перевод значений полей (узб. ключи → рус.) ───────────────────────────────
+
+const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+  materialSten: {
+    gisht: "Кирпич",
+    beton: "Бетон",
+    paxsa: "Глинобит",
+    tosh: "Камень",
+  },
+  aktivZalHolati: {
+    aktiv_zal_umuman_yuq: "Актового зала нет",
+    aktiv_zal_qoniqarli: "Удовлетворительное состояние",
+    aktiv_zal_bor_mebel_yuq: "Отсутствует мебель",
+    aktiv_zal_qisman_tamir: "Частичный ремонт",
+  },
+  oshhonaHolati: {
+    oshhona_bor_ishlamaydi: "Столовая не работает",
+    oshhona_holati_qoniqarli: "Удовлетворительное состояние",
+    oshhona_holati_qisman_tamir: "Частичный ремонт",
+    oshhona_umuman_yuq: "Столовой нет",
+  },
+  elektrKunDavomida: {
+    elektr_qisman: "Частично",
+    elektr_bor: "Электричество есть",
+    elektr_yuq: "Электричества нет",
+  },
+  ichimlikSuviManbaa: {
+    ichimlik_suvi_manbaa_lokal: "Локальный источник",
+    ichimlik_suvi_manbaa_markaz: "Центральный источник",
+    ichimlik_suvi_manbaa_olib_kelinadi: "Привозная вода",
+    ichimlik_suvi_yuq: "Питьевой воды нет",
+    yuq: "Воды нет",
+    vodoprovod_suvi: "Водопровод",
+    yer_osti_suvi: "Скважина",
+    avtosisterna: "Автоцистерна",
+    qadoqlangan_suv: "Бутилированная вода",
+  },
+  internet: {
+    internet_optika: "Оптоволокно",
+    internet_mobil: "Мобильный интернет",
+    umuman_yuq: "Интернета нет",
+    shisha_tola: "Оптоволоконный",
+    shaxsiy: "Личный",
+    yuq: "Отсутствует",
+  },
+  kapitalTamir: {
+    yuq_remont: "Ремонта не было",
+    ha_joriy: "Текущий ремонт",
+    ha_kapital: "Капитальный",
+    ha_rekon: "Реконструкция",
+  },
+  smena: {
+    "1": "Первая",
+    "2": "Вторая",
+  },
+  sportZalHolati: {
+    sport_zal_umuman_yuq: "Спортзала нет",
+    sport_zal_qisman_tamir: "Частичный ремонт",
+    sport_zal_qoniqarli: "Удовлетворительное состояние",
+  },
+  binoIchidaSuv: {
+    quvur_yuq_suv_yuq: "Трубы нет, воды нет",
+    kran_orqali: "Вода есть, посредством крана",
+    quvur_bor_suv_yuq: "Труба есть, воды нет",
+  },
+};
+
+function translateFieldValue(fieldKey: string, val: string | number): string {
+  const map = FIELD_VALUE_TRANSLATIONS[fieldKey];
+  if (!map) return String(val);
+  return map[String(val)] ?? String(val);
+}
+
 // ── IndicatorVerifyRow ────────────────────────────────────────────────────────
 
 function StarRating({
@@ -200,7 +273,7 @@ function IndicatorVerifyRow({
             {CONDITION_LABELS[fieldKey] || fieldKey}
           </div>
           <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 leading-snug">
-            {String(value)}
+            {translateFieldValue(fieldKey, value)}
           </div>
           {/* Summary badge */}
           {summary && summary.total > 0 && (
@@ -946,7 +1019,7 @@ const stats = useMemo(() => {
                   <InfoField
                     icon={Icon}
                     label={CONDITION_LABELS[key] || key}
-                    value={String(val)}
+                    value={translateFieldValue(key, val as string | number)}
                   />
                 );
               })}

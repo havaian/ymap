@@ -345,10 +345,11 @@ function IssueClusterGroup({ issues, onIssueClick, zoomLevel }: any) {
     if (!cg) return;
     cg.clearLayers();
     markersRef.current = [];
-    issuesRef.current = issues;
+    const filteredIssues = issues.filter((issue: Issue) => !issue.objectId);
+    issuesRef.current = filteredIssues;
     const isZoomedOut = zoomLevel < 14;
 
-    const markers = issues.map((issue: Issue) => {
+    const markers = filteredIssues.map((issue: Issue) => {
       const marker = L.marker([issue.lat, issue.lng], {
         icon: createIssueIcon(issue.category, isZoomedOut),
       });

@@ -69,6 +69,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     deleteIssue,
     upvoteIssue,
     addComment: addCommentToIssue,
+    fetchDetail: fetchIssueDetail,
   } = useIssues(selectedRegionCode);
 
   const {
@@ -84,6 +85,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     Map<string, any>
   >(new Map());
   const [taskStats, setTaskStats] = useState<any>(null);
+
+  const {
+    issues: allIssues,
+  } = useIssues(activeView === "LIST" ? null : selectedRegionCode);
 
   useEffect(() => {
     tasksAPI
@@ -105,13 +110,30 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
       .catch(() => {});
   }, []);
 
+  const [selectedIssueOverride, setSelectedIssueOverride] = useState<Issue | null>(null);
+
   // ── Derived from URL params ───────────────────────────
   const selectedIssue = params.issueId
-    ? issues.find((i) => i.id === params.issueId) || null
-    : null;
+  ? issues.find((i) => i.id === params.issueId) || selectedIssueOverride
+  : null;
   const [viewingObject, setViewingObject] = useState<FacilityObject | null>(
     null
   );
+
+  useEffect(() => {
+  if (!params.issueId) {
+    setSelectedIssueOverride(null);
+    return;
+  }
+  const found = issues.find((i) => i.id === params.issueId);
+  if (!found) {
+    fetchIssueDetail(params.issueId).then((detail) => {
+      if (detail) setSelectedIssueOverride(detail);
+    });
+  } else {
+    setSelectedIssueOverride(null);
+  }
+}, [params.issueId]);
 
   useEffect(() => {
     if (!params.objectId) {
@@ -554,7 +576,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
             )}
           </>
         ) : activeView === "LIST" ? (
-          <ListView issues={issues} onSelectIssue={handleSelectFromList} />
+          <ListView issues={allIssues} onSelectIssue={handleSelectFromList} />
         ) : activeView === "USERS" ? (
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
         ) : activeView === "DATA" ? (

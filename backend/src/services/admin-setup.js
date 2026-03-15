@@ -16,6 +16,7 @@ const DEMO_CITIZENS = [
     { name: 'Нигора Каримова', email: 'nigora@demo.ymap.uz', district: 'Мирзо-Улугбек' },
     { name: 'Фарход Ахмедов', email: 'farkhod@demo.ymap.uz', district: 'Яшнобод' },
     { name: 'Малика Холматова', email: 'malika@demo.ymap.uz', district: 'Сергели' },
+    { name: 'Telegram Demo Bot', email: 'telegram-bot@demo.ymap.uz', district: 'Мирабад' },
 ];
 
 // ── ensureAdminExists ─────────────────────────────────────────────────────────

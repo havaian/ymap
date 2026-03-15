@@ -269,13 +269,6 @@ export const AdminUserView: React.FC<AdminUserViewProps> = ({
                         : "bg-blue-500"
                     }`}
                   >
-                    <button
-                      onClick={() => setActivityUserId(user.id)}
-                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30 dark:hover:text-blue-400 transition-colors"
-                      title="Активность пользователя"
-                    >
-                      <Activity size={16} />
-                    </button>
                     {user.role === UserRole.ADMIN ? (
                       <ShieldCheck size={24} />
                     ) : (
@@ -283,21 +276,30 @@ export const AdminUserView: React.FC<AdminUserViewProps> = ({
                     )}
                   </div>
                   {user.role !== UserRole.ADMIN && (
-                    <button
-                      onClick={() => onToggleBlock(user.id)}
-                      className={`p-2 rounded-xl transition-colors ${
-                        user.blocked
-                          ? "bg-green-100 text-green-600 hover:bg-green-200"
-                          : "bg-red-50 text-red-600 hover:bg-red-100"
-                      }`}
-                      title={user.blocked ? "Разблокировать" : "Заблокировать"}
-                    >
-                      {user.blocked ? (
-                        <RotateCcw size={18} />
-                      ) : (
-                        <Ban size={18} />
-                      )}
-                    </button>
+                    <div>
+                      <button
+                        onClick={() => setActivityUserId(user.id)}
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30 dark:hover:text-blue-400 transition-colors"
+                        title="Активность пользователя"
+                      >
+                        <Activity size={16} />
+                      </button>
+                      <button
+                        onClick={() => onToggleBlock(user.id)}
+                        className={`p-2 rounded-xl transition-colors ${
+                          user.blocked
+                            ? "bg-green-100 text-green-600 hover:bg-green-200"
+                            : "bg-red-50 text-red-600 hover:bg-red-100"
+                        }`}
+                        title={user.blocked ? "Разблокировать" : "Заблокировать"}
+                      >
+                        {user.blocked ? (
+                          <RotateCcw size={18} />
+                        ) : (
+                          <Ban size={18} />
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
 

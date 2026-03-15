@@ -48,6 +48,24 @@ services:
     networks:
       - ymap-network
 
+  # Telegram Bot
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-ymap}-bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - YMAP_API_URL=http://backend:${BACKEND_PORT:-4000}/api
+      - BOT_EMAIL=${BOT_EMAIL}
+      - BOT_PASSWORD=${BOT_PASSWORD}
+    depends_on:
+      - backend
+    networks:
+      - ymap-network
+
   # Redis Cache
   redis:
     image: redis:7-alpine

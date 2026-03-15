@@ -15,7 +15,7 @@ import {
   TaskSignal,
   FieldSignal,
 } from "../../services/geminiService";
-import { tasksAPI } from "../../services/api";
+import { tasksAPI, indicatorVerifAPI } from "../../services/api";
 import { useObjects } from "../../hooks/useBackendData";
 import {
   Loader2,
@@ -182,6 +182,24 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       objectId: selectedObjectId || undefined,
       objectName: obj?.name,
     });
+
+    // Сохраняем AI-сигналы как верификации (fire-and-forget, 409 = уже есть — игнорируем)
+    if (selectedObjectId) {
+      analysis.fieldSignals?.forEach((s) => {
+        indicatorVerifAPI
+          .submit(selectedObjectId, {
+            field: s.field,
+            status: s.signal === "confirms" ? "confirmed" : "disputed",
+          })
+          .catch(() => {});
+      });
+
+      analysis.taskSignals?.forEach((s) => {
+        tasksAPI
+          .vote(s.taskId, s.signal === "confirms" ? "confirmed" : "rejected")
+          .catch(() => {});
+      });
+    }
   };
 
   // Only show education/health objects in the picker

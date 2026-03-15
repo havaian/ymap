@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        GEMINI_API_KEY: ${GEMINI_API_KEY}
+        GEMINI_API_KEY: AIzaSyDz2NwofCZ_m6CL6nN1i01E89KWlw4t5VA
         VITE_API_URL: ${VITE_API_URL}
     container_name: ${PROJECT_NAME:-ymap}-frontend
     restart: unless-stopped
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_KEY=AIzaSyDz2NwofCZ_m6CL6nN1i01E89KWlw4t5VA
       - YMAP_API_URL=http://backend:${BACKEND_PORT:-4000}/api
       - BOT_EMAIL=${BOT_EMAIL}
       - BOT_PASSWORD=${BOT_PASSWORD}

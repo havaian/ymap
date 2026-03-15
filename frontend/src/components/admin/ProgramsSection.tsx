@@ -326,6 +326,100 @@ function CreateProgramForm({ onCreated }: { onCreated: (p: Program) => void }) {
   );
 }
 
+// ── Task analytics panel ──────────────────────────────────────────────────────
+
+function ProgramTaskAnalytics({ programId }: { programId: string }) {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    (programsAPI as any).getProgramTaskAnalytics(programId)
+      .then((res: any) => { if (mounted && res.data?.success) setTasks(res.data.data); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [programId]);
+
+  if (loading) return (
+    <div className="flex items-center gap-2 text-slate-400 text-xs py-3 justify-center">
+      <Loader2 size={12} className="animate-spin" /> Загрузка аналитики...
+    </div>
+  );
+
+  if (!tasks.length) return (
+    <p className="text-xs text-slate-400 text-center py-3">Задач нет</p>
+  );
+
+  return (
+    <div className="space-y-1.5">
+      {tasks.map(task => {
+        const isOpen = expandedTask === task.title;
+        const doneRate = task.totalFacilities > 0
+          ? Math.round((task.verifiedDone / task.totalFacilities) * 100)
+          : 0;
+        return (
+          <div key={task.title} className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            {/* Заголовок задачи — кликабельный */}
+            <button
+              onClick={() => setExpandedTask(isOpen ? null : task.title)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 transition"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{task.title}</p>
+                {/* Прогресс-бар */}
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full"
+                      style={{ width: `${doneRate}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 flex-shrink-0">{doneRate}%</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 text-[10px] font-black">
+                <span className="text-emerald-500">{task.verifiedDone}✓</span>
+                <span className="text-red-500">{task.verifiedProblem}✗</span>
+                <span className="text-slate-400">{task.notVerified}—</span>
+                {isOpen ? <ChevronUp size={11} className="text-slate-400" /> : <ChevronDown size={11} className="text-slate-400" />}
+              </div>
+            </button>
+
+            {/* Детализация по учреждениям */}
+            {isOpen && (
+              <div className="border-t border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700/50 max-h-56 overflow-y-auto custom-scrollbar">
+                {task.facilities.map((f: any) => (
+                  <div key={f.taskId} className="px-3 py-2 flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{f.objectName}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {f.objectType ? (TYPE_SHORT[f.objectType] || f.objectType) : ''}
+                        {f.tuman ? ` · ${f.tuman}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {f.totalVerifications === 0 ? (
+                        <span className="text-[10px] font-black text-slate-400">Не проверено</span>
+                      ) : f.doneCount > 0 ? (
+                        <span className="text-[10px] font-black text-emerald-500">✓ Выполнено</span>
+                      ) : (
+                        <span className="text-[10px] font-black text-red-500">✗ Проблема</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Program objects list ──────────────────────────────────────────────────────
 
 const TASK_STATUS_COLOR: Record<string, string> = {
@@ -580,7 +674,8 @@ function ProgramRow({
             </p>
           )}
 
-          {/* Auto-assign objects */}
+          {/* Auto-assign objects — admin only */}
+          {isAdmin && (
           <div>
             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
               Назначение объектов по фильтру
@@ -604,8 +699,10 @@ function ProgramRow({
               </p>
             )}
           </div>
+          )}
 
-          {/* Bulk tasks */}
+          {/* Bulk tasks — admin only */}
+          {isAdmin && (
           <div>
             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
               Массовое создание задач
@@ -662,6 +759,15 @@ function ProgramRow({
                 </p>
               )}
             </div>
+          </div>
+          )}
+
+          {/* Task analytics — публично, доступно всем */}
+          <div>
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+              Аналитика по задачам
+            </div>
+            <ProgramTaskAnalytics programId={program.id} />
           </div>
 
           {/* Objects list */}

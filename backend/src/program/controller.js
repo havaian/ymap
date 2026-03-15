@@ -277,6 +277,70 @@ export const bulkCreateTasks = async (req, res) => {
     res.json({ success: true, data: { created: toCreate.length, skipped: existing.length } });
 };
 
+// GET /api/programs/:id/task-analytics — публичная аналитика задач программы
+// Группирует задачи по названию, считает сколько учреждений выполнили/не выполнили
+export const getProgramTaskAnalytics = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid id' });
+    }
+
+    const program = await Program.findById(id).lean();
+    if (!program) {
+        return res.status(404).json({ success: false, message: 'Program not found' });
+    }
+
+    if (!program.objectIds?.length) {
+        return res.json({ success: true, data: [] });
+    }
+
+    const [tasks, objects] = await Promise.all([
+        Task.find({ programId: id })
+            .select('title targetId status verifications')
+            .lean(),
+        Object_.find({ _id: { $in: program.objectIds } })
+            .select('name objectType tuman viloyat')
+            .lean()
+    ]);
+
+    const objMap = new Map(objects.map(o => [o._id.toString(), o]));
+
+    // Группируем по названию задачи
+    const byTitle = new Map();
+    for (const task of tasks) {
+        const title = task.title;
+        if (!byTitle.has(title)) byTitle.set(title, []);
+        const doneCount = (task.verifications || []).filter(v => v.status === 'done').length;
+        const problemCount = (task.verifications || []).filter(v => v.status === 'problem').length;
+        const obj = objMap.get(task.targetId?.toString());
+        byTitle.get(title).push({
+            taskId: task._id.toString(),
+            taskStatus: task.status,
+            objectId: task.targetId?.toString(),
+            objectName: obj?.name || '—',
+            objectType: obj?.objectType || null,
+            tuman: obj?.tuman || null,
+            doneCount,
+            problemCount,
+            totalVerifications: (task.verifications || []).length,
+        });
+    }
+
+    const data = Array.from(byTitle.entries()).map(([title, items]) => ({
+        title,
+        totalFacilities: items.length,
+        // Учреждение «выполнило» если хотя бы 1 верификация done
+        verifiedDone: items.filter(i => i.doneCount > 0).length,
+        // Учреждение «не выполнило» если есть problem но нет done
+        verifiedProblem: items.filter(i => i.problemCount > 0 && i.doneCount === 0).length,
+        notVerified: items.filter(i => i.totalVerifications === 0).length,
+        facilities: items,
+    }));
+
+    res.json({ success: true, data });
+};
+
 // GET /api/programs/:id/objects — объекты программы с их задачами
 export const getProgramObjects = async (req, res) => {
     const { id } = req.params;

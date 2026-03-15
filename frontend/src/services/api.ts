@@ -146,6 +146,8 @@ export const programsAPI = {
   ): Promise<AxiosResponse> => api.post(`/programs/${id}/bulk-tasks`, data),
   getProgramObjects: (id: string): Promise<AxiosResponse> =>
     api.get(`/programs/${id}/objects`),
+  getProgramTaskAnalytics: (id: string): Promise<AxiosResponse> =>
+    api.get(`/programs/${id}/task-analytics`),
 };
 
 // ── Tasks (replaces promisesAPI) ──────────────────────────────────────────────

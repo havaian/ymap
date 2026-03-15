@@ -3,7 +3,8 @@
 import { Router } from 'express';
 import {
     getPrograms, getProgram, createProgram, updateProgram, deleteProgram,
-    assignObjects, addObject, removeObject, bulkCreateTasks, getProgramObjects
+    assignObjects, addObject, removeObject, bulkCreateTasks, getProgramObjects,
+    getProgramTaskAnalytics
 } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
@@ -14,6 +15,9 @@ const router = Router();
 router.get('/', authMiddleware, getPrograms);
 router.get('/:id', authMiddleware, getProgram);
 router.get('/:id/objects', authMiddleware, getProgramObjects);
+
+// Public analytics — no auth required
+router.get('/:id/task-analytics', getProgramTaskAnalytics);
 
 // Admin writes
 router.post('/', authMiddleware, adminOnly, createProgram);

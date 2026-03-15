@@ -188,6 +188,9 @@ ${contextSection}
       }
     }
 
+    console.log("[Gemini] prompt:\n", prompt);
+    console.log("[Gemini] context passed:", JSON.stringify(context, null, 2));
+
     const response = await ai.models.generateContent({
       model,
       contents: prompt,
@@ -202,7 +205,9 @@ ${contextSection}
     });
 
     const jsonStr = response.text || "{}";
+    console.log("[Gemini] raw response:", jsonStr);
     const result = JSON.parse(jsonStr);
+    console.log("[Gemini] parsed result:", JSON.stringify(result, null, 2));
 
     // Нормализация fieldSignals: если AI вернул лейбл вместо ключа — исправляем
     const rawFieldSignals: FieldSignal[] = result.fieldSignals ?? [];

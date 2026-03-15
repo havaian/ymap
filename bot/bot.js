@@ -261,7 +261,7 @@ bot.callbackQuery('new_report', async (ctx) => {
   await ctx.answerCallbackQuery();
   await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() });
   ctx.reply(
-    `📝 *Опишите проблему*\n\nРасскажите подробно что произошло\\. Gemini AI автоматически определит категорию и серьёзность\\.`,
+    `📝 *Опишите проблему*\n\nРасскажите подробно что произошло.`,
     { parse_mode: 'MarkdownV2' }
   );
 });

@@ -32,8 +32,8 @@ export const PublicStatsBar: React.FC<PublicStatsBarProps> = ({
   if (totalVerifs === 0 && totalTasks === 0) return null;
 
   return (
-    <div className="absolute top-[4.25rem] left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
-      <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200/60 dark:border-slate-700/60 shadow-lg text-[11px] font-bold text-slate-600 dark:text-slate-300">
+    <div className="absolute top-[4.25rem] left-1/2 -translate-x-1/2 z-[400] pointer-events-none max-w-[calc(100vw-1rem)]">
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-3 py-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200/60 dark:border-slate-700/60 shadow-lg text-[11px] font-bold text-slate-600 dark:text-slate-300">
         <div className="flex items-center gap-1.5 pr-2.5 border-r border-slate-200 dark:border-slate-700">
           <Building2 size={12} className="text-indigo-500" />
           <span>{objectCount.toLocaleString()} объектов</span>

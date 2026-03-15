@@ -37,6 +37,7 @@ function ScorePicker({
   onMetricChange: (m: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [panelSide, setPanelSide] = useState<"left" | "right">("right");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +48,18 @@ function ScorePicker({
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Определяем сторону открытия чтобы не выйти за экран
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const panelWidth = Math.min(240, window.innerWidth - 8);
+    if (rect.right - panelWidth < 0) {
+      setPanelSide("left");
+    } else {
+      setPanelSide("right");
+    }
   }, [open]);
 
   const activeLabel =
@@ -210,7 +223,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         >
           <Menu className="w-5 h-5" />
         </button>
-        <MapPlusIcon onClick={() => navigate("/map")} />
+        <MapPlusIcon onClick={() => navigate("/map")} className="hidden sm:block" />
         <div className="hidden sm:block">
           <div className="flex items-center gap-2">
             <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">

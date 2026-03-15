@@ -32,7 +32,7 @@ export const PublicStatsBar: React.FC<PublicStatsBarProps> = ({
   if (totalVerifs === 0 && totalTasks === 0) return null;
 
 return (
-    <div className="absolute top-[4.25rem] left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
+<div className="absolute top-20 sm:top-[4.25rem] left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
       <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200/60 dark:border-slate-700/60 shadow-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
         
         <div className="flex items-center gap-1.5">

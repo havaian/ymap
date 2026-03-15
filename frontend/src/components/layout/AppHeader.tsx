@@ -50,18 +50,6 @@ function ScorePicker({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  // Определяем сторону открытия чтобы не выйти за экран
-  useEffect(() => {
-    if (!open || !ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const panelWidth = Math.min(240, window.innerWidth - 8);
-    if (rect.right - panelWidth < 0) {
-      setPanelSide("left");
-    } else {
-      setPanelSide("right");
-    }
-  }, [open]);
-
   const activeLabel =
     SCORE_METRICS.find((m) => m.value === metric)?.label ?? "Скоринг";
 
@@ -94,8 +82,11 @@ onClick={() => {
         />
       </button>
 
-      {open && (
-        <div className="absolute top-full right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[500]">
+      {open && panelPos && (
+        <div
+          style={{ position: "fixed", top: panelPos.top, right: panelPos.right, width: panelPos.width, zIndex: 500 }}
+          className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+        >
           <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
               Районный скоринг

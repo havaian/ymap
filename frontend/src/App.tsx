@@ -548,10 +548,10 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
                 currentUser.role !== UserRole.ADMIN && (
                   <button
                     onClick={() => setIsAddingMode(true)}
-                    className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-4 sm:pl-5 sm:pr-6 sm:py-4 rounded-full shadow-2xl transition-all border border-blue-400/20"
+                    className="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 sm:pl-5 sm:pr-6 sm:py-4 rounded-full shadow-2xl transition-all border border-blue-400/20"
                   >
-                    <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-100" />
-                    <span className="hidden sm:inline font-bold text-lg uppercase tracking-tight">
+                    <Plus className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-90 transition-transform duration-100" />
+                    <span className="font-bold text-sm sm:text-lg uppercase tracking-tight">
                       Сообщить
                     </span>
                   </button>

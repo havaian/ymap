@@ -235,6 +235,10 @@ export const adminAPI = {
   seedData: (data: Record<string, any>): Promise<AxiosResponse> =>
     api.post("/admin/seed/generate", data),
   clearSeeded: (): Promise<AxiosResponse> => api.delete("/admin/seed/clear"),
+  seedProgramVerifications: (maxPerTask?: number): Promise<AxiosResponse> =>
+    api.post("/admin/seed/program-verifications", { maxPerTask }),
+  clearProgramVerifications: (): Promise<AxiosResponse> =>
+    api.delete("/admin/seed/program-verifications"),
   getUserActivity: (id: string): Promise<AxiosResponse> =>
     api.get(`/users/${id}/activity`),
 };

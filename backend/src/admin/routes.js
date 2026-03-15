@@ -1,7 +1,7 @@
 // backend/src/admin/routes.js
 
 import express from 'express';
-import { adminGetUsers, adminBlockUser, syncObjects, getJobStatus, seedData, clearSeeded } from './controller.js';
+import { adminGetUsers, adminBlockUser, syncObjects, getJobStatus, seedData, clearSeeded, seedProgramVerifications, clearProgramVerifs } from './controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
 
@@ -19,5 +19,7 @@ router.get('/jobs/:jobId', getJobStatus);
 // Seeder (test data)
 router.post('/seed/generate', seedData);
 router.delete('/seed/clear', clearSeeded);
+router.post('/seed/program-verifications', seedProgramVerifications);
+router.delete('/seed/program-verifications', clearProgramVerifs);
 
 export default router;

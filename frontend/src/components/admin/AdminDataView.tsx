@@ -48,23 +48,21 @@ function SyncProgress({ job, onDone }: { job: JobState; onDone: () => void }) {
 
   return (
     <div
-      className={`p-5 rounded-2xl border space-y-4 ${
-        isError
+      className={`p-5 rounded-2xl border space-y-4 ${isError
           ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30"
           : isDone
-          ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30"
-          : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/30"
-      }`}
+            ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30"
+            : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/30"
+        }`}
     >
       <div className="flex items-center gap-3">
         <div
-          className={`flex-shrink-0 ${
-            isError
+          className={`flex-shrink-0 ${isError
               ? "text-red-600 dark:text-red-400"
               : isDone
-              ? "text-green-600 dark:text-green-400"
-              : "text-blue-600 dark:text-blue-400"
-          }`}
+                ? "text-green-600 dark:text-green-400"
+                : "text-blue-600 dark:text-blue-400"
+            }`}
         >
           {isError ? (
             <AlertCircle className="w-5 h-5" />
@@ -76,19 +74,18 @@ function SyncProgress({ job, onDone }: { job: JobState; onDone: () => void }) {
         </div>
         <div className="flex-1 min-w-0">
           <p
-            className={`text-sm font-black ${
-              isError
+            className={`text-sm font-black ${isError
                 ? "text-red-800 dark:text-red-300"
                 : isDone
-                ? "text-green-800 dark:text-green-300"
-                : "text-blue-800 dark:text-blue-300"
-            }`}
+                  ? "text-green-800 dark:text-green-300"
+                  : "text-blue-800 dark:text-blue-300"
+              }`}
           >
             {isError
               ? "Ошибка синхронизации"
               : isDone
-              ? "Синхронизация завершена!"
-              : "Синхронизация..."}
+                ? "Синхронизация завершена!"
+                : "Синхронизация..."}
           </p>
           {!isDone && !isError && (
             <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
@@ -175,6 +172,10 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
 
   const [isClearing, setIsClearing] = useState(false);
   const [clearResult, setClearResult] = useState<any>(null);
+
+  const [isSeedingVerifs, setIsSeedingVerifs] = useState(false);
+  const [seedVerifsResult, setSeedVerifsResult] = useState<any>(null);
+  const [isClearingVerifs, setIsClearingVerifs] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -296,6 +297,41 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
     }
   };
 
+  const handleSeedProgramVerifications = async () => {
+    setIsSeedingVerifs(true);
+    setSeedVerifsResult(null);
+    try {
+      const response = await adminAPI.seedProgramVerifications(6);
+      setSeedVerifsResult(
+        response.data.success
+          ? response.data.data
+          : { error: response.data.message }
+      );
+    } catch (error: any) {
+      setSeedVerifsResult({
+        error: error.response?.data?.message || error.message || "Ошибка",
+      });
+    } finally {
+      setIsSeedingVerifs(false);
+    }
+  };
+
+  const handleClearProgramVerifications = async () => {
+    if (!confirm("Удалить все mock-верификации задач программ?")) return;
+    setIsClearingVerifs(true);
+    setSeedVerifsResult(null);
+    try {
+      await adminAPI.clearProgramVerifications();
+      setSeedVerifsResult({ cleared: true });
+    } catch (error: any) {
+      setSeedVerifsResult({
+        error: error.response?.data?.message || error.message || "Ошибка",
+      });
+    } finally {
+      setIsClearingVerifs(false);
+    }
+  };
+
   return (
     <div className="h-full w-full bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in duration-100 overflow-y-auto">
       {/* Header */}
@@ -408,16 +444,14 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
                   <label className="flex items-center gap-3 cursor-pointer pb-3">
                     <div
                       onClick={() => setIncludeComments(!includeComments)}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        includeComments
+                      className={`w-12 h-6 rounded-full transition-colors ${includeComments
                           ? "bg-purple-600"
                           : "bg-slate-300 dark:bg-slate-600"
-                      } relative cursor-pointer`}
+                        } relative cursor-pointer`}
                     >
                       <div
-                        className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
-                          includeComments ? "left-7" : "left-1"
-                        }`}
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${includeComments ? "left-7" : "left-1"
+                          }`}
                       />
                     </div>
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -445,11 +479,10 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
 
               {seedResult && (
                 <div
-                  className={`p-4 rounded-2xl border ${
-                    seedResult.error
+                  className={`p-4 rounded-2xl border ${seedResult.error
                       ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30"
                       : "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/30"
-                  }`}
+                    }`}
                 >
                   {seedResult.error ? (
                     <p className="text-xs text-red-600 dark:text-red-400 font-medium">
@@ -533,11 +566,10 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
 
               {clearResult && (
                 <div
-                  className={`p-4 rounded-2xl border ${
-                    clearResult.error
+                  className={`p-4 rounded-2xl border ${clearResult.error
                       ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30"
                       : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30"
-                  }`}
+                    }`}
                 >
                   {clearResult.error ? (
                     <p className="text-xs text-red-600 dark:text-red-400 font-medium">
@@ -573,6 +605,81 @@ export const AdminDataView: React.FC<AdminDataViewProps> = ({
                   )}
                 </div>
               )}
+
+              {/* ── Program task verifications ── */}
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800 dark:text-white">
+                        Верификации задач программ
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Сгенерировать mock-верификации граждан для задач региональных программ
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Добавляет до 6 верификаций на каждую задачу, привязанную к программе. Задачи с уже существующими верификациями пропускаются.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSeedProgramVerifications}
+                      disabled={isSeedingVerifs || isClearingVerifs}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl font-black text-sm uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSeedingVerifs ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Генерация...</>
+                      ) : (
+                        <><CheckCircle2 className="w-4 h-4" /> Сгенерировать</>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleClearProgramVerifications}
+                      disabled={isSeedingVerifs || isClearingVerifs}
+                      className="px-5 py-3 rounded-2xl font-black text-sm uppercase tracking-wider border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isClearingVerifs ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      Очистить
+                    </button>
+                  </div>
+
+                  {seedVerifsResult && (
+                    <div className={`p-4 rounded-2xl border text-xs ${seedVerifsResult.error
+                        ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400"
+                        : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/30"
+                      }`}>
+                      {seedVerifsResult.error ? (
+                        <p className="font-medium">{seedVerifsResult.error}</p>
+                      ) : seedVerifsResult.cleared ? (
+                        <p className="font-black text-emerald-700 dark:text-emerald-400">Верификации очищены</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: "Задач", value: seedVerifsResult.tasks, color: "text-emerald-600 dark:text-emerald-400" },
+                            { label: "Верификаций", value: seedVerifsResult.verifications, color: "text-teal-600 dark:text-teal-400" },
+                            { label: "Пользователей", value: seedVerifsResult.users, color: "text-slate-600 dark:text-slate-300" },
+                          ].map((s) => (
+                            <div key={s.label} className="bg-white dark:bg-slate-900/50 p-2 rounded-xl text-center">
+                              <div className={`text-lg font-black ${s.color}`}>{s.value ?? 0}</div>
+                              <div className="text-slate-400 mt-0.5">{s.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

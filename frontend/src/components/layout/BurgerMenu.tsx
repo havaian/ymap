@@ -261,7 +261,7 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({
                 `}
               >
                 <BarChart3 className="w-5 h-5" />
-                Статистика ГЧП
+                Аналитика
               </button>
 
               <button

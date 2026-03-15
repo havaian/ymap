@@ -2,7 +2,7 @@
 
 import { getUsers, blockUser } from '../user/controller.js';
 import { importObjects } from '../scripts/import-objects.js';
-import { generateMockData, clearSeededData } from '../services/seeder.js';
+import { generateMockData, clearSeededData, generateProgramVerifications, clearProgramVerifications } from '../services/seeder.js';
 import { createJob, updateJob, getJob } from '../services/jobStore.js';
 
 export const adminGetUsers = getUsers;
@@ -67,5 +67,20 @@ export const seedData = async (req, res) => {
 
 export const clearSeeded = async (req, res) => {
     const result = await clearSeededData();
+    res.json({ success: true, data: result });
+};
+
+// ── POST /api/admin/seed/program-verifications ────────────────────────────────
+
+export const seedProgramVerifications = async (req, res) => {
+    const { maxPerTask = 6 } = req.body;
+    const result = await generateProgramVerifications(parseInt(maxPerTask));
+    res.json({ success: true, data: result });
+};
+
+// ── DELETE /api/admin/seed/program-verifications ──────────────────────────────
+
+export const clearProgramVerifs = async (req, res) => {
+    const result = await clearProgramVerifications();
     res.json({ success: true, data: result });
 };

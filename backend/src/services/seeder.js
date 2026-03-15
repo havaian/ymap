@@ -6,6 +6,7 @@ import Issue from '../issue/model.js';
 import Comment from '../comment/model.js';
 import Object_ from '../object/model.js';
 import User from '../user/model.js';
+import Task from '../task/model.js';
 import bcrypt from 'bcryptjs';
 
 // ── Issue templates per object type / sub-category ────────────────────────────
@@ -323,3 +324,131 @@ export const clearSeededData = async () => {
         users:    usersResult.deletedCount
     };
 };
+
+// ── generateProgramVerifications ──────────────────────────────────────────────
+// Adds mock citizen verifications to existing program tasks.
+// Verif users get email prefix "verif." to distinguish them from issue seeders.
+
+const VERIFICATION_COMMENTS = {
+    done: [
+        'Проверил лично — всё сделано',
+        'Работы завершены, результат хороший',
+        'Задача выполнена в полном объёме',
+        'Всё починено, жильцы довольны',
+        'Ремонт завершён, качество нормальное',
+        'Наблюдал выполнение работ — всё в порядке',
+        'Подтверждаю выполнение',
+    ],
+    problem: [
+        'Сделано некачественно, нужна доработка',
+        'Работы не завершены, проблема осталась',
+        'Видно, что ремонт формальный',
+        'Ситуация не изменилась',
+        'Выполнено, но уже снова сломалось',
+        'Не соответствует заявленному объёму работ',
+        'Требуется повторная проверка',
+    ],
+};
+
+// Status distribution per task status
+const VERIF_STATUS_CHANCE = {
+    Completed:             0.85, // 85% done
+    'Pending Verification': 0.55,
+    'In Progress':          0.35,
+    Planned:                0.25,
+    Failed:                 0.15,
+};
+
+export const generateProgramVerifications = async (maxPerTask = 6) => {
+    console.log('🌱 Generating mock program task verifications...');
+
+    const tasks = await Task.find({ programId: { $ne: null } }).lean();
+    if (!tasks.length) {
+        console.log('⚠️  No program tasks found. Create program tasks first.');
+        return { tasks: 0, verifications: 0, users: 0 };
+    }
+    console.log(`📋 Found ${tasks.length} program tasks`);
+
+    // Create a small pool of dedicated verif users
+    const POOL_SIZE = 40;
+    const hashedPassword = await bcrypt.hash('MockUser123!', 10);
+    const runId = Date.now();
+
+    const mockUsers = Array.from({ length: POOL_SIZE }, (_, i) => ({
+        name:     MOCK_USER_NAMES[i % MOCK_USER_NAMES.length],
+        email:    `verif.${runId}.${i + 1}@test.ymap.uz`,
+        password: hashedPassword,
+        role:     'CITIZEN',
+        isSeeded: true,
+    }));
+
+    const insertedUsers = await User.insertMany(mockUsers);
+    console.log(`✅ Created ${insertedUsers.length} verifier users`);
+
+    let totalVerifications = 0;
+
+    for (const task of tasks) {
+        // Skip tasks that already have verifications to avoid duplicate userId conflicts
+        if (task.verifications?.length > 0) continue;
+
+        const count    = randomBetween(1, maxPerTask);
+        const doneChance = VERIF_STATUS_CHANCE[task.status] ?? 0.5;
+        const verifs   = [];
+        const usedIds  = new Set();
+
+        for (let i = 0; i < count; i++) {
+            // Pick a user not already used for this task
+            let user;
+            let attempts = 0;
+            do {
+                user = randomChoice(insertedUsers);
+                attempts++;
+            } while (usedIds.has(user._id.toString()) && attempts < 30);
+
+            if (usedIds.has(user._id.toString())) continue;
+            usedIds.add(user._id.toString());
+
+            const status  = Math.random() < doneChance ? 'done' : 'problem';
+            const addComment = Math.random() < 0.65;
+
+            verifs.push({
+                userId:    user._id,
+                status,
+                comment:   addComment ? randomChoice(VERIFICATION_COMMENTS[status]) : undefined,
+                createdAt: new Date(Date.now() - randomBetween(0, 45 * 24 * 60 * 60 * 1000)),
+            });
+        }
+
+        if (verifs.length > 0) {
+            await Task.findByIdAndUpdate(task._id, {
+                $push: { verifications: { $each: verifs } },
+            });
+            totalVerifications += verifs.length;
+        }
+    }
+
+    console.log(`✅ Added ${totalVerifications} verifications across ${tasks.length} tasks`);
+    return { tasks: tasks.length, verifications: totalVerifications, users: insertedUsers.length };
+};
+
+// ── clearProgramVerifications ─────────────────────────────────────────────────
+// Removes verifications added by verif-seed users and deletes those users.
+
+export const clearProgramVerifications = async () => {
+    // Find only verif-seed users (email starts with "verif.")
+    const verifUsers = await User.find({ isSeeded: true, email: /^verif\./ }).lean();
+    const verifIds   = verifUsers.map(u => u._id);
+
+    let modifiedTasks = 0;
+    if (verifIds.length > 0) {
+        const result = await Task.updateMany(
+            { 'verifications.userId': { $in: verifIds } },
+            { $pull: { verifications: { userId: { $in: verifIds } } } }
+        );
+        modifiedTasks = result.modifiedCount;
+        await User.deleteMany({ _id: { $in: verifIds } });
+    }
+
+    console.log(`🗑️  Cleared verifications from ${modifiedTasks} tasks, removed ${verifUsers.length} verif users`);
+    return { modifiedTasks, removedUsers: verifUsers.length };
+};   

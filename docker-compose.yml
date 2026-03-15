@@ -40,7 +40,7 @@ services:
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
     volumes:
-      - ./uploads/:/usr/src/app/uploads:rw,Z
+      - ./uploads/:/app/uploads:rw,Z
     ports:
       - "${BACKEND_EXPOSE:-127.0.0.1:4000}:${BACKEND_PORT:-4000}"
     depends_on:

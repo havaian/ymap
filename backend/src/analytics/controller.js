@@ -623,6 +623,7 @@ export const getChoropleth = async (req, res) => {
 
             return {
                 dist,
+                issueCount: issues.total,
                 openRatio: issues.total > 0 ? issues.open / issues.total : 0,
                 objectDensity: objs.count / area,
                 verificationRate: verif.totalCount > 0 ? verif.doneCount / verif.totalCount : null
@@ -631,8 +632,8 @@ export const getChoropleth = async (req, res) => {
 
         const maxObjectDensity = Math.max(...raw.map(r => r.objectDensity), 0.001);
 
-        const features = raw.map(({ dist, openRatio, objectDensity, verificationRate }) => {
-            const issueScore = issues.total === 0 ? 0 : Math.max(0, Math.round((1 - openRatio) * 100));
+        const features = raw.map(({ dist, issueCount, openRatio, objectDensity, verificationRate }) => {
+            const issueScore = issueCount === 0 ? 0 : Math.max(0, Math.round((1 - openRatio) * 100));
             const objectScore = Math.min(100, Math.round((objectDensity / maxObjectDensity) * 100));
             const verifScore = verificationRate !== null ? Math.round(verificationRate * 100) : 0;
             const composite = Math.round(issueScore * 0.40 + verifScore * 0.35 + objectScore * 0.25);

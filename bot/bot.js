@@ -229,7 +229,7 @@ bot.callbackQuery('confirm', async (ctx) => {
         ctx.reply(
             `🎉 *Обращение создано!*\n\n` +
             `📋 ${issue.title || s.analysis.title}\n\n` +
-            `Вы можете отслеживать статус на платформе Y\\.Map\\.`,
+            `🔗 [Открыть обращение на карте](https://map.ytech.space/map/issues/${issue.id})`,
             {
                 parse_mode: 'Markdown',
                 reply_markup: { remove_keyboard: true },

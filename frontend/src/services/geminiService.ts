@@ -175,7 +175,8 @@ ${contextSection}
           items: {
             type: Type.OBJECT,
             properties: {
-              field:      { type: Type.STRING },
+              // enum принудительно ограничивает AI только реальными camelCase ключами
+              field:      { type: Type.STRING, enum: context!.fields!.map((f) => f.key) },
               fieldLabel: { type: Type.STRING },
               signal:     { type: Type.STRING, enum: ["confirms", "disputes"] },
               confidence: { type: Type.STRING, enum: ["low", "medium", "high"] },

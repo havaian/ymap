@@ -196,7 +196,10 @@ export const IssueModal: React.FC<IssueModalProps> = ({
 
       analysis.taskSignals?.forEach((s) => {
         tasksAPI
-          .vote(s.taskId, s.signal === "confirms" ? "confirmed" : "rejected")
+          .verify(s.taskId, {
+            status: s.signal === "confirms" ? "done" : "problem",
+            comment: s.reason,
+          })
           .catch(() => {});
       });
     }

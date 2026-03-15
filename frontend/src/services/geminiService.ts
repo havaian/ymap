@@ -204,6 +204,32 @@ ${contextSection}
     const jsonStr = response.text || "{}";
     const result = JSON.parse(jsonStr);
 
+    // Нормализация fieldSignals: если AI вернул лейбл вместо ключа — исправляем
+    const rawFieldSignals: FieldSignal[] = result.fieldSignals ?? [];
+    const normalizedFieldSignals: FieldSignal[] = rawFieldSignals.map((s) => {
+      if (!context?.fields) return s;
+
+      // Ключ уже правильный — оставляем
+      const byKey = context.fields.find((f) => f.key === s.field);
+      if (byKey) return s;
+
+      // AI вернул лейбл — ищем по лейблу
+      const byLabel = context.fields.find(
+        (f) => f.label.toLowerCase() === s.field.toLowerCase()
+      );
+      if (byLabel) return { ...s, field: byLabel.key, fieldLabel: byLabel.label };
+
+      // AI вернул перевод значения или что-то иное — ищем частичное совпадение
+      const byPartial = context.fields.find(
+        (f) =>
+          f.key.toLowerCase().includes(s.field.toLowerCase()) ||
+          s.field.toLowerCase().includes(f.label.toLowerCase())
+      );
+      if (byPartial) return { ...s, field: byPartial.key, fieldLabel: byPartial.label };
+
+      return s;
+    });
+
     return {
       title: result.title,
       category: result.category as IssueCategory,
@@ -211,7 +237,7 @@ ${contextSection}
       severity: result.severity as Severity,
       summary: result.summary,
       taskSignals: result.taskSignals ?? [],
-      fieldSignals: result.fieldSignals ?? [],
+      fieldSignals: normalizedFieldSignals,
     };
   } catch (error) {
     console.error("Gemini Analysis Failed:", error);

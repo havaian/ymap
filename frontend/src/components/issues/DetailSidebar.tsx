@@ -196,7 +196,7 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
           </div>
 
           {/* Object backlink */}
-          {issue.objectId && issue.objectName && (
+          {issue.objectId && (
             <button
               onClick={() => navigate(`/map/objects/${issue.objectId}`)}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 mb-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors text-left group"
@@ -209,7 +209,7 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
                   Объект
                 </div>
                 <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300 truncate leading-snug">
-                  {issue.objectName}
+                  {issue.objectName || "Перейти к объекту"}
                 </div>
               </div>
               <ExternalLink size={13} className="text-indigo-400 flex-shrink-0 group-hover:text-indigo-600 transition-colors" />

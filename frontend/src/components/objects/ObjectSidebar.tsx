@@ -102,6 +102,11 @@ const VERIFIABLE_FIELDS = new Set([
   "oshhonaHolati",
   "kapitalTamir",
   "materialSten",
+  "elektrKunDavomida",
+  "ichimlikSuviManbaa",
+  "internet",
+  "smena",
+  "binoIchidaSuv",
 ]);
 
 // ── Перевод значений полей (узб. ключи → рус.) ───────────────────────────────

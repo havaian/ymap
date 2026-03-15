@@ -1,10 +1,12 @@
 // frontend/src/components/admin/ProgramsSection.tsx
 
 import React, { useState, useEffect, useCallback } from "react";
+import { ProgramStatsModal } from "../programs/ProgramStatsModal";
 import { useNavigate } from "react-router-dom";
 import {
   Loader2,
   Plus,
+  BarChart3,
   ChevronDown,
   ChevronUp,
   CheckCircle2,
@@ -563,6 +565,7 @@ function ProgramRow({
     skipped: number;
   } | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const cfg = STATUS_LABEL[program.status] || STATUS_LABEL.active;
 
@@ -647,6 +650,16 @@ function ProgramRow({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setStatsOpen(true);
+            }}
+            className="p-1.5 text-slate-300 hover:text-indigo-500 transition-colors rounded-lg"
+            title="Статистика"
+          >
+            <BarChart3 size={13} />
+          </button>
           {isAdmin && (
             <button
               onClick={(e) => {
@@ -657,6 +670,12 @@ function ProgramRow({
             >
               <Trash2 size={13} />
             </button>
+          )}
+          {statsOpen && (
+            <ProgramStatsModal
+              program={program}
+              onClose={() => setStatsOpen(false)}
+            />
           )}
           {expanded ? (
             <ChevronUp size={15} className="text-slate-400" />

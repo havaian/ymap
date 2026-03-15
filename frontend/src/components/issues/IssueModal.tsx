@@ -15,7 +15,7 @@ import {
   TaskSignal,
   FieldSignal,
 } from "../../services/geminiService";
-import { tasksAPI, indicatorVerifAPI } from "../../services/api";
+import { tasksAPI, indicatorVerifAPI, objectsAPI } from "../../services/api";
 import { useObjects } from "../../hooks/useBackendData";
 import {
   Loader2,
@@ -140,17 +140,22 @@ export const IssueModal: React.FC<IssueModalProps> = ({
             status: t.status,
           }));
 
-        // Build verifiable fields list from selected object's details
-        const obj = objects.find((o) => o.id === selectedObjectId);
+        // Build verifiable fields list — нужен полный объект с details (markers endpoint их не отдаёт)
         const fields: AnalysisContext["fields"] = [];
-        if (obj?.details) {
-          for (const [key, val] of Object.entries(obj.details)) {
-            if (val !== undefined && val !== null && VERIFIABLE_FIELD_LABELS[key]) {
-              const map = FIELD_VALUE_TRANSLATIONS_FOR_CONTEXT[key];
-              const translated = map ? (map[String(val)] ?? String(val)) : String(val);
-              fields.push({ key, label: VERIFIABLE_FIELD_LABELS[key], value: translated });
+        try {
+          const objRes = await objectsAPI.getOne(selectedObjectId);
+          const fullObj = objRes.data?.data;
+          if (fullObj?.details) {
+            for (const [key, val] of Object.entries(fullObj.details)) {
+              if (val !== undefined && val !== null && VERIFIABLE_FIELD_LABELS[key]) {
+                const map = FIELD_VALUE_TRANSLATIONS_FOR_CONTEXT[key];
+                const translated = map ? (map[String(val)] ?? String(val)) : String(val);
+                fields.push({ key, label: VERIFIABLE_FIELD_LABELS[key], value: translated });
+              }
             }
           }
+        } catch {
+          // fields останется пустым — анализ продолжится без них
         }
 
         if (tasks.length > 0 || fields.length > 0) {

@@ -24,6 +24,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "@turf/turf": "^7.3.4",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",

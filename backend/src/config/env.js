@@ -3,19 +3,22 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const requiredEnvVars = [
+    'GEMINI_API_KEY',
     'MONGODB_URI',
     'JWT_SECRET'
 ];
 
 export const validateEnv = () => {
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
-
     if (missing.length > 0) {
         console.error('❌ Missing required environment variables:');
         missing.forEach(varName => console.error(`   - ${varName}`));
         process.exit(1);
     }
-
+    // Опциональные — предупреждение, но не падаем
+    if (!process.env.GEMINI_API_KEY) {
+        console.warn('⚠️  GEMINI_API_KEY not set — AI analysis endpoint will return 503');
+    }
     console.log('✅ Environment variables validated');
 };
 

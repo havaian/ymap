@@ -4,6 +4,7 @@ import { getUsers, blockUser } from '../user/controller.js';
 import { importObjects } from '../scripts/import-objects.js';
 import { generateMockData, clearSeededData, generateProgramVerifications, clearProgramVerifications } from '../services/seeder.js';
 import { createJob, updateJob, getJob } from '../services/jobStore.js';
+import { invalidateAnalyticsCache } from '../middleware/cache.js';
 
 export const adminGetUsers = getUsers;
 export const adminBlockUser = blockUser;
@@ -38,6 +39,7 @@ export const syncObjects = async (req, res) => {
                 total: result.upserted,
                 result
             });
+            await invalidateAnalyticsCache();
         } catch (error) {
             console.error('syncObjects job failed:', error);
             updateJob(jobId, { status: 'error', error: error.message });

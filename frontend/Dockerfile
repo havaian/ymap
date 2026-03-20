@@ -16,12 +16,6 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Define build arguments
-ARG GEMINI_API_KEY
-
-# Set environment variables from build args
-ENV GEMINI_API_KEY=$GEMINI_API_KEY
-
 # Build the app
 RUN npm run build
 

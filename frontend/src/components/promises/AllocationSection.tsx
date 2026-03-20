@@ -10,6 +10,7 @@ import {
   TaskStatus,
   User,
   UserRole,
+  isAdminUser
 } from "../../../types";
 import { tasksAPI, allocationsAPI } from "../../services/api";
 import { TaskCard } from "./TaskCard";
@@ -33,7 +34,7 @@ export const AllocationSection: React.FC<AllocationSectionProps> = ({
   targetId,
   currentUser,
 }) => {
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = isAdminUser(currentUser)
 
   const [allocations, setAllocations] = useState<BudgetAllocation[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);

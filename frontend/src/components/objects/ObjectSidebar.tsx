@@ -11,6 +11,7 @@ import {
   UserRole,
   Task,
   BudgetAllocation,
+  isAdminUser
 } from "../../../types";
 import { AllocationSection } from "../promises/AllocationSection";
 import { tasksAPI, indicatorVerifAPI, issuesAPI } from "../../services/api";
@@ -244,7 +245,7 @@ function IndicatorVerifyRow({
   const [submitting, setSubmitting] = useState(false);
 
   const Icon = CONDITION_ICONS[fieldKey] || Info;
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = isAdminUser(currentUser)
   const isCitizen = currentUser && !isAdmin;
 
   const handleSubmit = async () => {
@@ -873,7 +874,7 @@ export const ObjectSidebar: React.FC<ObjectSidebarProps> = ({
 }) => {
   if (!object) return null;
 
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = isAdminUser(currentUser)
 
   const [indicatorSummary, setIndicatorSummary] = useState<Record<string, any>>(
     {}
@@ -899,7 +900,7 @@ useEffect(() => {
     const fetchObjectIssues = async () => {
         setIssuesLoading(true);
         try {
-            const res = await issuesAPI.getAll({ objectId: object.id } as any);
+            const res = await issuesAPI.getAll({ objectId: object.id, includeComments: 'false' } as any);
             if (isMounted) {
                 const sorted = (res.data?.data || []).sort((a: Issue, b: Issue) => {
                     if (SEVERITY_WEIGHT[a.severity] !== SEVERITY_WEIGHT[b.severity])

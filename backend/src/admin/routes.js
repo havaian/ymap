@@ -7,7 +7,7 @@ import { adminOnly } from '../middleware/adminOnly.js';
 
 const router = express.Router();
 
-router.use(authMiddleware, adminOnly);
+router.use(adminOnly);
 
 router.get('/users', adminGetUsers);
 router.patch('/users/:id/block', adminBlockUser);

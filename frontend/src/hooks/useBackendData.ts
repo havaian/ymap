@@ -21,7 +21,6 @@ export const useIssues = (regionCode?: number | null) => {
       try {
         if (!isMounted) return;
         setLoading(true);
-        detailCache.current.clear();
 
         const params: Record<string, any> = {};
         if (regionCode != null) params.regionCode = regionCode;
@@ -186,7 +185,6 @@ export const useObjects = (regionCode?: number | null) => {
     const fetchMarkers = async () => {
       try {
         setLoading(true);
-        detailCache.current.clear();
 
         const params: Record<string, any> = {};
         if (regionCode != null) params.regionCode = regionCode;

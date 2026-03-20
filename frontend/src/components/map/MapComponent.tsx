@@ -43,10 +43,17 @@ if (L.Icon && L.Icon.Default) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Icon cache — each unique variant built once per session
 // ─────────────────────────────────────────────────────────────────────────────
+const MAX_ICON_CACHE = 500;
 const iconCache = new Map<string, L.DivIcon>();
 function getCachedIcon(key: string, creator: () => L.DivIcon): L.DivIcon {
-  if (!iconCache.has(key)) iconCache.set(key, creator());
-  return iconCache.get(key)!;
+  if (iconCache.has(key)) return iconCache.get(key)!;
+  if (iconCache.size >= MAX_ICON_CACHE) {
+    // Удаляем первый (самый старый) ключ
+    iconCache.delete(iconCache.keys().next().value);
+  }
+  const icon = creator();
+  iconCache.set(key, icon);
+  return icon;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,6 +99,12 @@ function getVerificationColor(
   return "#f59e0b"; // amber — mixed
 }
 
+const OBJECT_TYPE_SVG: Record<string, string> = {
+  school: renderToStaticMarkup(getObjectTypeIcon("school", 18)),
+  kindergarten: renderToStaticMarkup(getObjectTypeIcon("kindergarten", 18)),
+  health_post: renderToStaticMarkup(getObjectTypeIcon("health_post", 18)),
+};
+
 function createObjectIcon(
   objectType: string,
   unresolvedCount: number,
@@ -116,7 +129,7 @@ function createObjectIcon(
   return getCachedIcon(cacheKey, () => {
     const size = 40;
     const borderRadius = 12;
-    const iconSvg = renderToStaticMarkup(getObjectTypeIcon(objectType, 18));
+    const iconSvg = OBJECT_TYPE_SVG[objectType] ?? renderToStaticMarkup(getObjectTypeIcon(objectType, 18));
 
     const badgeSvg =
       unresolvedCount > 0

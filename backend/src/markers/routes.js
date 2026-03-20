@@ -6,7 +6,7 @@ import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = Router();
 
-router.get('/objects', cacheMiddleware(120, 'markers'), getObjectMarkers);
+router.get('/objects', cacheMiddleware(3600, 'markers'), getObjectMarkers); // 1 час
 router.get('/issues', cacheMiddleware(60, 'markers'), getIssueMarkers);
 
 export default router;

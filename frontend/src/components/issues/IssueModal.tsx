@@ -40,6 +40,7 @@ interface IssueModalProps {
   onSubmit: (data: any) => void;
   selectedLocation: Coordinates | null;
   preSelectedObject?: FacilityObject | null;
+  regionCode?: number | null;
 }
 
 const OBJECT_TYPE_CATEGORY: Record<string, IssueCategory> = {
@@ -82,6 +83,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   onSubmit,
   selectedLocation,
   preSelectedObject,
+  regionCode
 }) => {
   const [description, setDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -93,7 +95,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   >(undefined);
   const [objectSearchTerm, setObjectSearchTerm] = useState("");
 
-  const { objects } = useObjects();
+  const { objects } = useObjects(regionCode);
 
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
 

@@ -4,11 +4,9 @@
 
 import 'dotenv/config';
 import { Bot, session, InlineKeyboard, Keyboard } from 'grammy';
-import { GoogleGenAI, Type } from '@google/genai';
 import axios from 'axios';
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const API_BASE = process.env.YMAP_API_URL || 'https://map.ytech.space/api';
 
@@ -35,44 +33,13 @@ async function ensureToken() {
 
 // ── Gemini — точно такой же промпт и схема как в geminiService.ts ──────────────
 
-async function analyzeWithGemini(description) {
-    const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `You are an AI assistant for a civic infrastructure app in Uzbekistan called 'Y.Map'.
-Analyze the following user report description about a city problem.
-
-User Report: "${description}"
-
-Determine:
-1. A short, professional title (max 6 words).
-2. The most fitting Category from this list: Roads, Water & Sewage, Electricity, Schools & Kindergartens, Hospitals & Clinics, Waste Management, Other.
-3. If the category is 'Schools & Kindergartens' or 'Hospitals & Clinics', also determine a subCategory: 'Water' (plumbing, leaks), 'Electricity' (no power, wires), or 'General/Other'.
-4. The Severity level: Low, Medium, High, or Critical.
-5. A one-sentence summary for the government dashboard.`,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    title: { type: Type.STRING },
-                    category: { type: Type.STRING, enum: ['Roads', 'Water & Sewage', 'Electricity', 'Schools & Kindergartens', 'Hospitals & Clinics', 'Waste Management', 'Other'] },
-                    subCategory: { type: Type.STRING, enum: ['Water', 'Electricity', 'General/Other'] },
-                    severity: { type: Type.STRING, enum: ['Low', 'Medium', 'High', 'Critical'] },
-                    summary: { type: Type.STRING },
-                },
-                required: ['title', 'category', 'severity', 'summary'],
-            },
-        },
-    });
-
-    const result = JSON.parse(response.text || '{}');
-    return {
-        title: result.title || description,
-        category: result.category || 'Other',
-        subCategory: result.subCategory || undefined,
-        severity: result.severity || 'Medium',
-        summary: result.summary || null,
-    };
+async function analyzeWithGemini(description, token) {
+    const { data } = await axios.post(
+        `${API_BASE}/ai/analyze`,
+        { description, context: {} },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return data.data;
 }
 
 // ── API ────────────────────────────────────────────────────────────────────────
@@ -194,7 +161,7 @@ bot.on('message', async (ctx) => {
         const thinking = await ctx.reply('🤖 Анализируем обращение...');
 
         try {
-            s.analysis = await analyzeWithGemini(s.description);
+            s.analysis = await analyzeWithGemini(s.description, authToken)
         } catch (e) {
             console.error('Gemini error full:', JSON.stringify(e?.message || e, null, 2));
             s.analysis = { title: s.description.slice(0, 80), category: 'Other', severity: 'Medium', summary: null };
@@ -257,13 +224,13 @@ bot.callbackQuery('cancel', async (ctx) => {
 });
 
 bot.callbackQuery('new_report', async (ctx) => {
-  ctx.session = { step: 'waiting_desc', description: null, lat: null, lng: null, analysis: null };
-  await ctx.answerCallbackQuery();
-  await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() });
-  ctx.reply(
-    `📝 *Опишите проблему*\n\nРасскажите подробно что произошло.`,
-    { parse_mode: 'MarkdownV2' }
-  );
+    ctx.session = { step: 'waiting_desc', description: null, lat: null, lng: null, analysis: null };
+    await ctx.answerCallbackQuery();
+    await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() });
+    ctx.reply(
+        `📝 *Опишите проблему*\n\nРасскажите подробно что произошло.`,
+        { parse_mode: 'MarkdownV2' }
+    );
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────

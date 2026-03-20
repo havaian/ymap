@@ -29,6 +29,7 @@ import {
   FacilityObject,
   User,
   UserRole,
+  isAdminUser
 } from "../types";
 import { TASHKENT_CENTER } from "./constants";
 import { useIssues, useObjects, useUsers } from "./hooks/useBackendData";
@@ -68,16 +69,18 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     updateIssueStatus,
     deleteIssue,
     upvoteIssue,
-    addComment: addCommentToIssue,
+    addComment,
     fetchDetail: fetchIssueDetail,
+    refetch: refetchIssues
   } = useIssues(selectedRegionCode);
 
   const {
     objects,
     loading: objectsLoading,
     fetchDetail: fetchObjectDetail,
+    refetch: refetchObjects
   } = useObjects(selectedRegionCode);
-  const isAdmin = currentUser.role === UserRole.ADMIN || currentUser.role.toLowerCase() === "admin";
+  const isAdmin = isAdminUser(currentUser);
   const { users, toggleBlockUser } = useUsers(isAdmin);
 
   // Verification summary for map marker colors — Map<objectId, { doneCount, problemCount, totalCount }>
@@ -85,10 +88,6 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     Map<string, any>
   >(new Map());
   const [taskStats, setTaskStats] = useState<any>(null);
-
-  const {
-    issues: allIssues,
-  } = useIssues(activeView === "LIST" ? null : selectedRegionCode);
 
   useEffect(() => {
     tasksAPI
@@ -248,12 +247,13 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   }, [fontSize]);
 
   // ── Toast helpers ─────────────────────────────────────
-  const addToast = (message: string, type: "success" | "error" = "success") => {
+  const addToast = useCallback((message: string, type: "success" | "error" = "success") => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, message, type }]);
-  };
-  const removeToast = (id: string) =>
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const removeToast = useCallback((id: string) =>
+      setToasts((prev) => prev.filter((t) => t.id !== id)), []);
 
   const layers: LayerState = { showHeatmap, showObjects, showStandaloneIssues };
 
@@ -270,13 +270,13 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   // ── Unresolved counts per object (map marker badge) ───
   const objectUnresolvedCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    issues.forEach((issue) => {
-      if (issue.objectId && issue.status !== "Resolved") {
-        counts[issue.objectId] = (counts[issue.objectId] || 0) + 1;
-      }
-    });
+    for (const issue of issues) {
+        if (issue.objectId && issue.status !== "Resolved") {
+            counts[issue.objectId] = (counts[issue.objectId] || 0) + 1;
+        }
+    }
     return counts;
-  }, [issues]);
+}, [issues]); // for-of быстрее forEach на больших массивах
 
   // ── Handlers ──────────────────────────────────────────
 
@@ -358,9 +358,13 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   };
 
   const handleAddIssue = async (data: any) => {
+    if (!selectedLocation && !data.objectId) {
+      addToast("Выберите место на карте", "error");
+      return;
+    }
     const issueData = {
-      lat: selectedLocation?.lat || TASHKENT_CENTER[0],
-      lng: selectedLocation?.lng || TASHKENT_CENTER[1],
+      lat: selectedLocation?.lat ?? TASHKENT_CENTER[0],
+      lng: selectedLocation?.lng ?? TASHKENT_CENTER[1],
       title: data.title,
       description: data.description,
       category: data.category,
@@ -380,10 +384,26 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
     } else {
       addToast(result.error || "Ошибка создания обращения", "error");
     }
+    refreshVerificationData();
   };
 
+  const refreshVerificationData = useCallback(() => {
+    tasksAPI.getVerificationSummary().then((res) => {
+        if (res.data?.success) {
+            const map = new Map<string, any>();
+            res.data.data.forEach((s: any) => map.set(s.targetId, s));
+            setVerificationSummary(map);
+        }
+    }).catch(() => {});
+    tasksAPI.getStats().then((res) => {
+        if (res.data?.success) setTaskStats(res.data.data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => { refreshVerificationData(); }, []);
+
   const handleAddComment = async (issueId: string, text: string) => {
-    const result = await addCommentToIssue(issueId, text);
+    const result = await addComment(issueId, text);
     if (result.success) addToast("Комментарий добавлен.");
     else addToast(result.error || "Ошибка добавления комментария", "error");
   };
@@ -420,23 +440,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
 
   // Refresh verification summary after a task is verified from ObjectSidebar
   const handleVerificationDone = useCallback(() => {
-    tasksAPI
-      .getVerificationSummary()
-      .then((res) => {
-        if (res.data?.success) {
-          const map = new Map<string, any>();
-          res.data.data.forEach((s: any) => map.set(s.targetId, s));
-          setVerificationSummary(map);
-        }
-      })
-      .catch(() => {});
-    tasksAPI
-      .getStats()
-      .then((res) => {
-        if (res.data?.success) setTaskStats(res.data.data);
-      })
-      .catch(() => {});
-  }, []);
+    refreshVerificationData();
+  }, [refreshVerificationData]);
 
   // ── Loading screen ────────────────────────────────────
   if (issuesLoading || objectsLoading) {
@@ -576,11 +581,11 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
             )}
           </>
         ) : activeView === "LIST" ? (
-          <ListView issues={allIssues} onSelectIssue={handleSelectFromList} />
+          <ListView issues={issues} onSelectIssue={handleSelectFromList} />
         ) : activeView === "USERS" ? (
           <AdminUserView users={users} onToggleBlock={handleToggleBlock} />
         ) : activeView === "DATA" ? (
-          <AdminDataView onDataImported={() => window.location.reload()} />
+          <AdminDataView onDataImported={() => { refetchIssues(); refetchObjects(); }} />
         ) : activeView === "PROFILE" ? (
           <ProfileView currentUser={currentUser} />
         ) : activeView === "LEADERBOARD" ? (
@@ -633,6 +638,7 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
         onSubmit={handleAddIssue}
         selectedLocation={selectedLocation}
         preSelectedObject={selectedObjectForReport}
+        regionCode={selectedRegionCode}
       />
 
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />

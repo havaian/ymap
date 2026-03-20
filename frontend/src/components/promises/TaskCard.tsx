@@ -12,7 +12,7 @@ import {
   ThumbsDown,
   Loader2,
 } from "lucide-react";
-import { Task, TaskStatus, User, UserRole } from "../../../types";
+import { Task, TaskStatus, User, UserRole, isAdminUser } from "../../../types";
 
 interface TaskCardProps {
   task: Task;
@@ -73,7 +73,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onEdit,
 }) => {
   const [voting, setVoting] = React.useState(false);
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = isAdminUser(currentUser)
   const userId = currentUser?.id;
 
   const cfg = STATUS_CONFIG[task.status];

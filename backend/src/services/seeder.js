@@ -1,6 +1,5 @@
 // backend/src/services/seeder.js
-// Generates mock citizen issue reports for demo / testing.
-// Uses the unified Object model (school, kindergarten, health_post).
+// Generates mock citizen issue reports and program task verifications for demo / testing.
 
 import Issue from '../issue/model.js';
 import Comment from '../comment/model.js';
@@ -120,11 +119,10 @@ const TASHKENT_BOUNDS = { latMin: 41.20, latMax: 41.38, lngMin: 69.13, lngMax: 6
 
 const STANDALONE_CATEGORIES = Object.keys(STANDALONE_TEMPLATES);
 
-// Maps objectType → IssueCategory value for object-bound issues
 const OBJECT_TYPE_CATEGORY = {
-    school:       'Schools & Kindergartens',
+    school: 'Schools & Kindergartens',
     kindergarten: 'Schools & Kindergartens',
-    health_post:  'Hospitals & Clinics'
+    health_post: 'Hospitals & Clinics'
 };
 
 const COMMENT_TEMPLATES = [
@@ -157,177 +155,7 @@ const MOCK_USER_NAMES = [
     'Шахноза Садыкова', 'Дониёр Муродов', 'Нигора Алимова', 'Бахтиёр Эргашев'
 ];
 
-const randomChoice  = (arr)       => arr[Math.floor(Math.random() * arr.length)];
-const randomBetween = (min, max)  => Math.floor(Math.random() * (max - min + 1)) + min;
-const randomFloat   = (min, max)  => Math.random() * (max - min) + min;
-
-// ── generateMockData ──────────────────────────────────────────────────────────
-
-export const generateMockData = async (count = 1000, includeComments = true) => {
-    console.log(`🌱 Generating ${count} mock issues...`);
-
-    // Auto-clear any leftover seeded data
-    const existingIds = await Issue.find({ isSeeded: true }).distinct('_id');
-    if (existingIds.length > 0) {
-        console.log(`🧹 Clearing ${existingIds.length} leftover seeded issues...`);
-        await Comment.deleteMany({ issueId: { $in: existingIds } });
-        await Issue.deleteMany({ isSeeded: true });
-        await User.deleteMany({ isSeeded: true });
-    }
-
-    // Step 1: Create mock users (1 per 10 issues)
-    const usersNeeded     = Math.ceil(count / 10);
-    const hashedPassword  = await bcrypt.hash('MockUser123!', 10);
-    const runId           = Date.now();
-
-    const mockUsers = Array.from({ length: usersNeeded }, (_, i) => ({
-        name:      MOCK_USER_NAMES[i % MOCK_USER_NAMES.length],
-        email:     `mock.${runId}.${i + 1}@test.ymap.uz`,
-        password:  hashedPassword,
-        role:      'CITIZEN',
-        isSeeded:  true
-    }));
-
-    const insertedUsers = await User.insertMany(mockUsers);
-    console.log(`✅ Created ${insertedUsers.length} mock users`);
-
-    // Step 2: Load objects from the unified Object collection (sample up to 500)
-    const objects = await Object_.find().limit(500).lean();
-
-    if (objects.length === 0) {
-        throw new Error('No objects found. Please sync objects first via POST /api/admin/sync-objects.');
-    }
-
-    // Step 3: Generate issues
-    const issues       = [];
-    const now          = Date.now();
-    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
-
-    for (let i = 0; i < count; i++) {
-        const user      = insertedUsers[Math.floor(i / 10)];
-        const createdAt = new Date(ninetyDaysAgo + Math.random() * (now - ninetyDaysAgo));
-
-        const severityRand = Math.random();
-        const severity = severityRand > 0.9 ? 'Critical' : severityRand > 0.7 ? 'High' : severityRand > 0.4 ? 'Medium' : 'Low';
-
-        const statusRand = Math.random();
-        const status = statusRand > 0.9 ? 'Resolved' : statusRand > 0.7 ? 'In Progress' : 'Open';
-
-        if (Math.random() < 0.3) {
-            // ── Standalone issue ──────────────────────────────────────────────
-            const category = randomChoice(STANDALONE_CATEGORIES);
-            const title    = randomChoice(STANDALONE_TEMPLATES[category]);
-            const lat      = randomFloat(TASHKENT_BOUNDS.latMin, TASHKENT_BOUNDS.latMax);
-            const lng      = randomFloat(TASHKENT_BOUNDS.lngMin, TASHKENT_BOUNDS.lngMax);
-
-            issues.push({
-                lat,
-                lng,
-                location:    { type: 'Point', coordinates: [lng, lat] },
-                title,
-                description: `Обращение от жителя. ${title}. Просьба обратить внимание.`,
-                category,
-                subCategory: 'General/Other',
-                severity,
-                status,
-                votes:       randomBetween(1, 300),
-                userId:      user._id,
-                aiSummary:   `Автоматически определено: ${severity} приоритет.`,
-                isSeeded:    true,
-                createdAt
-            });
-
-        } else {
-            // ── Object-bound issue ────────────────────────────────────────────
-            const obj        = randomChoice(objects);
-            const objType    = obj.objectType;
-            const templates  = PROBLEM_TEMPLATES[objType] || PROBLEM_TEMPLATES.school;
-            const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
-            const title      = randomChoice(templates[subCategory] || templates['General/Other']);
-            const category   = OBJECT_TYPE_CATEGORY[objType] || 'Schools & Kindergartens';
-
-            const latOffset  = (Math.random() - 0.5) * 0.002;
-            const lngOffset  = (Math.random() - 0.5) * 0.002;
-
-            issues.push({
-                lat:         obj.lat + latOffset,
-                lng:         obj.lng + lngOffset,
-                location:    { type: 'Point', coordinates: [obj.lng + lngOffset, obj.lat + latOffset] },
-                title,
-                description: `Обращение по объекту ${obj.name}. ${title}. Требуется решение.`,
-                category,
-                subCategory,
-                severity,
-                status,
-                votes:       randomBetween(1, 500),
-                userId:      user._id,
-                objectId:    obj._id.toString(),
-                objectName:  obj.name,
-                aiSummary:   `Автоматически определено: ${severity} приоритет.`,
-                isSeeded:    true,
-                createdAt
-            });
-        }
-    }
-
-    const insertedIssues = await Issue.insertMany(issues);
-    const standaloneCount = issues.filter(i => !i.objectId).length;
-    const boundCount      = issues.length - standaloneCount;
-    console.log(`✅ Created ${insertedIssues.length} mock issues (${boundCount} object-bound, ${standaloneCount} standalone)`);
-
-    // Step 4: Generate comments
-    let commentsGenerated = 0;
-    if (includeComments) {
-        const allComments = [];
-        for (let u = 0; u < insertedUsers.length; u++) {
-            for (let j = 0; j < 5; j++) {
-                allComments.push({
-                    issueId:   randomChoice(insertedIssues)._id,
-                    userId:    insertedUsers[u]._id,
-                    author:    insertedUsers[u].name,
-                    text:      randomChoice(COMMENT_TEMPLATES),
-                    createdAt: new Date(now - randomBetween(0, 30 * 24 * 60 * 60 * 1000))
-                });
-                commentsGenerated++;
-            }
-        }
-        if (allComments.length > 0) await Comment.insertMany(allComments);
-    }
-
-    console.log(`✅ Generated ${count} mock issues with ${commentsGenerated} comments`);
-
-    return {
-        generated:  count,
-        standalone: standaloneCount,
-        bound:      boundCount,
-        comments:   commentsGenerated,
-        users:      usersNeeded,
-        objects:    objects.length
-    };
-};
-
-// ── clearSeededData ───────────────────────────────────────────────────────────
-
-export const clearSeededData = async () => {
-    const seededIds = await Issue.find({ isSeeded: true }).distinct('_id');
-    const [commentsResult, issuesResult, usersResult] = await Promise.all([
-        Comment.deleteMany({ issueId: { $in: seededIds } }),
-        Issue.deleteMany({ isSeeded: true }),
-        User.deleteMany({ isSeeded: true })
-    ]);
-
-    console.log(`🗑️ Cleared ${issuesResult.deletedCount} seeded issues, ${commentsResult.deletedCount} comments, ${usersResult.deletedCount} users`);
-
-    return {
-        issues:   issuesResult.deletedCount,
-        comments: commentsResult.deletedCount,
-        users:    usersResult.deletedCount
-    };
-};
-
-// ── generateProgramVerifications ──────────────────────────────────────────────
-// Adds mock citizen verifications to existing program tasks.
-// Verif users get email prefix "verif." to distinguish them from issue seeders.
+// ── Verification templates ────────────────────────────────────────────────────
 
 const VERIFICATION_COMMENTS = {
     done: [
@@ -350,35 +178,213 @@ const VERIFICATION_COMMENTS = {
     ],
 };
 
-// Status distribution per task status
+// Probability of "done" verdict per task status
 const VERIF_STATUS_CHANCE = {
-    Completed:             0.85, // 85% done
+    Completed: 0.85,
     'Pending Verification': 0.55,
-    'In Progress':          0.35,
-    Planned:                0.25,
-    Failed:                 0.15,
+    'In Progress': 0.35,
+    Planned: 0.25,
+    Failed: 0.15,
 };
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const randomChoice = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomFloat = (min, max) => Math.random() * (max - min) + min;
+
+// ── generateMockData ──────────────────────────────────────────────────────────
+
+export const generateMockData = async (count = 1000, includeComments = true) => {
+    console.log(`🌱 Generating ${count} mock issues...`);
+
+    // Auto-clear leftover seeded data
+    const existingIds = await Issue.find({ isSeeded: true }).distinct('_id');
+    if (existingIds.length > 0) {
+        console.log(`🧹 Clearing ${existingIds.length} leftover seeded issues...`);
+        const seededUserIds = await User.find({ isSeeded: true, email: /^mock\./ }).distinct('_id');
+        await Promise.all([
+            Comment.deleteMany({ userId: { $in: seededUserIds } }),
+            Issue.deleteMany({ isSeeded: true }),
+            User.deleteMany({ isSeeded: true, email: /^mock\./ }),
+        ]);
+    }
+
+    // Step 1: Create mock users — rounds=4 for speed (seed data only)
+    const usersNeeded = Math.ceil(count / 10);
+    const hashedPassword = await bcrypt.hash('MockUser123!', 4);
+    const runId = Date.now();
+
+    const mockUsers = Array.from({ length: usersNeeded }, (_, i) => ({
+        name: MOCK_USER_NAMES[i % MOCK_USER_NAMES.length],
+        email: `mock.${runId}.${i + 1}@test.ymap.uz`,
+        password: hashedPassword,
+        role: 'CITIZEN',
+        isSeeded: true
+    }));
+
+    const insertedUsers = await User.insertMany(mockUsers);
+    console.log(`✅ Created ${insertedUsers.length} mock users`);
+
+    // Step 2: Random sample of objects across all regions via $sample
+    const objects = await Object_.aggregate([{ $sample: { size: 500 } }]);
+
+    if (objects.length === 0) {
+        throw new Error('No objects found. Please sync objects first via POST /api/admin/sync-objects.');
+    }
+
+    // Step 3: Generate issues — count standalone during generation, not after
+    const issues = [];
+    const now = Date.now();
+    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
+    let standaloneCount = 0;
+
+    for (let i = 0; i < count; i++) {
+        const user = insertedUsers[Math.floor(i / 10)];
+        const createdAt = new Date(ninetyDaysAgo + Math.random() * (now - ninetyDaysAgo));
+
+        const severityRand = Math.random();
+        const severity = severityRand > 0.9 ? 'Critical' : severityRand > 0.7 ? 'High' : severityRand > 0.4 ? 'Medium' : 'Low';
+
+        const statusRand = Math.random();
+        const status = statusRand > 0.9 ? 'Resolved' : statusRand > 0.7 ? 'In Progress' : 'Open';
+
+        if (Math.random() < 0.3) {
+            // ── Standalone issue ──────────────────────────────────────────────
+            standaloneCount++;
+            const category = randomChoice(STANDALONE_CATEGORIES);
+            const title = randomChoice(STANDALONE_TEMPLATES[category]);
+            const lat = randomFloat(TASHKENT_BOUNDS.latMin, TASHKENT_BOUNDS.latMax);
+            const lng = randomFloat(TASHKENT_BOUNDS.lngMin, TASHKENT_BOUNDS.lngMax);
+
+            issues.push({
+                lat, lng,
+                location: { type: 'Point', coordinates: [lng, lat] },
+                title,
+                description: `Обращение от жителя. ${title}. Просьба обратить внимание.`,
+                category,
+                subCategory: 'General/Other',
+                severity, status,
+                votes: randomBetween(1, 300),
+                userId: user._id,
+                aiSummary: `Автоматически определено: ${severity} приоритет.`,
+                isSeeded: true,
+                createdAt
+            });
+        } else {
+            // ── Object-bound issue ────────────────────────────────────────────
+            const obj = randomChoice(objects);
+            const objType = obj.objectType;
+            const templates = PROBLEM_TEMPLATES[objType] || PROBLEM_TEMPLATES.school;
+            const subCategory = randomChoice(['Water', 'Electricity', 'General/Other']);
+            const title = randomChoice(templates[subCategory] || templates['General/Other']);
+            const category = OBJECT_TYPE_CATEGORY[objType] || 'Schools & Kindergartens';
+            const latOffset = (Math.random() - 0.5) * 0.002;
+            const lngOffset = (Math.random() - 0.5) * 0.002;
+
+            issues.push({
+                lat: obj.lat + latOffset,
+                lng: obj.lng + lngOffset,
+                location: { type: 'Point', coordinates: [obj.lng + lngOffset, obj.lat + latOffset] },
+                title,
+                description: `Обращение по объекту ${obj.name}. ${title}. Требуется решение.`,
+                category, subCategory, severity, status,
+                votes: randomBetween(1, 500),
+                userId: user._id,
+                objectId: obj._id.toString(),
+                objectName: obj.name,
+                aiSummary: `Автоматически определено: ${severity} приоритет.`,
+                isSeeded: true,
+                createdAt
+            });
+        }
+    }
+
+    const insertedIssues = await Issue.insertMany(issues);
+    const boundCount = issues.length - standaloneCount;
+    console.log(`✅ Created ${insertedIssues.length} mock issues (${boundCount} object-bound, ${standaloneCount} standalone)`);
+
+    // Step 4: Generate comments — batched to avoid large in-memory arrays
+    let commentsGenerated = 0;
+    if (includeComments) {
+        const COMMENT_BATCH = 500;
+        let batch = [];
+
+        for (let u = 0; u < insertedUsers.length; u++) {
+            for (let j = 0; j < 5; j++) {
+                batch.push({
+                    issueId: randomChoice(insertedIssues)._id,
+                    userId: insertedUsers[u]._id,
+                    author: insertedUsers[u].name,
+                    text: randomChoice(COMMENT_TEMPLATES),
+                    createdAt: new Date(now - randomBetween(0, 30 * 24 * 60 * 60 * 1000))
+                });
+                commentsGenerated++;
+                if (batch.length >= COMMENT_BATCH) {
+                    await Comment.insertMany(batch);
+                    batch = [];
+                }
+            }
+        }
+        if (batch.length > 0) await Comment.insertMany(batch);
+    }
+
+    console.log(`✅ Generated ${count} mock issues with ${commentsGenerated} comments`);
+
+    return {
+        generated: count,
+        standalone: standaloneCount,
+        bound: boundCount,
+        comments: commentsGenerated,
+        users: usersNeeded,
+        objects: objects.length
+    };
+};
+
+// ── clearSeededData ───────────────────────────────────────────────────────────
+
+export const clearSeededData = async () => {
+    // Use seeded user IDs to delete comments — avoids loading all issue IDs into memory
+    const seededUserIds = await User.find({ isSeeded: true }).distinct('_id');
+
+    const [commentsResult, issuesResult, usersResult] = await Promise.all([
+        Comment.deleteMany({ userId: { $in: seededUserIds } }),
+        Issue.deleteMany({ isSeeded: true }),
+        User.deleteMany({ isSeeded: true })
+    ]);
+
+    console.log(`🗑️ Cleared ${issuesResult.deletedCount} seeded issues, ${commentsResult.deletedCount} comments, ${usersResult.deletedCount} users`);
+
+    return {
+        issues: issuesResult.deletedCount,
+        comments: commentsResult.deletedCount,
+        users: usersResult.deletedCount
+    };
+};
+
+// ── generateProgramVerifications ──────────────────────────────────────────────
+// Adds mock citizen verifications to existing program tasks.
 
 export const generateProgramVerifications = async (maxPerTask = 6) => {
     console.log('🌱 Generating mock program task verifications...');
 
-    const tasks = await Task.find({ programId: { $ne: null } }).lean();
+    const tasks = await Task.find({ programId: { $exists: true, $ne: null } }).lean();
     if (!tasks.length) {
         console.log('⚠️  No program tasks found. Create program tasks first.');
         return { tasks: 0, verifications: 0, users: 0 };
     }
     console.log(`📋 Found ${tasks.length} program tasks`);
 
-    // Create a small pool of dedicated verif users
+    // rounds=4 — seed data only, speed matters
+    const hashedPassword = await bcrypt.hash('MockUser123!', 4);
     const POOL_SIZE = 40;
-    const hashedPassword = await bcrypt.hash('MockUser123!', 10);
     const runId = Date.now();
 
     const mockUsers = Array.from({ length: POOL_SIZE }, (_, i) => ({
-        name:     MOCK_USER_NAMES[i % MOCK_USER_NAMES.length],
-        email:    `verif.${runId}.${i + 1}@test.ymap.uz`,
+        name: MOCK_USER_NAMES[i % MOCK_USER_NAMES.length],
+        email: `verif.${runId}.${i + 1}@test.ymap.uz`,
         password: hashedPassword,
-        role:     'CITIZEN',
+        role: 'CITIZEN',
         isSeeded: true,
     }));
 
@@ -388,36 +394,27 @@ export const generateProgramVerifications = async (maxPerTask = 6) => {
     let totalVerifications = 0;
 
     for (const task of tasks) {
-        // Skip tasks that already have verifications to avoid duplicate userId conflicts
+        // Skip tasks that already have verifications
         if (task.verifications?.length > 0) continue;
 
-        const count    = randomBetween(1, maxPerTask);
+        const count = randomBetween(1, maxPerTask);
         const doneChance = VERIF_STATUS_CHANCE[task.status] ?? 0.5;
-        const verifs   = [];
-        const usedIds  = new Set();
 
-        for (let i = 0; i < count; i++) {
-            // Pick a user not already used for this task
-            let user;
-            let attempts = 0;
-            do {
-                user = randomChoice(insertedUsers);
-                attempts++;
-            } while (usedIds.has(user._id.toString()) && attempts < 30);
+        // Shuffle pool and take first N — guaranteed unique, no retry loop
+        const shuffled = [...insertedUsers]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, count);
 
-            if (usedIds.has(user._id.toString())) continue;
-            usedIds.add(user._id.toString());
-
-            const status  = Math.random() < doneChance ? 'done' : 'problem';
+        const verifs = shuffled.map(user => {
+            const status = Math.random() < doneChance ? 'done' : 'problem';
             const addComment = Math.random() < 0.65;
-
-            verifs.push({
-                userId:    user._id,
+            return {
+                userId: user._id,
                 status,
-                comment:   addComment ? randomChoice(VERIFICATION_COMMENTS[status]) : undefined,
+                comment: addComment ? randomChoice(VERIFICATION_COMMENTS[status]) : undefined,
                 createdAt: new Date(Date.now() - randomBetween(0, 45 * 24 * 60 * 60 * 1000)),
-            });
-        }
+            };
+        });
 
         if (verifs.length > 0) {
             await Task.findByIdAndUpdate(task._id, {
@@ -432,12 +429,10 @@ export const generateProgramVerifications = async (maxPerTask = 6) => {
 };
 
 // ── clearProgramVerifications ─────────────────────────────────────────────────
-// Removes verifications added by verif-seed users and deletes those users.
 
 export const clearProgramVerifications = async () => {
-    // Find only verif-seed users (email starts with "verif.")
-    const verifUsers = await User.find({ isSeeded: true, email: /^verif\./ }).lean();
-    const verifIds   = verifUsers.map(u => u._id);
+    // Use distinct to avoid loading full user documents into memory
+    const verifIds = await User.find({ isSeeded: true, email: /^verif\./ }).distinct('_id');
 
     let modifiedTasks = 0;
     if (verifIds.length > 0) {
@@ -449,6 +444,6 @@ export const clearProgramVerifications = async () => {
         await User.deleteMany({ _id: { $in: verifIds } });
     }
 
-    console.log(`🗑️  Cleared verifications from ${modifiedTasks} tasks, removed ${verifUsers.length} verif users`);
-    return { modifiedTasks, removedUsers: verifUsers.length };
-};   
+    console.log(`🗑️  Cleared verifications from ${modifiedTasks} tasks, removed ${verifIds.length} verif users`);
+    return { modifiedTasks, removedUsers: verifIds.length };
+};

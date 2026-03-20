@@ -7,6 +7,11 @@ export enum UserRole {
   ADMIN   = 'ADMIN'
 }
 
+export function isAdminUser(user: User | null): boolean {
+  if (!user) return false;
+  return user.role === UserRole.ADMIN || user.role.toUpperCase() === "ADMIN";
+}
+
 export interface User {
   id: string;
   name: string;

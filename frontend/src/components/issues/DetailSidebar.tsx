@@ -7,6 +7,7 @@ import {
   IssueSubCategory,
   UserRole,
   User as UserType,
+  isAdminUser
 } from "../../../types";
 import { CATEGORY_COLORS } from "../../constants";
 import {
@@ -61,7 +62,7 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
   onDeleteIssue,
 }) => {
   const [newComment, setNewComment] = useState("");
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = isAdminUser(currentUser)
   const navigate = useNavigate();
 
   if (!issue) return null;

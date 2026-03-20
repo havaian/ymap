@@ -15,6 +15,7 @@ import { adminOnly } from './middleware/adminOnly.js';
 import { ensureAdminExists } from './services/admin-setup.js';
 
 import authRoutes from './auth/routes.js';
+import aiRoutes from './ai/routes.js';
 import issueRoutes from './issue/routes.js';
 import objectRoutes from './object/routes.js';
 import userRoutes from './user/routes.js';
@@ -77,7 +78,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ── Static uploads ────────────────────────────────────────────────────────────
-app.use('/api/uploads', express.static(UPLOAD_PATHS.root));
+app.use('/api/uploads', express.static(UPLOAD_PATHS.root, {
+    maxAge: '7d',
+    immutable: true,
+}));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -86,6 +90,9 @@ app.get('/health', (req, res) => {
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
+
+// ── AI (Gemini proxy) — авторизованные пользователи ──────────────────────────
+app.use('/api/ai', apiLimiter, aiRoutes);
 
 // Map data — read is public, writes are protected inside each route file
 app.use('/api/issues', apiLimiter, issueRoutes);
@@ -119,7 +126,7 @@ app.use('/api/markers', apiLimiter, authMiddleware, markerRoutes);
 app.use('/api/openbudget', apiLimiter, authMiddleware, openBudgetRoutes);
 
 // ── Indicator verification routes (public) ──────────────────────────────────────────────────────
-app.use('/api/objects/:id/indicator-verifications', apiLimiter, indicatorVerifRoutes);
+app.use('/api/objects/:id/indicator-verifications', apiLimiter, authMiddleware, indicatorVerifRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

@@ -107,5 +107,7 @@ issueSchema.index({ location: '2dsphere' });
 issueSchema.index({ status: 1 });
 issueSchema.index({ category: 1 });
 issueSchema.index({ createdAt: -1 });
+issueSchema.index({ objectId: 1 });
+issueSchema.index({ objectId: 1, status: 1 }); // для фильтрации активных
 
 export default mongoose.model('Issue', issueSchema);

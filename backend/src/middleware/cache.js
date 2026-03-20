@@ -66,15 +66,13 @@ export const invalidateAnalyticsCache = async () => {
     if (!redis?.isOpen) return;
 
     try {
-        // Find and delete all analytics cache keys
-        const keys = await redis.keys('analytics:*');
-        if (keys.length > 0) {
-            await redis.del(keys);
-        }
-        // Also invalidate markers cache
-        const markerKeys = await redis.keys('markers:*');
-        if (markerKeys.length > 0) {
-            await redis.del(markerKeys);
+        for (const prefix of ['analytics:*', 'markers:*']) {
+            let cursor = 0;
+            do {
+                const result = await redis.scan(cursor, { MATCH: prefix, COUNT: 100 });
+                cursor = result.cursor;
+                if (result.keys.length > 0) await redis.del(result.keys);
+            } while (cursor !== 0);
         }
     } catch (err) {
         console.warn('Cache invalidation error:', err.message);

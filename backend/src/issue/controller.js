@@ -10,68 +10,60 @@ import { validateCoordinates } from '../utils/validators.js';
 
 /**
  * GET /api/issues
- *
- * Uses $lookup aggregation to fetch all comments in one query.
+ * Query: ?category= &status= &severity= &objectId= &regionCode= &limit= &includeComments=false
  */
 export const getIssues = async (req, res) => {
-    const { category, status, severity, limit = 1000, objectId } = req.query;
+    const { category, status, severity, limit = 1000, objectId, regionCode, includeComments } = req.query;
 
     const match = {};
     if (category) match.category = category;
     if (status) match.status = status;
     if (severity) match.severity = severity;
     if (objectId) match.objectId = objectId;
+    if (regionCode) match.regionCode = parseInt(regionCode);
 
-    const issues = await Issue.aggregate([
+    const pipeline = [
         { $match: match },
         { $sort: { createdAt: -1 } },
         { $limit: parseInt(limit) },
-        {
+    ];
+
+    // Comments lookup is skipped when caller passes ?includeComments=false
+    if (includeComments !== 'false') {
+        pipeline.push({
             $lookup: {
                 from: 'comments',
                 localField: '_id',
                 foreignField: 'issueId',
                 pipeline: [
                     { $sort: { createdAt: 1 } },
-                    {
-                        $project: {
-                            id: { $toString: '$_id' },
-                            author: 1,
-                            text: 1,
-                            timestamp: { $toLong: '$createdAt' },
-                            _id: 0
-                        }
-                    }
+                    { $project: { id: { $toString: '$_id' }, author: 1, text: 1, timestamp: { $toLong: '$createdAt' }, _id: 0 } }
                 ],
                 as: 'comments'
             }
-        },
-        {
-            $project: {
-                id: { $toString: '$_id' },
-                lat: 1,
-                lng: 1,
-                title: 1,
-                description: 1,
-                category: 1,
-                subCategory: 1,
-                severity: 1,
-                status: 1,
-                votes: 1,
-                aiSummary: 1,
-                objectId: 1,
-                objectName: 1,
-                userId: 1,
-                regionCode: 1,
-                districtId: 1,
-                comments: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                _id: 0
-            }
-        }
-    ]);
+        });
+    } else {
+        pipeline.push({ $addFields: { comments: [] } });
+    }
 
+    pipeline.push({
+        $project: {
+            id: { $toString: '$_id' },
+            lat: 1, lng: 1,
+            title: 1, description: 1,
+            category: 1, subCategory: 1,
+            severity: 1, status: 1,
+            votes: 1, aiSummary: 1,
+            objectId: 1, objectName: 1,
+            userId: 1,
+            regionCode: 1, districtId: 1,
+            comments: 1,
+            createdAt: 1, updatedAt: 1,
+            _id: 0
+        }
+    });
+
+    const issues = await Issue.aggregate(pipeline);
     res.json({ success: true, data: issues });
 };
 
@@ -116,13 +108,11 @@ export const createIssue = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid coordinates' });
     }
 
-    // Look up the linked object name if objectId provided
     let objectName = null;
     let objectRegionCode = null;
     let objectDistrictId = null;
 
     if (objectId) {
-        // Linked to a facility — copy geo from the object
         const obj = await Object_.findById(objectId).select('name regionCode districtId').lean();
         if (obj) {
             objectName = obj.name;
@@ -131,7 +121,6 @@ export const createIssue = async (req, res) => {
         }
     }
 
-    // If still no district (standalone issue or object had no geo) — lookup by coordinates
     if (!objectRegionCode || !objectDistrictId) {
         const point = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
         const district = await District.findOne({
@@ -147,20 +136,14 @@ export const createIssue = async (req, res) => {
     }
 
     const issue = await Issue.create({
-        lat,
-        lng,
+        lat, lng,
         location: { type: 'Point', coordinates: [lng, lat] },
-        title,
-        description,
-        category,
+        title, description, category,
         subCategory: subCategory || null,
         severity,
         status: 'Open',
         votes: 1,
         aiSummary: aiSummary || null,
-        objectId: objectId || null,
-        objectName,
-        userId: req.user._id,
         objectId: objectId || null,
         objectName,
         userId: req.user._id,

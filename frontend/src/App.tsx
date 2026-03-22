@@ -50,7 +50,8 @@ const App: React.FC<AppProps> = ({ currentUser, onLogout, view }) => {
   const [selectedRegionCode, setSelectedRegionCode] = useState<number | null>(
     () => {
       const saved = localStorage.getItem("map_region");
-      return saved ? parseInt(saved) : null;
+      // Default to Tashkent city (10) on first visit to avoid loading all regions
+      return saved ? parseInt(saved) : 10;
     }
   );
 

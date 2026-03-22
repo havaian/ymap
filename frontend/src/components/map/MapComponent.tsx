@@ -471,6 +471,9 @@ function ObjectClusterGroup({
     }
   }, [map, hidden]);
 
+  // Pre-rendered once at module load — avoids calling renderToStaticMarkup in a hot loop
+  const ARROW_SVG = renderToStaticMarkup(<ArrowRight size={10} />);
+
   // Repopulate markers when object list changes
   useEffect(() => {
     const cg = clusterRef.current;
@@ -481,7 +484,7 @@ function ObjectClusterGroup({
     if (hidden) return;
 
     objectsRef.current = objects;
-    const arrowSvg = renderToStaticMarkup(<ArrowRight size={10} />);
+    const arrowSvg = ARROW_SVG;
 
     const markers = objects.map((obj: FacilityObject) => {
       const unresolvedCount = unresolvedRef.current[obj.id] || 0;

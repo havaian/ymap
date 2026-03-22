@@ -6,7 +6,7 @@ import User from '../user/model.js';
 // ─── Fast middleware (no DB lookup) ─────────────────────────────────────────
 // Uses role stored in JWT claims. No round-trip to MongoDB.
 // Use this on all regular protected routes (issues, votes, etc.)
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
 
@@ -25,6 +25,19 @@ export const authMiddleware = (req, res, next) => {
                 success: false,
                 message: 'Invalid or expired token'
             });
+        }
+
+        // Check if this user has been blocked since token was issued
+        const { getRedisClient } = await import('../config/redis.js');
+        const redis = getRedisClient();
+        if (redis?.isOpen) {
+            const blocked = await redis.get(`blocked:${decoded.userId}`);
+            if (blocked) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Your account has been blocked'
+                });
+            }
         }
 
         // Attach minimal user object from JWT claims — no DB needed

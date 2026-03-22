@@ -122,11 +122,11 @@ const AppWrapper: React.FC = () => {
           <Route path="objects/:objectId" element={null} />
         </Route>
 
-        {/* Dashboard */}
+        {/* Dashboard — admin only (analytics API is admin-gated) */}
         <Route
           path="/dashboard"
           element={
-            currentUser ? (
+            currentUser && currentUser.role.toLowerCase() === "admin" ? (
               <Suspense fallback={<ViewLoader />}>
                 <App
                   currentUser={currentUser}
@@ -134,6 +134,8 @@ const AppWrapper: React.FC = () => {
                   view="STATISTICS"
                 />
               </Suspense>
+            ) : currentUser ? (
+              <Navigate to="/map" replace />
             ) : (
               <Navigate to="/login" replace />
             )

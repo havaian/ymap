@@ -43,6 +43,18 @@ export const blockUser = async (req, res) => {
     user.blocked = blocked;
     await user.save();
 
+    // Flag in Redis so active JWTs are immediately rejected
+    const { getRedisClient } = await import('../config/redis.js');
+    const redis = getRedisClient();
+    if (redis?.isOpen) {
+        if (blocked) {
+            // TTL = 7 days (matches JWT_EXPIRES_IN)
+            await redis.setEx(`blocked:${id}`, 7 * 24 * 60 * 60, '1');
+        } else {
+            await redis.del(`blocked:${id}`);
+        }
+    }
+
     res.json({
         success: true,
         data: user.toJSON()

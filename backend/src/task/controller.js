@@ -279,6 +279,14 @@ export const verify = async (req, res) => {
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
+        // One verification per user per task
+        const alreadyVerified = task.verifications.some(
+            v => v.userId.toString() === req.user._id.toString()
+        );
+        if (alreadyVerified) {
+            return res.status(409).json({ success: false, message: 'You have already submitted a verification for this task' });
+        }
+
         task.verifications.push({
             userId: req.user._id,
             status,

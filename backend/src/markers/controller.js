@@ -7,15 +7,21 @@ import Object_ from '../object/model.js';
 import Issue from '../issue/model.js';
 
 // ── GET /api/markers/objects ──────────────────────────────────────────────────
-// Query: ?objectType=school&regionCode=17
+// Query: ?objectType=school&regionCode=17&swLat=&swLng=&neLat=&neLng=
 // Returns: id, lat, lng, name, objectType, sourceApi
 export const getObjectMarkers = async (req, res) => {
-    const { objectType, sourceApi, regionCode } = req.query;
+    const { objectType, sourceApi, regionCode, swLat, swLng, neLat, neLng } = req.query;
 
     const filter = {};
     if (objectType) filter.objectType = objectType;
     if (sourceApi) filter.sourceApi = sourceApi;
     if (regionCode) filter.regionCode = parseInt(regionCode);
+
+    // Bbox filter — takes priority over regionCode when provided
+    if (swLat && swLng && neLat && neLng) {
+        filter.lat = { $gte: parseFloat(swLat), $lte: parseFloat(neLat) };
+        filter.lng = { $gte: parseFloat(swLng), $lte: parseFloat(neLng) };
+    }
 
     const docs = await Object_.find(filter)
         .select('lat lng name objectType sourceApi details.sigimi details.umumiyUquvchi')
@@ -38,16 +44,22 @@ export const getObjectMarkers = async (req, res) => {
 };
 
 // ── GET /api/markers/issues ───────────────────────────────────────────────────
-// Query: ?category=&status=&severity=&regionCode=
+// Query: ?category=&status=&severity=&regionCode=&swLat=&swLng=&neLat=&neLng=
 // Returns: id, lat, lng, title, category, severity, status, votes, objectId
 export const getIssueMarkers = async (req, res) => {
-    const { category, status, severity, regionCode } = req.query;
+    const { category, status, severity, regionCode, swLat, swLng, neLat, neLng } = req.query;
 
     const filter = {};
     if (category) filter.category = category;
     if (status) filter.status = status;
     if (severity) filter.severity = severity;
     if (regionCode) filter.regionCode = parseInt(regionCode);
+
+    // Bbox filter — takes priority over regionCode when provided
+    if (swLat && swLng && neLat && neLng) {
+        filter.lat = { $gte: parseFloat(swLat), $lte: parseFloat(neLat) };
+        filter.lng = { $gte: parseFloat(swLng), $lte: parseFloat(neLng) };
+    }
 
     const docs = await Issue.find(filter)
         .select('lat lng title category severity status votes objectId createdAt')

@@ -7,6 +7,7 @@ import Vote from '../vote/model.js';
 import Object_ from '../object/model.js';
 import District from '../district/model.js';
 import { validateCoordinates } from '../utils/validators.js';
+import { invalidateAnalyticsCache } from '../middleware/cache.js';
 
 /**
  * GET /api/issues
@@ -105,7 +106,21 @@ export const createIssue = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
     if (!validateCoordinates(lat, lng)) {
-        return res.status(400).json({ success: false, message: 'Invalid coordinates' });
+        return res.status(400).json({ success: false, message: 'Invalid coordinates for Uzbekistan' });
+    }
+
+    // If linked to an object, verify coordinates are within ~10km of it
+    if (objectId) {
+        const linkedObj = await Object_.findById(objectId).select('lat lng').lean();
+        if (linkedObj) {
+            const dLat = parseFloat(lat) - linkedObj.lat;
+            const dLng = parseFloat(lng) - linkedObj.lng;
+            const distDeg = Math.sqrt(dLat * dLat + dLng * dLng);
+            // ~0.09 degrees ≈ 10km
+            if (distDeg > 0.09) {
+                return res.status(400).json({ success: false, message: 'Issue coordinates are too far from the linked object' });
+            }
+        }
     }
 
     let objectName = null;
@@ -155,6 +170,9 @@ export const createIssue = async (req, res) => {
 
     const issueObj = issue.toJSON();
     issueObj.comments = [];
+
+    // Invalidate markers cache so new issue appears immediately
+    invalidateAnalyticsCache().catch(() => {});
 
     res.status(201).json({ success: true, data: issueObj });
 };

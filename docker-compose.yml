@@ -71,11 +71,11 @@ services:
     image: redis:7-alpine
     container_name: ${PROJECT_NAME:-ymap}-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --port ${REDIS_PORT:-7791}
     volumes:
       - redis-data:/data
     ports:
-      - "127.0.0.1:6379:6379"
+      - "${REDIS_EXPOSE:-127.0.0.1:7791}:${REDIS_PORT:-7791}"
     networks:
       - ymap-network
 

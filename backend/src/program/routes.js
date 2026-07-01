@@ -25,8 +25,9 @@ router.patch('/:id', authMiddleware, adminOnly, updateProgram);
 router.delete('/:id', authMiddleware, adminOnly, deleteProgram);
 
 // Object assignment
-router.post('/:id/assign-objects', authMiddleware, adminOnly, assignObjects);
-router.post('/:id/bulk-tasks', authMiddleware, adminOnly, bulkCreateTasks);
+// Этап 10: массовое назначение убрано (ТЗ) - роуты закомментированы (не удалены), можно вернуть.
+// router.post('/:id/assign-objects', authMiddleware, adminOnly, assignObjects);
+// router.post('/:id/bulk-tasks', authMiddleware, adminOnly, bulkCreateTasks);
 router.post('/:id/objects/:objectId', authMiddleware, adminOnly, addObject);
 router.delete('/:id/objects/:objectId', authMiddleware, adminOnly, removeObject);
 

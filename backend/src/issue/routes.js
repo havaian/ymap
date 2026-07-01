@@ -14,7 +14,8 @@ router.use('/:issueId/comments', commentRoutes);
 router.get('/:id', getIssue);
 
 // Citizens only — admins manage facilities and tasks, not citizen issue reports
-router.post('/', authMiddleware, citizenOnly, createIssue);
+// Этап 10: веб-создание обращений убрано (приём обращений - через Doppix Telegram-app). Роут закомментирован.
+// router.post('/', authMiddleware, citizenOnly, createIssue);
 
 router.patch('/:id', authMiddleware, adminOnly, updateIssue);
 router.delete('/:id', authMiddleware, adminOnly, deleteIssue);

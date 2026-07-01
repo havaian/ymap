@@ -110,17 +110,18 @@ app.use('/api/allocations', apiLimiter, allocationRoutes);
 app.use('/api/programs', apiLimiter, programRoutes);
 
 // ── Admin routes ──────────────────────────────────────────────────────────────
-app.use('/api/admin', adminLimiter, strictAuthMiddleware, adminOnly, adminRoutes);
+// Этап 10: админка убрана из продукта - роут закомментирован (не удалён), можно вернуть.
+// app.use('/api/admin', adminLimiter, strictAuthMiddleware, adminOnly, adminRoutes);
 
-// ── Analytics (admin only) ────────────────────────────────────────────────────
-app.use('/api/analytics', strictAuthMiddleware, adminOnly, analyticsRoutes);
+// ── Analytics (Этап 10: админ-гейт снят → публичная аналитика; старая защита в комментарии) ──
+app.use('/api/analytics', apiLimiter, /* strictAuthMiddleware, adminOnly, */ analyticsRoutes);
 
 // ── Region & District (public — map GeoJSON + dropdowns) ─────────────────────
-app.use('/api/regions', apiLimiter, authMiddleware, regionRoutes);
-app.use('/api/districts', apiLimiter, authMiddleware, districtRoutes);
+app.use('/api/regions', apiLimiter, /* authMiddleware, */ regionRoutes);
+app.use('/api/districts', apiLimiter, /* authMiddleware, */ districtRoutes);
 
 // ── Markers (public — map pins) ───────────────────────────────────────────────
-app.use('/api/markers', apiLimiter, authMiddleware, markerRoutes);
+app.use('/api/markers', apiLimiter, /* authMiddleware, */ markerRoutes);
 
 // ── Open Budget (public) ──────────────────────────────────────────────────────
 app.use('/api/openbudget', apiLimiter, authMiddleware, openBudgetRoutes);

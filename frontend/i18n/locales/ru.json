@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "Главная",
+    "strategy": "Стратегия 2030",
+    "analytics": "Аналитика",
+    "analyticsGeneral": "Общее",
+    "analyticsRegions": "Регионы",
+    "analyticsCurrent": "Текущая ситуация",
+    "analyticsProblems": "Проблемы",
+    "map": "Карта",
+    "feed": "Лента обращений",
+    "knowledge": "Просто о сложном",
+    "stories": "Истории людей",
+    "about": "О нас",
+    "search": "Поиск",
+    "login": "Войти",
+    "register": "Зарегистрироваться",
+    "profile": "Профиль",
+    "leaderboard": "Лидерборд",
+    "help": "Помощь",
+    "logout": "Выйти"
+  },
+  "groups": {
+    "main": "Главная",
+    "media": "Медиацентр",
+    "profile": "Профиль"
+  },
+  "actions": {
+    "checkObject": "Проверить объект"
+  },
+  "common": {
+    "inDevelopment": "Раздел в разработке"
+  }
+}

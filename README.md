@@ -7,7 +7,7 @@
 
 ## Стек
 
-- Фронтенд: Nuxt 4 (Vue 3, Pinia, @nuxtjs/i18n RU/UZ, Tailwind, Leaflet). Каталог `frontend-nuxt/`.
+- Фронтенд: Nuxt 4 (Vue 3, Pinia, @nuxtjs/i18n RU/UZ, Tailwind, Leaflet), SSR через Nitro node-server. Каталог `frontend/`.
 - Бэкенд: Node.js (ESM) + Express, MongoDB (Mongoose), Redis. Каталог `backend/`.
 - Бот: Grammy (Telegram). Каталог `bot/`.
 - Инфраструктура: Docker Compose + Nginx.
@@ -19,13 +19,12 @@
 ymap/
   backend/         # Express API (MongoDB, Redis, JWT)
   bot/             # Telegram-бот (Grammy)
-  frontend/        # старый фронт на React 19 + Vite (заменён на frontend-nuxt)
-  frontend-nuxt/   # актуальный фронт на Nuxt 4
+  frontend/        # фронт на Nuxt 4 (SSR, Nitro node-server)
   docker-compose.yml
   .env.sample
 ```
 
-Миграция фронта: `frontend/` (React) заменён на `frontend-nuxt/` (Nuxt). Старый каталог оставлен для истории.
+Фронт мигрирован с React 19 + Vite на Nuxt 4. Старый React убран, `frontend/` теперь Nuxt.
 
 ## Требования
 
@@ -49,9 +48,9 @@ cp .env.sample .env
 docker compose up -d --build
 ```
 
-Сервисы: `frontend`, `backend` (порт 4000), `bot`, `redis` (порт 7791).
+Сервисы: `frontend` (Nuxt SSR, порт 3000), `backend` (порт 4000), `bot`, `redis` (порт 7791).
 
-Замечание по деплою фронта: в текущем `docker-compose.yml` сервис `frontend` собирается из `./frontend` (старый React). Для деплоя Nuxt переведите сборку фронта на `./frontend-nuxt` (обновите `context` и `Dockerfile` сервиса `frontend`). В рамках миграции сам `docker-compose.yml` не менялся.
+Маршрутизация: сервис `frontend` собирается из `./frontend/Dockerfile` (multi-stage: сборка Nuxt, затем запуск `node .output/server/index.mjs`) и слушает порт 3000. Запросы `/` на фронт и `/api` на бэкенд разводит внешний host-nginx (как и в версии на React). В SSR Nuxt ходит на бэкенд напрямую через `NUXT_INTERNAL_API_BASE`, на клиенте - через `NUXT_PUBLIC_API_BASE` (по умолчанию `/api`).
 
 ## Локальная разработка
 
@@ -67,7 +66,7 @@ npm run seed       # опционально: наполнение БД
 Фронтенд (Nuxt):
 
 ```
-cd frontend-nuxt
+cd frontend
 npm install
 npm run dev        # http://localhost:3000
 ```
@@ -107,22 +106,23 @@ npm run build
 | `YMAP_API_URL` | базовый URL API (в Docker `http://backend:4000/api`) |
 | `BOT_EMAIL`, `BOT_PASSWORD` | сервисный аккаунт бота |
 
-Фронтенд (`frontend-nuxt/`, все секреты только на сервере):
+Фронтенд (`frontend/`, все секреты только на сервере):
 
 | Переменная | Назначение |
 |---|---|
 | `NUXT_PUBLIC_API_BASE` | базовый URL API, виден клиенту (по умолчанию `/api`) |
-| `NUXT_INTERNAL_API_BASE` | абсолютный URL Express для SSR-запросов |
+| `NUXT_INTERNAL_API_BASE` | абсолютный URL Express для SSR-запросов (в Docker `http://backend:4000/api`) |
+| `NITRO_HOST`, `NITRO_PORT` | хост/порт Nuxt-сервера (в Docker `0.0.0.0` / `3000`) |
 | `NUXT_DASHBOARD_API_URL`, `NUXT_DASHBOARD_API_KEY` | Дашборд Агентства (Этап 9) |
 | `NUXT_DOPPIX_API_URL`, `NUXT_DOPPIX_API_KEY` | Doppix |
 
-Docker Compose (`.env`): `PROJECT_NAME`, `FRONTEND_EXPOSE`, `FRONTEND_PROD_PORT`, `BACKEND_EXPOSE`, `REDIS_PORT`, `REDIS_EXPOSE`.
+Docker Compose (`.env`): `PROJECT_NAME`, `FRONTEND_EXPOSE`, `BACKEND_EXPOSE`, `REDIS_PORT`, `REDIS_EXPOSE`.
 
 ## Состояние проекта
 
 Готово:
 
-- Миграция фронта на Nuxt: профиль, лидерборд, аналитика (4 вкладки), единая карта, лендинг.
+- Миграция фронта на Nuxt: профиль, лидерборд, аналитика (4 вкладки), единая карта, лендинг. Деплой (Dockerfile, docker-compose) переведён на Nuxt SSR.
 - Backend Этап 10 (доступная часть): аналитика/регионы/районы/маркеры сделаны публичными, админ-роут закомментирован, веб-создание обращений и AI-эндпоинт отключены, массовое назначение задач убрано.
 - Гейтинг: лендинг/аналитика/карта/контент публичны, логин нужен только для профиля и лидерборда.
 

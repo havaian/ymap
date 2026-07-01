@@ -6,8 +6,14 @@
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
 
+  // On the server (SSR) '/api' is relative to the Nuxt server, which has no /api route;
+  // use the absolute Express base (NUXT_INTERNAL_API_BASE) so SSR-time calls reach the backend.
+  const baseURL = import.meta.server
+    ? (config.internalApiBase || config.public.apiBase)
+    : config.public.apiBase
+
   const api = $fetch.create({
-    baseURL: config.public.apiBase,
+    baseURL,
     onRequest({ options }) {
       if (import.meta.client) {
         const token = localStorage.getItem('token')

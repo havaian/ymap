@@ -20,7 +20,8 @@
  *   Cyrillic and Latin, including the abbreviated suffixes "т." and "ш."
  *   inserted spaces   Pastdargʻom / Past Dargʻom, Yangihayot / Yangi hayot
  *   doubled letters   Tuproqqaʼla / Tuproqqalʼa
- *   abbreviated initials  Sh.Rashidov / Sharof Rashidov
+ *   abbreviated initials  Sh.Rashidov / Sharof Rashidov, М.Улугбек / Mirzo Ulugʻbek
+ *   Karakalpak endings  Boʻzatov / Бозатау, word-final -aw -au -ov folded together
  *   Karakalpak Latin  Nókis / Nukus, ó á ú ń ǵ ı folded to their base letters
  *   Karakalpak unit words  qala / qalası as "city", trailing hákimiyatı dropped
  *
@@ -110,6 +111,12 @@ export function fold(stem) {
     s = s.replace(/[^a-z0-9]/g, '');
     s = s.split('gh').join('g').split('kh').join('h').split('ts').join('s');
     s = s.split('u').join('o');           // oʻ, u and o are used interchangeably
+    // Karakalpak writes a word-final -aw / -aý where Uzbek writes -ov: Boʻzatov
+    // and Бозатау are the same district. The u→o fold above turns -au into -ao,
+    // which is two edits from -ov and so falls outside the edit tier. Collapsing
+    // every one of these endings to a single form closes that gap without
+    // touching anything that does not end this way.
+    s = s.replace(/(a[ov]|ao|av|ov|ou|oo)$/, 'av');
     s = s.replace(/(.)\1+/g, '$1');       // doubled letters
     return s;
 }
@@ -159,12 +166,18 @@ export function tokenMatch(a, b) {
     if (A.kind !== B.kind) return false;
     if (A.tokens.length !== B.tokens.length || A.tokens.length === 0) return false;
 
+    // A one-letter token is an initial and is accepted as a prefix, but only in a
+    // name that has more than one word. On its own it would let any two districts
+    // starting with the same letter pair up; alongside a second token that has to
+    // match in full, it is what turns М.Улугбек into Mirzo Ulugʻbek.
+    const minPrefix = A.tokens.length > 1 ? 1 : 2;
+
     for (let i = 0; i < A.tokens.length; i++) {
         const x = A.tokens[i];
         const y = B.tokens[i];
         if (x === y) continue;
-        if (x.length >= 2 && y.startsWith(x)) continue;
-        if (y.length >= 2 && x.startsWith(y)) continue;
+        if (x.length >= minPrefix && y.startsWith(x)) continue;
+        if (y.length >= minPrefix && x.startsWith(y)) continue;
         return false;
     }
     return true;

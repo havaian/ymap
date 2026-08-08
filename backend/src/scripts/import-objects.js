@@ -43,6 +43,7 @@ import Region from '../region/model.js';
 import District from '../district/model.js';
 import Object_ from '../object/model.js';
 import { normalizeUzName } from './geo-translations.js';
+import { compareNames } from './uz-name-match.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -88,7 +89,7 @@ async function buildCaches() {
     // ── Districts ──
     const districts = await District.find(
         {},
-        { regionCode: 1, 'name.uz': 1, 'name.ru': 1, 'name.en': 1, centroid: 1 }
+        { regionCode: 1, cadNum: 1, 'name.uz': 1, 'name.ru': 1, 'name.en': 1, centroid: 1 }
     ).lean();
 
     // Map<regionCode, Array<{ normNames: string[], lat, lng, _id }>>
@@ -97,6 +98,11 @@ async function buildCaches() {
     for (const d of districts) {
         const [lng, lat] = d.centroid.coordinates;
         const entry = {
+            // cadNum is the SOATO code written by import-geodata-osm.js. It is the
+            // key this binding should have used all along; the names below are the
+            // fallback for documents that predate it.
+            cadNum: d.cadNum ? String(d.cadNum) : null,
+            rawNames: [d.name?.uz, d.name?.ru, d.name?.en].filter(Boolean),
             normNames: [d.name?.uz, d.name?.ru, d.name?.en]
                 .filter(Boolean)
                 .map(n => normalizeUzName(n))
@@ -119,11 +125,29 @@ async function buildCaches() {
 
 // ── Crosswalk: SOATO district code → District document ───────────────────────
 //
-// The crosswalk file lists every district code observed in the source data with
-// both its Latin and Cyrillic spellings. Matching a code to the District
-// collection still needs names, because District rows come from crop.agro.uz and
-// carry no SOATO code - but it happens 198 times at startup instead of once per
-// record, and it has both spellings to try instead of one.
+// REWRITTEN. The comment that used to stand here said District rows come from
+// crop.agro.uz and carry no SOATO code, so the binding had to go through names.
+// That stopped being true when import-geodata-osm.js started writing cadNum, and
+// the name path it left behind was actively wrong.
+//
+// What it did: normalizeUzName() strips the administrative suffix, so
+// "Shahrisabz shahar" and "Shahrisabz tumani" both reduce to "shahrisabz". The
+// city and the district around it are in the same region, so the regionCode
+// scoping did not separate them either, and a second pass accepted a bare prefix
+// match on top of that. The result was five cities - Shahrisabz, Termiz, Bekobod,
+// Yangiyoʻl, Xiva - whose facilities were counted inside the surrounding rural
+// district. The district read as larger than it is and the city vanished from
+// every figure computed per district.
+//
+// It was invisible because it produced no warning: the code bound, districtId was
+// set, and the count came out plausible. It surfaced only when the list of codes
+// with no District document disagreed with the list of crosswalk entries that
+// found no boundary - nine on each side, four in common.
+//
+// Now: cadNum first, exact and unambiguous. Names are the fallback for documents
+// written before cadNum existed, and that fallback uses compareNames from
+// uz-name-match.js, which keeps the unit type as part of the key and therefore
+// cannot collapse a city into its district.
 
 function loadCrosswalk() {
     if (!fs.existsSync(CROSSWALK_FILE)) {
@@ -138,20 +162,36 @@ function loadCrosswalk() {
 function bindCrosswalkToDistricts(crosswalk, districtsByRegion) {
     const codeToDistrict = new Map();
     const unbound = [];
+    let byCode = 0;
+    let byName = 0;
+
+    // One flat index over every district document that carries a SOATO code.
+    const byCadNum = new Map();
+    for (const list of districtsByRegion.values()) {
+        for (const d of list) {
+            if (d.cadNum && !byCadNum.has(d.cadNum)) byCadNum.set(d.cadNum, d);
+        }
+    }
 
     for (const [code, entry] of crosswalk) {
         const regionCode = Number(entry.regionCode);
         const candidates = districtsByRegion.get(regionCode) || [];
 
-        const keys = [...entry.nameLatin, ...entry.nameCyrillic]
-            .map(n => normalizeUzName(n))
-            .filter(Boolean);
+        // 1. The code itself. No names, no ambiguity, nothing to collapse.
+        let match = byCadNum.get(String(code)) || null;
+        if (match) byCode++;
 
-        let match = candidates.find(d => keys.some(k => d.normNames.includes(k)));
+        // 2. Names, and only for documents with no code of their own. Restricting
+        //    it that way matters: a document that has a cadNum and did not match
+        //    above belongs to a different district, and letting a name reach it
+        //    would be the same error in a new place.
         if (!match) {
-            match = candidates.find(d =>
-                keys.some(k => d.normNames.some(n => n.startsWith(k) || k.startsWith(n)))
-            );
+            const crosswalkNames = [...entry.nameLatin, ...entry.nameCyrillic].filter(Boolean);
+            const codeless = candidates.filter(d => !d.cadNum);
+            match = codeless.find(d =>
+                d.rawNames.some(dn => crosswalkNames.some(cn => compareNames(dn, cn)))
+            ) || null;
+            if (match) byName++;
         }
 
         if (!match) {
@@ -162,18 +202,21 @@ function bindCrosswalkToDistricts(crosswalk, districtsByRegion) {
         codeToDistrict.set(code, {
             regionCode: match.regionCode,
             districtId: match._id,
-            nameKeys: keys,
+            nameKeys: [...entry.nameLatin, ...entry.nameCyrillic]
+                .map(n => normalizeUzName(n))
+                .filter(Boolean),
         });
     }
 
     console.log(`  🔗 Crosswalk: ${codeToDistrict.size}/${crosswalk.size} district codes bound to District docs`);
+    console.log(`     по коду СОАТО: ${byCode}, по имени (документы без кода): ${byName}`);
     if (unbound.length > 0) {
         // Not fatal. districtCode is the canonical key and is written regardless;
         // districtId is an optional convenience for joins and only exists once the
-        // District collection has been populated by import-geodata.js.
+        // District collection has been populated by import-geodata-osm.js.
         console.warn(`  ⚠️  ${unbound.length} district codes have no District document yet.`);
         console.warn('      Objects will still import, with districtCode set and districtId null.');
-        console.warn('      Run import-geodata.js to populate districts, then re-run this import.');
+        console.warn('      Run import-geodata-osm.js to populate districts, then re-run this import.');
         for (const u of unbound.slice(0, REJECT_PRINT_LIMIT)) {
             console.warn(`       ${u.code}  region ${u.regionCode}  ${u.names.join(' | ')}`);
         }

@@ -31,6 +31,7 @@
  *   node backend/src/scripts/fetch-osm-boundaries.js --endpoint=https://overpass.kumi.systems/api/interpreter
  *   node backend/src/scripts/fetch-osm-boundaries.js --debug --dump-raw
  *   node backend/src/scripts/fetch-osm-boundaries.js --out=/app/uploads
+ *   node backend/src/scripts/fetch-osm-boundaries.js --extra-district-levels=7
  *
  * Writes:
  *   data/osm-regions.geojson     admin_level=4
@@ -434,6 +435,18 @@ async function main() {
     if (outDir !== DATA_DIR) console.log(`  каталог вывода: ${outDir}`);
 
     const levels = onlyLevel ? [Number(onlyLevel)] : Object.keys(LEVELS).map(Number);
+
+    // Extra admin_levels folded into the district pass. Several Uzbek cities of
+    // regional subordination are mapped one level below the districts around them,
+    // and which ones is a question for probe-missing-boundaries.js rather than for
+    // a guess baked in here. Once the probe names the level, this flag applies it
+    // without a code change:  --extra-district-levels=7
+    const extraArg = args.find(a => a.startsWith('--extra-district-levels='))?.split('=')[1];
+    if (extraArg) {
+        const extra = extraArg.split(',').map(x => x.trim()).filter(Boolean);
+        LEVELS[6].levels = [...new Set([...LEVELS[6].levels, ...extra])];
+        console.log(`  admin_level районов расширен до: ${LEVELS[6].levels.join(', ')}`);
+    }
 
     for (const level of levels) {
         const cfg = LEVELS[level];

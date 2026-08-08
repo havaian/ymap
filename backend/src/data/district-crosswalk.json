@@ -1608,9 +1608,7 @@
     "nameLatin": [
       "Namangan shahar"
     ],
-    "nameCyrillic": [
-      "Давлатобод т."
-    ],
+    "nameCyrillic": [],
     "regionNames": [
       "Namangan",
       "Namangan viloyati"
@@ -1624,7 +1622,16 @@
       "ssv": 2,
       "bogcha": 3,
       "maktab44": 6
-    }
+    },
+    "nameConflicts": [
+      {
+        "name": "Давлатобод т.",
+        "field": "nameCyrillic",
+        "kindOfName": "district",
+        "kindByCode": "city",
+        "note": "Имя противоречит типу единицы по коду СОАТО. Оставлено как наблюдение, из сопоставления исключено."
+      }
+    ]
   },
   {
     "districtCode": "1718203",

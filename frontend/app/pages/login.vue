@@ -83,8 +83,8 @@
               <p class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">
                 Тестовые аккаунты:
               </p>
-              <p class="text-[10px] text-slate-400">admin@map.ytech.space</p>
-              <p class="text-[10px] text-slate-400">org_*@map.ytech.space</p>
+              <p class="text-[10px] text-slate-400">admin@ymap.ytech.space</p>
+              <p class="text-[10px] text-slate-400">org_*@ymap.ytech.space</p>
             </div>
           </div>
         </div>

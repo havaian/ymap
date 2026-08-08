@@ -21,6 +21,8 @@
  *   inserted spaces   Pastdargʻom / Past Dargʻom, Yangihayot / Yangi hayot
  *   doubled letters   Tuproqqaʼla / Tuproqqalʼa
  *   abbreviated initials  Sh.Rashidov / Sharof Rashidov
+ *   Karakalpak Latin  Nókis / Nukus, ó á ú ń ǵ ı folded to their base letters
+ *   Karakalpak unit words  qala / qalası as "city", trailing hákimiyatı dropped
  *
  * Verified against all 198 districts in district-crosswalk.json: zero key
  * collisions between different districts of the same region, and zero false pairs
@@ -41,9 +43,24 @@ const APOSTROPHES = ['ʻ', 'ʼ', '‘', '’', '`', '´', 'ʹ', 'ʾ'];
 // groups are tried top to bottom.
 const KINDS = [
     ['region', ['viloyati', 'viloyat', 'respublikasi', 'respublika', 'vil.', 'v.']],
-    ['city', ['shahri', 'shahar', 'shaher', 'sh.', 's.']],
-    ['district', ['tumani', 'tuman', 'rayoni', 'rayonı', 'rayon', 't.', 'r-n']]
+    // qala / qalasi is the Karakalpak word for a city. Without it OSM's
+    // "Nókis qalası hákimiyatı" carries no recognised unit type, defaults to
+    // district, and can never pair with "Nukus shahar" whatever the stems do.
+    ['city', ['shahri', 'shahar', 'shaher', 'qalasi', 'qala', 'sh.', 's.']],
+    ['district', ['tumani', 'tuman', 'rayoni', 'rayoni', 'rayon', 't.', 'r-n']]
 ];
+
+// Karakalpak Latin letters, folded to the base letters the rest of the matcher
+// works in. Applied before suffix detection, so a suffix carrying a diacritic is
+// still recognised as a suffix.
+const KARAKALPAK = {
+    'ó': 'o', 'ǵ': 'g', 'ń': 'n', 'ú': 'u', 'á': 'a', 'ı': 'i', 'í': 'i',
+    'ó': 'o', 'ә': 'a', 'ө': 'o', 'ү': 'u', 'ң': 'n'
+};
+
+// A boundary tagged with the name of the body that administers it rather than of
+// the unit itself. OSM does this for several Karakalpak cities.
+const ADMIN_WORDS = ['hakimiyati', 'hokimiyati', 'hakimligi', 'hokimligi'];
 
 function translit(s) {
     let out = '';
@@ -59,6 +76,15 @@ export function splitKind(name) {
     let s = (name || '').trim().toLowerCase();
     for (const ap of APOSTROPHES) s = s.split(ap).join("'");
     s = translit(s).replace(/\s+/g, ' ').trim();
+    let folded = '';
+    for (const ch of s) folded += (KARAKALPAK[ch] !== undefined ? KARAKALPAK[ch] : ch);
+    s = folded;
+
+    // Dropped before the unit type is read, otherwise the administration word is
+    // the suffix and the real one is never reached.
+    for (const w of ADMIN_WORDS) {
+        if (s.endsWith(' ' + w)) { s = s.slice(0, -(w.length + 1)).trim(); break; }
+    }
 
     for (const [kind, suffixes] of KINDS) {
         const ordered = [...suffixes].sort((a, b) => b.length - a.length);

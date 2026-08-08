@@ -178,6 +178,44 @@ Docker Compose (`.env`): `PROJECT_NAME`, `FRONTEND_EXPOSE`, `BACKEND_EXPOSE`, `R
 Порядок и что делает каждый. Все читают `backend/src/data/`, пишут только те,
 где это сказано.
 
+**Состояние на 08.08.2026.** Границы перезалиты из OSM: 14 регионов из 14,
+188 районов из 198 в кроссволке, медиана вершин 606 у районов и 2549 у регионов.
+`simplify-boundaries.js` срезал 86,8 % вершин у районов и 84,6 % у регионов.
+
+Что осталось незакрытым после перезалива:
+
+- **10 записей кроссволка без границы**, из них 8 - города (`shahar`), плюс
+  Xatirchi и Nurobod. Это разные случаи: у городов граница в OSM обычно есть, но
+  под другим именем, у Xatirchi и Nurobod её в ответе нет вовсе.
+- **10 границ OSM без пары в кроссволке.** Девять из них - единицы, которых в
+  кроссволке нет вообще: он собран из duasr.uz и покрывает только районы с
+  объектами. Десятая, `Matbuotchilar ko'chasi`, это улица, помеченная в OSM как
+  `admin_level=6`.
+- **Nukus нашёлся** после правки матчера: OSM зовёт его `Nókis qalası hákimiyatı`,
+  каракалпакское `qala` теперь опознаётся как город, а `hákimiyatı` отбрасывается.
+
+Порядок восстановления:
+
+```
+docker compose exec backend node src/scripts/fetch-osm-boundaries.js --debug
+docker compose exec backend node src/scripts/import-geodata-osm.js --dry-run
+docker compose exec backend node src/scripts/import-geodata-osm.js
+docker compose exec backend node src/scripts/import-objects.js
+docker compose exec backend node src/scripts/simplify-boundaries.js
+docker compose exec backend node src/scripts/audit-geodata.js
+```
+
+Три барьера, которых раньше не было:
+
+- `fetch-osm-boundaries.js` не запишет файл, если геометрия вырождена в bbox.
+- `import-geodata-osm.js` не запишет такую геометрию в базу.
+- `import-geodata-osm.js` сообщает о документах, которых нет в текущем прогоне.
+  Импортёр апсертит и никогда не удаляет, поэтому район, переставший
+  сопоставляться, сохраняет документ прошлого прогона навсегда - именно так два
+  bbox пережили полный перезалив. Удаление: `--prune-stale`, после него
+  **обязательно** `import-objects.js`, иначе часть объектов останется с
+  `districtId` в никуда.
+
 | Команда | Пишет | Зачем |
 |---|---|---|
 | `node src/scripts/audit-geodata.js` | нет | Считает районы по `apiId` до и после миллиона: до - ключ crop.agro, после - ключ OSM relation. Оба набора сразу означают, что районы лежат в базе дважды и хороплет рисует их поверх друг друга |

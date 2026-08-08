@@ -139,7 +139,29 @@ async function main() {
     if (legacyRegions.length) summarize(legacyRegions, 'Регионы, нумерация crop.agro', listLimit);
     if (soatoRegions.length) summarize(soatoRegions, 'Регионы, СОАТО', listLimit);
 
-    console.log('\nЕсли подтвердились дубли: node src/scripts/prune-legacy-geodata.js (по умолчанию dry-run)');
+    const boxDistricts = districts.filter(d => looksRectangular(d.geometry)).length;
+    const boxRegions = regions.filter(r => looksRectangular(r.geometry)).length;
+
+    console.log('\n── Что делать ──');
+    if (dupes.length > 0) {
+        console.log('  Дубли кодов: node src/scripts/prune-legacy-geodata.js (по умолчанию dry-run)');
+    }
+    if (boxDistricts > 0 || boxRegions > 0) {
+        // Two different causes, two different fixes, and telling them apart is the
+        // whole point of this block. A file full of boxes is a bad download. A
+        // handful of boxes in an otherwise clean collection is what the importer
+        // left behind when it stopped producing those keys.
+        console.log(`  Прямоугольников: ${boxDistricts} районов, ${boxRegions} регионов.`);
+        console.log('  Если их немного, это остатки прошлых прогонов, которые импортёр не перезаписал:');
+        console.log('    node src/scripts/import-geodata-osm.js --dry-run   покажет, каких документов нет в прогоне');
+        console.log('    node src/scripts/import-geodata-osm.js --prune-stale   удалит их');
+        console.log('    node src/scripts/import-objects.js                 обязательно после удаления');
+        console.log('  Если прямоугольники почти во всём - испорчен сам файл границ:');
+        console.log('    node src/scripts/fetch-osm-boundaries.js --debug');
+    }
+    if (dupes.length === 0 && boxDistricts === 0 && boxRegions === 0) {
+        console.log('  Ничего. Границы в порядке.');
+    }
 
     await mongoose.disconnect();
 }

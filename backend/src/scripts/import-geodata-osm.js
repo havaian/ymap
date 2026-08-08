@@ -28,6 +28,8 @@
  * Options:
  *   --dry-run    Report matches without writing
  *   --strict     Exit non-zero if any crosswalk entry found no boundary
+ *   --prune-stale        Удалить документы, которых нет в этом прогоне
+ *   --allow-degenerate   Импортировать bbox вместо контуров, только вручную
  */
 
 import 'dotenv/config';
@@ -37,6 +39,7 @@ import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import Region from '../region/model.js';
 import District from '../district/model.js';
+import Object_ from '../object/model.js';
 import { compareNames, TIER_ORDER } from './uz-name-match.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -130,6 +133,55 @@ function assertNotBoxes(features, label, allowDegenerate) {
         return;
     }
     throw new Error(`${label}: геометрия вырождена, импорт остановлен`);
+}
+
+/**
+ * Documents in the collection that this run did not touch.
+ *
+ * The importer upserts and never deletes, and districts are keyed on the OSM
+ * relation id. So a district that matched under an older matcher, or came from an
+ * older and broken boundary file, keeps its document forever once the current run
+ * stops producing that id. It is not overwritten, it is simply skipped, and it
+ * goes on being the only geometry that district has.
+ *
+ * That is exactly how two bounding boxes survived a full reimport: 188 districts
+ * were written, 190 were in the collection, and the extra two were the last
+ * remains of the broken run - still bound to objects, still drawn on the map.
+ *
+ * Reported by default, removed only with --prune-stale, because deleting a
+ * district orphans the `districtId` of every object pointing at it and that needs
+ * import-objects.js run afterwards.
+ */
+async function reportStale(Model, keyField, keptKeys, label, { pruneStale, dryRun }) {
+    const stale = await Model.find({ [keyField]: { $nin: [...keptKeys] } })
+        .select(`${keyField} name cadNum code geometry`)
+        .lean();
+
+    if (stale.length === 0) return 0;
+
+    console.warn(`  ⚠️  ${label}: документов, которых нет в этом прогоне: ${stale.length}`);
+    for (const d of stale.slice(0, PRINT_LIMIT)) {
+        const v = vertexCount(d.geometry);
+        const box = v > 0 && v <= RECTANGLE_MAX_VERTICES ? '  ПРЯМОУГОЛЬНИК' : '';
+        const objects = Model.modelName === 'District'
+            ? await Object_.countDocuments({ districtId: d._id })
+            : null;
+        console.warn(`     ${d[keyField]}  ${d.name?.ru || d.name?.uz || '(без имени)'}  вершин ${v}${box}${objects !== null ? `  объектов ${objects}` : ''}`);
+    }
+    if (stale.length > PRINT_LIMIT) console.warn(`     ... и ещё ${stale.length - PRINT_LIMIT}`);
+
+    if (!pruneStale) {
+        console.warn('     Оставлены. Удалить: --prune-stale, затем обязательно import-objects.js');
+        return stale.length;
+    }
+    if (dryRun) {
+        console.warn(`     (dry run) удалило бы ${stale.length}`);
+        return stale.length;
+    }
+
+    const res = await Model.deleteMany({ _id: { $in: stale.map(d => d._id) } });
+    console.warn(`     ✅ удалено: ${res.deletedCount}. Теперь прогоните import-objects.js: districtId у части объектов указывает в пустоту.`);
+    return stale.length;
 }
 
 function centroidOf(geometry) {
@@ -234,7 +286,7 @@ function readJson(file) {
 
 // ── Import ───────────────────────────────────────────────────────────────────
 
-async function importRegions({ dryRun, allowDegenerate }) {
+async function importRegions({ dryRun, allowDegenerate, pruneStale }) {
     const geo = readJson(FILES.regions);
     const cw = readJson(FILES.regionCrosswalk);
 
@@ -301,14 +353,21 @@ async function importRegions({ dryRun, allowDegenerate }) {
         console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
     }
 
-    if (dryRun) { console.log(`  🔍 dry run - записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
+    const keptCodes = ops.map(o => o.updateOne.filter.code);
+
+    if (dryRun) {
+        console.log(`  🔍 dry run - записали бы ${ops.length}`);
+        await reportStale(Region, 'code', keptCodes, 'регионы', { pruneStale, dryRun });
+        return { written: 0, missing: missing.length };
+    }
 
     if (ops.length) await Region.bulkWrite(ops, { ordered: false });
     console.log(`  ✅ записано регионов: ${ops.length}`);
+    await reportStale(Region, 'code', keptCodes, 'регионы', { pruneStale, dryRun });
     return { written: ops.length, missing: missing.length };
 }
 
-async function importDistricts({ dryRun, allowDegenerate }) {
+async function importDistricts({ dryRun, allowDegenerate, pruneStale }) {
     const geo = readJson(FILES.districts);
     const cw = readJson(FILES.districtCrosswalk);
 
@@ -386,10 +445,17 @@ async function importDistricts({ dryRun, allowDegenerate }) {
         console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
     }
 
-    if (dryRun) { console.log(`  🔍 dry run - записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
+    const keptIds = ops.map(o => o.updateOne.filter.apiId);
+
+    if (dryRun) {
+        console.log(`  🔍 dry run - записали бы ${ops.length}`);
+        await reportStale(District, 'apiId', keptIds, 'районы', { pruneStale, dryRun });
+        return { written: 0, missing: missing.length };
+    }
 
     if (ops.length) await District.bulkWrite(ops, { ordered: false });
     console.log(`  ✅ записано районов: ${ops.length}`);
+    await reportStale(District, 'apiId', keptIds, 'районы', { pruneStale, dryRun });
     return { written: ops.length, missing: missing.length };
 }
 
@@ -401,6 +467,9 @@ async function main() {
     // load rectangles; the flag exists so a future case nobody predicted is not
     // blocked by a check written today.
     const allowDegenerate = args.includes('--allow-degenerate');
+    // Removes documents this run did not produce. Off by default: deleting a
+    // district orphans the districtId of every object pointing at it.
+    const pruneStale = args.includes('--prune-stale');
 
     console.log('═══════════════════════════════════════');
     console.log('  GeoData Import - OpenStreetMap');
@@ -414,8 +483,8 @@ async function main() {
     console.log('✅ Подключено к MongoDB');
 
     try {
-        const r = await importRegions({ dryRun, allowDegenerate });
-        const d = await importDistricts({ dryRun, allowDegenerate });
+        const r = await importRegions({ dryRun, allowDegenerate, pruneStale });
+        const d = await importDistricts({ dryRun, allowDegenerate, pruneStale });
 
         console.log('\nДальше: node src/scripts/import-objects.js - проставит districtId');
 

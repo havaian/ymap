@@ -10,7 +10,7 @@
           >
             <MapIcon :size="20" />
           </span>
-          <span class="font-black text-lg tracking-tight">REAL HOLAT</span>
+          <span class="font-black text-lg tracking-tight">Y.Map</span>
         </div>
         <div class="flex items-center gap-2 mt-4">
           <a
@@ -36,7 +36,7 @@
     </div>
 
     <div class="border-t border-slate-100 dark:border-slate-800">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 text-xs text-slate-400">© {{ year }} REAL HOLAT</div>
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 text-xs text-slate-400">© {{ year }} Y.Map</div>
     </div>
   </footer>
 </template>

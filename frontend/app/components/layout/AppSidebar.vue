@@ -21,7 +21,7 @@
         >
           <MapIcon :size="20" />
         </span>
-        <span v-if="!collapsed" class="font-black tracking-tight whitespace-nowrap">REAL HOLAT</span>
+        <span v-if="!collapsed" class="font-black tracking-tight whitespace-nowrap">Y.Map</span>
       </NuxtLink>
       <button
         type="button"

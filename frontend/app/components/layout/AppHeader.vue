@@ -9,7 +9,7 @@
         >
           <MapIcon :size="20" />
         </span>
-        <span class="font-black text-lg tracking-tight hidden sm:inline">REAL HOLAT</span>
+        <span class="font-black text-lg tracking-tight hidden sm:inline">Y.Map</span>
       </NuxtLink>
 
       <nav class="hidden lg:flex items-center gap-1 ml-2">

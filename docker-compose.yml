@@ -57,6 +57,7 @@ services:
       - RESET_TOKEN_TTL_MS=${RESET_TOKEN_TTL_MS:-3600000}
     volumes:
       - ./uploads/:/app/uploads:rw,Z
+      - ./backend/src/data/:/app/src/data:rw,Z
     ports:
       - "${BACKEND_EXPOSE:-127.0.0.1:4000}:${BACKEND_PORT:-4000}"
     depends_on:

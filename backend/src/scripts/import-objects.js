@@ -48,6 +48,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const BATCH_SIZE = 500;
 const CROSSWALK_FILE = path.join(DATA_DIR, 'district-crosswalk.json');
+// A systemic failure would otherwise print one line per record.
+const REJECT_PRINT_LIMIT = 20;
 
 // ── Coordinate jitter ─────────────────────────────────────────────────────────
 // DISABLED. Jittering a district centroid produced positions that look precise and
@@ -65,7 +67,7 @@ const CROSSWALK_FILE = path.join(DATA_DIR, 'district-crosswalk.json');
 // regionsByNorm:  Map<normalizedViloyat, regionCode>
 // districtsByRegion: Map<regionCode, Array<{ normName, lat, lng, _id }>>
 //
-// Scoping district lookup by regionCode is critical - there are districts
+// Scoping district lookup by regionCode is critical — there are districts
 // with identical names in different regions (e.g. "Shahrisabz" exists in
 // multiple oblasts).
 
@@ -120,7 +122,7 @@ async function buildCaches() {
 // The crosswalk file lists every district code observed in the source data with
 // both its Latin and Cyrillic spellings. Matching a code to the District
 // collection still needs names, because District rows come from crop.agro.uz and
-// carry no SOATO code - but it happens 198 times at startup instead of once per
+// carry no SOATO code — but it happens 198 times at startup instead of once per
 // record, and it has both spellings to try instead of one.
 
 function loadCrosswalk() {
@@ -166,8 +168,18 @@ function bindCrosswalkToDistricts(crosswalk, districtsByRegion) {
 
     console.log(`  🔗 Crosswalk: ${codeToDistrict.size}/${crosswalk.size} district codes bound to District docs`);
     if (unbound.length > 0) {
-        console.warn(`  ⚠️  ${unbound.length} district codes have no matching District document:`);
-        for (const u of unbound) console.warn(`       ${u.code}  region ${u.regionCode}  ${u.names.join(' | ')}`);
+        // Not fatal. districtCode is the canonical key and is written regardless;
+        // districtId is an optional convenience for joins and only exists once the
+        // District collection has been populated by import-geodata.js.
+        console.warn(`  ⚠️  ${unbound.length} district codes have no District document yet.`);
+        console.warn('      Objects will still import, with districtCode set and districtId null.');
+        console.warn('      Run import-geodata.js to populate districts, then re-run this import.');
+        for (const u of unbound.slice(0, REJECT_PRINT_LIMIT)) {
+            console.warn(`       ${u.code}  region ${u.regionCode}  ${u.names.join(' | ')}`);
+        }
+        if (unbound.length > REJECT_PRINT_LIMIT) {
+            console.warn(`       ... and ${unbound.length - REJECT_PRINT_LIMIT} more`);
+        }
     }
 
     return codeToDistrict;
@@ -200,22 +212,30 @@ function resolveByCode(row, crosswalk, codeToDistrict) {
         flags.push('parent_code_mismatch');
     }
 
-    const bound = codeToDistrict.get(code);
-    if (!bound) {
+    const entry = crosswalk.get(code);
+    if (!entry) {
         return { error: 'code_unknown', code, flags };
     }
 
-    // Consistency check only - never overrides the code.
+    // District documents are optional. When the District collection has not been
+    // populated yet, the object still imports with districtCode set and districtId
+    // null, and a later run fills the reference in.
+    const bound = codeToDistrict.get(code) || null;
+
+    // Consistency check only — never overrides the code.
+    const nameKeys = [...entry.nameLatin, ...entry.nameCyrillic]
+        .map(n => normalizeUzName(n))
+        .filter(Boolean);
     const tumanKey = normalizeUzName(row.tuman);
-    if (tumanKey && !bound.nameKeys.includes(tumanKey)) {
-        const near = bound.nameKeys.some(n => n.startsWith(tumanKey) || tumanKey.startsWith(n));
+    if (tumanKey && !nameKeys.includes(tumanKey)) {
+        const near = nameKeys.some(n => n.startsWith(tumanKey) || tumanKey.startsWith(n));
         if (!near) flags.push('district_name_mismatch');
     }
 
     return {
         districtCode: code,
-        regionCode: bound.regionCode,
-        districtId: bound.districtId,
+        regionCode: bound ? bound.regionCode : Number(entry.regionCode),
+        districtId: bound ? bound.districtId : null,
         flags,
     };
 }
@@ -293,6 +313,9 @@ function transformSSV(row, coords) {
         // from the data.egov.uz registry by tax id; anything unmatched stays null
         // and is drawn through the district choropleth.
         regionCode: coords.regionCode,
+        // districtCode is the canonical key. districtId is a convenience reference
+        // and stays null until the District collection is populated.
+        districtCode: coords.districtCode,
         districtId: coords.districtId,
         qualityFlags: qualityFlags(row, coords.flags),
         details: {
@@ -330,6 +353,9 @@ function transformBogcha(row, coords) {
         // from the data.egov.uz registry by tax id; anything unmatched stays null
         // and is drawn through the district choropleth.
         regionCode: coords.regionCode,
+        // districtCode is the canonical key. districtId is a convenience reference
+        // and stays null until the District collection is populated.
+        districtCode: coords.districtCode,
         districtId: coords.districtId,
         qualityFlags: qualityFlags(row, coords.flags),
         details: {
@@ -370,6 +396,9 @@ function transformMaktab(row, coords) {
         // from the data.egov.uz registry by tax id; anything unmatched stays null
         // and is drawn through the district choropleth.
         regionCode: coords.regionCode,
+        // districtCode is the canonical key. districtId is a convenience reference
+        // and stays null until the District collection is populated.
+        districtCode: coords.districtCode,
         districtId: coords.districtId,
         qualityFlags: qualityFlags(row, coords.flags),
         details: {
@@ -440,6 +469,7 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
         const rejected = { code_missing: [], code_length: [], code_unknown: [] };
         const flagCounts = new Map();
         const bulkOps = [];
+        let withDistrictId = 0;
 
         for (const row of rows) {
             const resolved = resolveByCode(row, crosswalk, codeToDistrict);
@@ -457,6 +487,7 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
 
             const doc = transform(row, resolved);
             for (const f of doc.qualityFlags) flagCounts.set(f, (flagCounts.get(f) || 0) + 1);
+            if (doc.districtId) withDistrictId++;
 
             bulkOps.push({
                 updateOne: {
@@ -474,10 +505,15 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
         for (const [reason, list] of Object.entries(rejected)) {
             if (list.length === 0) continue;
             console.warn(`  ⚠️  ${reason}: ${list.length} records`);
-            for (const r of list) {
+            for (const r of list.slice(0, REJECT_PRINT_LIMIT)) {
                 console.warn(`       id=${r.id} code=${r.code} ${r.viloyat} / ${r.tuman}`);
             }
+            if (list.length > REJECT_PRINT_LIMIT) {
+                console.warn(`       ... and ${list.length - REJECT_PRINT_LIMIT} more`);
+            }
         }
+
+        console.log(`  🗺  districtId resolved for ${withDistrictId}/${bulkOps.length} records`);
 
         if (flagCounts.size > 0) {
             console.log('  🏷  quality flags:');
@@ -488,13 +524,8 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
 
         totals.noDistrict += noDistrict;
 
-        if (noDistrict > 0) {
-            console.warn(`  ⚠️  ${noDistrict} unresolved (${unresolved.size} unique viloyat/tuman pairs):`);
-            for (const pair of unresolved) console.warn(`       ${pair}`);
-        }
-
         if (dryRun) {
-            console.log(`  🔍 Dry run - would upsert ${bulkOps.length} records`);
+            console.log(`  🔍 Dry run — would upsert ${bulkOps.length} records`);
             totals.upserted += bulkOps.length;
             continue;
         }
@@ -511,7 +542,7 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
         console.log(`  ✅ ${key}: ${done} upserted`);
     }
 
-    console.log(`\n✅ Import complete - ${totals.upserted} upserted, ${totals.skipped} rejected (${totals.noDistrict} unresolved district)`);
+    console.log(`\n✅ Import complete — ${totals.upserted} upserted, ${totals.skipped} rejected (${totals.noDistrict} unresolved district)`);
 
     if (strict && totals.skipped > 0) {
         throw new Error(`strict mode: ${totals.skipped} records rejected`);
@@ -529,10 +560,10 @@ async function main() {
     const srcArg = args.find(a => a.startsWith('--source='))?.split('=')[1] || null;
 
     console.log('═══════════════════════════════════════');
-    console.log('  Object Import - local JSON files');
+    console.log('  Object Import — local JSON files');
     console.log('═══════════════════════════════════════');
-    if (dryRun) console.log('  DRY RUN - no writes');
-    if (strict) console.log('  STRICT - non-zero exit if anything is rejected');
+    if (dryRun) console.log('  DRY RUN — no writes');
+    if (strict) console.log('  STRICT — non-zero exit if anything is rejected');
     if (srcArg) console.log(`  Source filter: ${srcArg}`);
 
     const mongoUri = process.env.MONGODB_URI;

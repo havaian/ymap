@@ -1,5 +1,5 @@
 // backend/src/object/model.js
-// Unified facility/infrastructure object - sourced from duasr.uz APIs (ssv, bogcha, maktab44).
+// Unified facility/infrastructure object — sourced from duasr.uz APIs (ssv, bogcha, maktab44).
 
 import mongoose from 'mongoose';
 
@@ -17,7 +17,7 @@ const objectSchema = new mongoose.Schema({
         type: Number,
         index: true
     },
-    // inn is the tax ID - used as primary upsert key together with code + sourceApi
+    // inn is the tax ID — used as primary upsert key together with code + sourceApi
     // CORRECTION: inn is NOT unique and cannot serve as a key. ssv holds 392 records
     // under 166 tax ids because rural health posts share one legal entity; maktab44
     // has 71 duplicates. It stays as an attribute and as the join key to the
@@ -27,7 +27,7 @@ const objectSchema = new mongoose.Schema({
         index: true
     },
     // code is the geographic unit code assigned by the ministry
-    // CORRECTION: verified against ssv/bogcha/maktab44 - `code` is the 7-digit
+    // CORRECTION: verified against ssv/bogcha/maktab44 — `code` is the 7-digit
     // SOATO district code (17 + region(2) + district(3)). It is consistent across
     // all three sources: 1703203 is Andijon tumani in maktab44 and Андижон т. in
     // bogcha. This is the district join key, `tuman` is display text only.
@@ -77,10 +77,10 @@ const objectSchema = new mongoose.Schema({
         required: true
     },
     nameRu: {
-        type: String  // obekt_nomi_ru - only present in maktab44
+        type: String  // obekt_nomi_ru — only present in maktab44
     },
     nameEn: {
-        type: String  // obekt_nomi_en - only present in maktab44
+        type: String  // obekt_nomi_en — only present in maktab44
     },
 
     // ── Location ──────────────────────────────────────────────────────────────
@@ -97,9 +97,20 @@ const objectSchema = new mongoose.Schema({
         type: Number,
         index: true
     },
+    // districtCode is the 7-digit SOATO code taken straight from the source `code`
+    // field and validated against data/district-crosswalk.json. This is the
+    // canonical district key and it does not depend on the District collection
+    // existing, so objects can be imported before geometry is loaded.
+    districtCode: {
+        type: String,
+        index: true
+    },
+    // Reference to the District document. Optional: it stays null until
+    // import-geodata.js has populated districts, and is filled by a later import run.
     districtId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'District',
+        default: null,
         index: true
     },
     // lat/lng set at sync time by jittering the matched district centroid
@@ -121,7 +132,7 @@ const objectSchema = new mongoose.Schema({
             default: 'Point'
         },
         coordinates: {
-            type: [Number]  // [lng, lat] - left undefined when no real coordinate is known
+            type: [Number]  // [lng, lat] — left undefined when no real coordinate is known
         }
     },
     // Where the coordinate came from. 'egov_inn' means it was joined from the
@@ -140,7 +151,7 @@ const objectSchema = new mongoose.Schema({
     },
     // True when this exact coordinate is shared by other objects in the source.
     // In the non-state preschool registry 640 coordinates carry 1441 objects, one of
-    // them 30 at once - a single map click copied across many records. Technically
+    // them 30 at once — a single map click copied across many records. Technically
     // valid, factually unknown, so it must not be treated as a surveyed position.
     coordShared: {
         type: Boolean,
@@ -150,17 +161,17 @@ const objectSchema = new mongoose.Schema({
 
     // ── Condition details (vary per sourceApi) ────────────────────────────────
     details: {
-        // Wall material - all three APIs
+        // Wall material — all three APIs
         materialSten: String,
-        // Electricity - all three
+        // Electricity — all three
         elektrKunDavomida: String,
-        // Drinking water source - all three
+        // Drinking water source — all three
         ichimlikSuviManbaa: String,
-        // Internet type - bogcha / maktab44 use 'internetgaUlanishTuri'; ssv uses 'internet'
+        // Internet type — bogcha / maktab44 use 'internetgaUlanishTuri'; ssv uses 'internet'
         internet: String,
-        // Water inside building - ssv only
+        // Water inside building — ssv only
         binoIchidaSuv: String,
-        // Last capital repair year - all three
+        // Last capital repair year — all three
         // NOTE: the field carries two different meanings depending on the source.
         // bogcha and maktab44 store a year ("2018"). ssv stores a category:
         // ha_kapital, ha_joriy, ha_rekon, yuq_remont. Keep the raw value here and
@@ -174,19 +185,19 @@ const objectSchema = new mongoose.Schema({
             enum: ['ha_kapital', 'ha_joriy', 'ha_rekon', 'yuq_remont', null],
             default: null
         },
-        // Construction year - all three
+        // Construction year — all three
         qurilishYili: String,
         // Capacity (seats/beds)
         sigimi: Number,
         // Total students/patients
         umumiyUquvchi: Number,
-        // Number of shifts - maktab44 only
+        // Number of shifts — maktab44 only
         smena: String,
-        // Sports hall condition - maktab44 only
+        // Sports hall condition — maktab44 only
         sportZalHolati: String,
-        // Activity hall condition - maktab44 + bogcha
+        // Activity hall condition — maktab44 + bogcha
         aktivZalHolati: String,
-        // Canteen condition - maktab44 + bogcha
+        // Canteen condition — maktab44 + bogcha
         oshhonaHolati: String
     },
 
@@ -233,7 +244,7 @@ const objectSchema = new mongoose.Schema({
 // Sparse because a record with no known coordinate leaves location.coordinates
 // undefined; a non-sparse 2dsphere index would reject those documents.
 objectSchema.index({ location: '2dsphere' }, { sparse: true });
-// Compound unique index - ensures no duplicate per source record across re-syncs
+// Compound unique index — ensures no duplicate per source record across re-syncs
 // REPLACED. The previous key was { inn, code, sourceApi }. It cannot hold: inn
 // repeats within a source and code is the district code shared by every object in
 // that district, so the pair collapses unrelated facilities into one document.

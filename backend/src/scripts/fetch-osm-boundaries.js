@@ -29,6 +29,7 @@
  *   node backend/src/scripts/fetch-osm-boundaries.js
  *   node backend/src/scripts/fetch-osm-boundaries.js --level=6
  *   node backend/src/scripts/fetch-osm-boundaries.js --endpoint=https://overpass.kumi.systems/api/interpreter
+ *   node backend/src/scripts/fetch-osm-boundaries.js --debug --dump-raw
  *
  * Writes:
  *   data/osm-regions.geojson     admin_level=4
@@ -69,7 +70,7 @@ function query(levels) {
     return `[out:json][timeout:${TIMEOUT_S}];
 area["ISO3166-1"="UZ"][admin_level=2]->.uz;
 relation(area.uz)["boundary"="administrative"]${filter};
-out geom tags;`;
+out body geom;`;
 }
 
 // ── Assembling relations into polygons ───────────────────────────────────────
@@ -142,10 +143,27 @@ function pointInRing(pt, ring) {
  * its own polygon rather than discarded, since that usually means the relation is
  * tagged inconsistently upstream and losing the area would be worse.
  */
-function relationToFeature(rel) {
-    const toCoords = m => (m.geometry || [])
-        .filter(p => p && typeof p.lon === 'number' && typeof p.lat === 'number')
-        .map(p => [p.lon, p.lat]);
+function relationToFeature(rel, index) {
+    // Two response shapes are possible and both are supported, because which one
+    // Overpass returns depends on the print mode and the mirror:
+    //   1. `out geom` puts the coordinates inline on each member
+    //   2. plain `out body` returns ways and nodes as separate elements and the
+    //      member carries only a ref
+    const toCoords = m => {
+        if (Array.isArray(m.geometry) && m.geometry.length) {
+            return m.geometry
+                .filter(p => p && typeof p.lon === 'number' && typeof p.lat === 'number')
+                .map(p => [p.lon, p.lat]);
+        }
+        const way = index.ways.get(m.ref);
+        if (!way || !Array.isArray(way.nodes)) return [];
+        const out = [];
+        for (const nid of way.nodes) {
+            const n = index.nodes.get(nid);
+            if (n && typeof n.lon === 'number' && typeof n.lat === 'number') out.push([n.lon, n.lat]);
+        }
+        return out;
+    };
 
     const outerSegs = [];
     const innerSegs = [];
@@ -159,6 +177,7 @@ function relationToFeature(rel) {
 
     const outer = stitchRings(outerSegs);
     const inner = stitchRings(innerSegs);
+    index.stats.segments += outerSegs.length + innerSegs.length;
     if (outer.rings.length === 0) return { feature: null, dropped: outer.dropped + inner.dropped };
 
     const sorted = outer.rings.slice().sort((a, b) => ringArea(b) - ringArea(a));
@@ -185,21 +204,52 @@ function relationToFeature(rel) {
     };
 }
 
-function toGeoJSON(payload) {
+function buildIndex(payload) {
+    const ways = new Map();
+    const nodes = new Map();
+    for (const el of payload.elements) {
+        if (el.type === 'way') ways.set(el.id, el);
+        else if (el.type === 'node') nodes.set(el.id, el);
+    }
+    return { ways, nodes, stats: { segments: 0 } };
+}
+
+function toGeoJSON(payload, debug = false) {
+    const index = buildIndex(payload);
     const features = [];
     let droppedRings = 0;
     let noGeometry = 0;
+    const relations = payload.elements.filter(el => el.type === 'relation');
 
-    for (const el of payload.elements) {
-        if (el.type !== 'relation') continue;
-        const { feature, dropped } = relationToFeature(el);
+    if (debug && relations.length) {
+        const r = relations[0];
+        console.log('    [debug] поля отношения:', Object.keys(r).join(', '));
+        console.log('    [debug] членов:', (r.members || []).length);
+        const firstWay = (r.members || []).find(m => m.type === 'way');
+        console.log('    [debug] первый член-way:', firstWay
+            ? JSON.stringify({ ...firstWay, geometry: Array.isArray(firstWay.geometry)
+                ? `[${firstWay.geometry.length} точек] ${JSON.stringify(firstWay.geometry[0])}`
+                : firstWay.geometry }).slice(0, 400)
+            : 'нет');
+        console.log(`    [debug] отдельных way в ответе: ${index.ways.size}, node: ${index.nodes.size}`);
+    }
+
+    for (const el of relations) {
+        const { feature, dropped } = relationToFeature(el, index);
         droppedRings += dropped;
         if (feature) features.push(feature);
         else noGeometry++;
     }
 
+    console.log(`    отрезков разобрано: ${index.stats.segments}`);
     if (droppedRings > 0) console.log(`    незамкнутых цепочек отброшено: ${droppedRings}`);
-    if (noGeometry > 0) console.log(`    отношений без пригодной геометрии: ${noGeometry}`);
+    if (noGeometry > 0) {
+        console.log(`    отношений без пригодной геометрии: ${noGeometry}`);
+        if (index.stats.segments === 0) {
+            console.log('    ⚠️  ни одного отрезка. В ответе нет ни inline geometry, ни отдельных way/node.');
+            console.log('       Запустите с --debug и пришлите вывод.');
+        }
+    }
 
     return { type: 'FeatureCollection', features };
 }
@@ -285,6 +335,10 @@ async function main() {
     const args = process.argv.slice(2);
     const onlyLevel = args.find(a => a.startsWith('--level='))?.split('=')[1];
     const customEndpoint = args.find(a => a.startsWith('--endpoint='))?.split('=')[1];
+    const debug = args.includes('--debug');
+    // Dumps the raw Overpass answer next to the output so the shape can be checked
+    // without another round trip.
+    const dumpRaw = args.includes('--dump-raw');
     const endpoints = customEndpoint ? [customEndpoint] : ENDPOINTS;
 
     if (typeof fetch !== 'function') {
@@ -307,8 +361,16 @@ async function main() {
         console.log(`\nadmin_level=${cfg.levels.join(', ')} (${cfg.label})`);
         const payload = await runQuery(cfg.levels, endpoints);
         console.log(`  получено элементов OSM: ${payload.elements.length}`);
+        const kinds = {};
+        for (const el of payload.elements) kinds[el.type] = (kinds[el.type] || 0) + 1;
+        console.log(`    по типам: ${JSON.stringify(kinds)}`);
+        if (dumpRaw) {
+            const raw = path.join(DATA_DIR, `osm-raw-${cfg.levels.join('-')}.json`);
+            fs.writeFileSync(raw, JSON.stringify(payload));
+            console.log(`    сырой ответ: ${raw}`);
+        }
 
-        const geojson = toGeoJSON(payload);
+        const geojson = toGeoJSON(payload, debug);
         const stats = describe(geojson, cfg.label);
 
         if (stats.polygonal === 0) {

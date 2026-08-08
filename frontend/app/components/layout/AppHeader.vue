@@ -1,15 +1,15 @@
 <template>
   <header
-    class="sticky top-0 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-100 dark:border-slate-800 transition-colors duration-100"
+    class="sticky top-0 z-[1000] border-b border-rule bg-paper-raised/90 backdrop-blur transition-colors duration-instant dark:border-night-rule dark:bg-night-raised/90"
   >
     <div class="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center gap-3">
       <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
         <span
-          class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-control bg-prussian-600 text-paper"
         >
           <MapIcon :size="20" />
         </span>
-        <span class="font-black text-lg tracking-tight hidden sm:inline">Y.Map</span>
+        <span class="hidden font-display text-lead font-semibold tracking-tight sm:inline">Y.Map</span>
       </NuxtLink>
 
       <nav class="hidden lg:flex items-center gap-1 ml-2">
@@ -17,8 +17,8 @@
           v-for="link in links"
           :key="link.to"
           :to="link.to"
-          class="px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          active-class="!text-blue-600 dark:!text-blue-400"
+          class="rounded-control px-3 py-2 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
+          active-class="!text-prussian-600 dark:!text-prussian-200"
         >
           {{ $t(link.label) }}
         </NuxtLink>
@@ -29,7 +29,7 @@
       <NuxtLink
         to="/search"
         :aria-label="$t('nav.search')"
-        class="inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
       >
         <SearchIcon :size="18" />
       </NuxtLink>
@@ -41,14 +41,14 @@
           <template v-if="isAuthenticated">
             <NuxtLink
               to="/profile"
-              class="px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors hidden sm:inline-flex items-center gap-2"
+              class="px-3 py-2 rounded-control text-body font-medium text-ink dark:text-paper hover:bg-paper-sunk dark:hover:bg-night-sunk transition-colors hidden sm:inline-flex items-center gap-2"
             >
               <UserIcon :size="16" />
               {{ $t('nav.profile') }}
             </NuxtLink>
             <button
               type="button"
-              class="px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              class="rounded-control px-3 py-2 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
               @click="onLogout"
             >
               {{ $t('nav.logout') }}
@@ -57,14 +57,14 @@
           <template v-else>
             <NuxtLink
               to="/login"
-              class="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              class="hidden sm:inline-flex px-4 py-2 rounded-control text-body font-bold text-prussian-600 dark:text-prussian-200 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
               {{ $t('nav.login') }}
             </NuxtLink>
             <!-- Registration flow is Telegram-based per ТЗ; no web register page yet -> /login. -->
             <NuxtLink
               to="/login"
-              class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              class="px-4 py-2 rounded-control text-body font-bold text-white bg-prussian-600 hover:bg-prussian-700 transition-colors"
             >
               {{ $t('nav.register') }}
             </NuxtLink>
@@ -74,7 +74,7 @@
 
       <button
         type="button"
-        class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        class="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
         :aria-label="mobileOpen ? 'Закрыть меню' : 'Открыть меню'"
         @click="mobileOpen = !mobileOpen"
       >
@@ -85,14 +85,14 @@
 
     <nav
       v-if="mobileOpen"
-      class="lg:hidden border-t border-slate-100 dark:border-slate-800 px-4 py-2 flex flex-col gap-1"
+      class="lg:hidden border-t border-rule dark:border-night-rule px-4 py-2 flex flex-col gap-1"
     >
       <NuxtLink
         v-for="link in links"
         :key="link.to"
         :to="link.to"
-        class="px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        active-class="!text-blue-600 dark:!text-blue-400"
+        class="rounded-control px-3 py-2 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
+        active-class="!text-prussian-600 dark:!text-prussian-200"
         @click="mobileOpen = false"
       >
         {{ $t(link.label) }}

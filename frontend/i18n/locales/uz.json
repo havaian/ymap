@@ -1,1 +1,16 @@
-{}
+{
+  "nav": {
+    "observatory": "Observatoriya",
+    "civic": "Murojaatlar",
+    "capacity": "Quvvat",
+    "wear": "Eskirish",
+    "deprivation": "Deprivatsiya",
+    "verification": "Tekshiruv",
+    "dataQuality": "Ma'lumot sifati",
+    "civicOverview": "Umumiy"
+  },
+  "groups": {
+    "observatory": "Observatoriya",
+    "civic": "Murojaatlar"
+  }
+}

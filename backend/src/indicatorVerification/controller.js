@@ -50,15 +50,24 @@ export const submit = async (req, res) => {
             return res.status(400).json({ success: false, message: 'rating must be 1-5' });
 
         // upsert - пользователь может изменить своё мнение
-        await IndicatorVerification.findOneAndUpdate(
+        const result = await IndicatorVerification.findOneAndUpdate(
             { objectId: id, field, userId: req.user._id },
             { status, rating: rating || null, comment: comment || null },
-            { upsert: true, new: true }
+            { upsert: true, new: true, includeResultMetadata: true }
         );
 
         // +1 балл пользователю (только при первом сабмите - upsert отслеживает)
         // Используем $inc безопасно, если поле points не существует - создастся
-        await User.findByIdAndUpdate(req.user._id, { $inc: { points: 1 } });
+        // CORRECTION: upsert ничего не отслеживал. findOneAndUpdate выполняется при
+        // каждом вызове, поэтому $inc срабатывал и на правку собственного ответа:
+        // переключение confirmed/disputed давало балл за балл. Помимо накрутки это
+        // портит метку, на которой будет обучаться М4 версии 2 - переобъявленный
+        // ответ выглядит как новое наблюдение. Балл теперь начисляется только когда
+        // документ был создан, а не обновлён.
+        const isFirstSubmission = !result?.lastErrorObject?.updatedExisting;
+        if (isFirstSubmission) {
+            await User.findByIdAndUpdate(req.user._id, { $inc: { points: 1 } });
+        }
 
         // Возвращаем обновлённую агрегацию по этому полю
         const verifs = await IndicatorVerification.find({ objectId: id, field }).lean();

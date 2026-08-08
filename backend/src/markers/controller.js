@@ -10,12 +10,19 @@ import Issue from '../issue/model.js';
 // Query: ?objectType=school&regionCode=17&swLat=&swLng=&neLat=&neLng=
 // Returns: id, lat, lng, name, objectType, sourceApi
 export const getObjectMarkers = async (req, res) => {
-    const { objectType, sourceApi, regionCode, swLat, swLng, neLat, neLng } = req.query;
+    const { objectType, sourceApi, regionCode, precision, swLat, swLng, neLat, neLng } = req.query;
 
     const filter = {};
     if (objectType) filter.objectType = objectType;
     if (sourceApi) filter.sourceApi = sourceApi;
     if (regionCode) filter.regionCode = parseInt(regionCode);
+
+    // A point is drawn only where a real coordinate exists. Since the centroid
+    // jitter was removed from import-objects.js most records legitimately carry
+    // lat = null, and returning those put markers at [null, null]. Default is
+    // exact only; ?precision=any also returns approximate positions for callers
+    // that render them differently.
+    filter.coordPrecision = precision === 'any' ? { $in: ['exact', 'approximate'] } : 'exact';
 
     // Bbox filter - takes priority over regionCode when provided
     if (swLat && swLng && neLat && neLng) {
@@ -24,7 +31,7 @@ export const getObjectMarkers = async (req, res) => {
     }
 
     const docs = await Object_.find(filter)
-        .select('lat lng name objectType sourceApi details.sigimi details.umumiyUquvchi')
+        .select('lat lng name objectType sourceApi coordPrecision coordSource coordShared details.sigimi details.umumiyUquvchi')
         .lean();
 
     res.json({
@@ -37,6 +44,11 @@ export const getObjectMarkers = async (req, res) => {
             name: d.name,
             objectType: d.objectType,
             sourceApi: d.sourceApi,
+            // coordShared marks a point copied across several facilities in the
+            // source registry: valid as a coordinate, unverified as a position.
+            coordPrecision: d.coordPrecision ?? 'none',
+            coordSource: d.coordSource ?? 'none',
+            coordShared: !!d.coordShared,
             capacity: d.details?.sigimi ?? null,
             enrollment: d.details?.umumiyUquvchi ?? null,
         }))

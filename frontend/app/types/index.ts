@@ -284,8 +284,35 @@ export interface ObjectMarker {
   name: string
   objectType: string
   sourceApi?: string | null
+  // Where the coordinate came from and how far it can be trusted. /markers/objects
+  // returns only coordPrecision 'exact' by default; 'approximate' arrives only when
+  // the caller asks for it, and coordShared marks a point the source registry reuses
+  // across several facilities.
+  coordPrecision?: 'exact' | 'approximate' | 'none'
+  coordSource?: string
+  coordShared?: boolean
   capacity: number | null
   enrollment: number | null
+}
+
+export interface DeprivationBound {
+  lower: number | null
+  upper: number | null
+}
+
+export interface DeprivationFeatureProps {
+  districtCode: string
+  districtId: string
+  name: { ru?: string; uz?: string; en?: string } | string
+  regionCode: number
+  areaKm2?: number
+  value: number | null
+  M0: DeprivationBound
+  H: DeprivationBound
+  A: DeprivationBound
+  assessed: number
+  notAssessable: number
+  dimensions: Record<string, { label: string; lower: number | null; upper: number | null }>
 }
 
 export interface RegionListItem {

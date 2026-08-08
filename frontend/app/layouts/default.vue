@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased transition-colors duration-100"
+    class="min-h-screen flex flex-col bg-paper text-ink transition-colors duration-instant dark:bg-night dark:text-paper"
   >
     <AppHeader />
     <main class="flex-1">

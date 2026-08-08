@@ -9,6 +9,27 @@
     <p v-else-if="!ov" class="text-center text-sm text-slate-400 py-24">Не удалось загрузить аналитику</p>
 
     <template v-else>
+      <!-- This section is fed by what people submit, and almost nothing has been
+           submitted yet. Zeros in every card look like a broken product; saying
+           plainly that the section has not been populated does not. The registry
+           side is a different circuit and is full. -->
+      <div
+        v-if="civicEmpty"
+        class="mb-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-5"
+      >
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Раздел ещё не наполнен</p>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Здесь показываются обращения и проверки, которые оставляют пользователи. Пока их нет.
+          Данные по объектам инфраструктуры лежат в разделе «Обсерватория» и не зависят от этого счётчика.
+        </p>
+        <NuxtLink
+          to="/analytics/data-quality"
+          class="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          Перейти к данным реестров
+        </NuxtLink>
+      </div>
+
       <!-- Big KPI cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div
@@ -62,8 +83,8 @@ import { Loader2, Building2, Map as MapIcon, ClipboardCheck, Smile, CheckCircle2
 definePageMeta({
   layout: 'app',
   // Этап 10: аналитика публичная (ТЗ раздел 3.4) - гейт логина снят.
-  pageTitle: 'Общее',
-  pageSubtitle: 'Сводная статистика по системе',
+  pageTitle: 'Сводка',
+  pageSubtitle: 'Обращения и проверки от пользователей',
 })
 useSeoMeta({ title: 'Аналитика - Y.Map' })
 
@@ -94,6 +115,13 @@ onMounted(async () => {
 })
 
 const fmt = (n: number) => n.toLocaleString('ru-RU')
+
+// Both counters come from user activity. If neither has moved, the section has no
+// content yet rather than a value of zero to report.
+const civicEmpty = computed(() => {
+  const o = ov.value
+  return !!o && o.issues.total === 0 && o.tasks.total === 0
+})
 const satisfaction = computed(() => ov.value?.tasks.completionRate ?? 0)
 
 const bigKpis = computed(() => {

@@ -1,7 +1,7 @@
 <template>
   <section class="mx-auto max-w-7xl px-4 sm:px-6 py-24 text-center">
-    <h1 class="text-3xl sm:text-4xl font-black tracking-tight">{{ title }}</h1>
-    <p class="mt-4 text-slate-500 dark:text-slate-400">
+    <h1 class="font-display text-h1 font-semibold tracking-tight">{{ title }}</h1>
+    <p class="mt-4 text-body text-ink-muted dark:text-ink-faint">
       {{ $t('common.inDevelopment') }} · {{ phase }}
     </p>
   </section>

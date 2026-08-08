@@ -1,16 +1,16 @@
 <template>
   <footer
-    class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-100"
+    class="border-t border-rule bg-paper-raised transition-colors duration-instant dark:border-night-rule dark:bg-night-raised"
   >
     <div class="mx-auto max-w-7xl px-4 sm:px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
       <div class="col-span-2 md:col-span-1">
         <div class="flex items-center gap-2">
           <span
-            class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-control bg-prussian-600 text-paper"
           >
             <MapIcon :size="20" />
           </span>
-          <span class="font-black text-lg tracking-tight">Y.Map</span>
+          <span class="font-display text-lead font-semibold tracking-tight">Y.Map</span>
         </div>
         <div class="flex items-center gap-2 mt-4">
           <a
@@ -18,7 +18,7 @@
             :key="s.label"
             :href="s.href"
             :aria-label="s.label"
-            class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-paper-sunk text-ink-muted transition-colors hover:bg-rule dark:bg-night-sunk dark:text-ink-faint dark:hover:bg-night-rule"
           >
             <component :is="s.icon" :size="16" />
           </a>
@@ -26,8 +26,8 @@
       </div>
 
       <div v-for="col in columns" :key="col.title">
-        <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">{{ col.title }}</h3>
-        <ul class="space-y-2 text-sm">
+        <h3 class="eyebrow mb-3">{{ col.title }}</h3>
+        <ul class="space-y-2 text-body">
           <li v-for="item in col.items" :key="item.label">
             <NuxtLink :to="item.to" class="footer-link">{{ item.label }}</NuxtLink>
           </li>
@@ -35,8 +35,8 @@
       </div>
     </div>
 
-    <div class="border-t border-slate-100 dark:border-slate-800">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 text-xs text-slate-400">© {{ year }} Y.Map</div>
+    <div class="border-t border-rule dark:border-night-rule">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 text-note text-ink-faint">© {{ year }} Y.Map</div>
     </div>
   </footer>
 </template>
@@ -84,6 +84,6 @@ const columns = [
 
 <style scoped>
 .footer-link {
-  @apply text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors;
+  @apply text-ink-muted transition-colors hover:text-prussian-600 dark:text-ink-faint dark:hover:text-prussian-200;
 }
 </style>

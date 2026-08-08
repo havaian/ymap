@@ -18,6 +18,12 @@ import {
     getOvercrowdedFacilities,
     getProblematicFacilities
 } from './controller.js';
+import { getDeprivation, getDeprivationChoropleth } from './deprivation.js';
+import { getDataQuality } from './data-quality.js';
+import { getChanges, getChangeTimeline } from './changes.js';
+import { getVerificationQueue, getVerificationQueueAudit } from './verification-queue.js';
+import { getCapacity } from './capacity.js';
+import { getWear } from './wear.js';
 import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = Router();
@@ -37,5 +43,24 @@ router.get('/efficiency', cacheMiddleware(300, 'analytics'), getEfficiency);
 router.get('/district/:name', cacheMiddleware(120, 'analytics'), getDistrictProfile);
 router.get('/overcrowded', cacheMiddleware(300, 'analytics'), getOvercrowdedFacilities);
 router.get('/problematic-facilities', cacheMiddleware(180, 'analytics'), getProblematicFacilities);
+
+// Both read the objects collection and change only when an import runs, so they
+// cache long. Query parameters are part of the cache key.
+router.get('/deprivation/choropleth', cacheMiddleware(900, 'analytics'), getDeprivationChoropleth);
+router.get('/deprivation', cacheMiddleware(900, 'analytics'), getDeprivation);
+router.get('/data-quality', cacheMiddleware(900, 'analytics'), getDataQuality);
+
+// The change log moves only when diff-snapshots.js runs, which is rare by nature.
+router.get('/changes/timeline', cacheMiddleware(900, 'analytics'), getChangeTimeline);
+router.get('/changes', cacheMiddleware(900, 'analytics'), getChanges);
+
+// Deliberately not cached. A cached queue would hand the same random draw to every
+// caller, which is the same as having no random arm. The audit is cheap and also
+// left uncached so it reflects what was just served.
+router.get('/verification-queue/audit', getVerificationQueueAudit);
+router.get('/verification-queue', getVerificationQueue);
+
+router.get('/capacity', cacheMiddleware(900, 'analytics'), getCapacity);
+router.get('/wear', cacheMiddleware(900, 'analytics'), getWear);
 
 export default router;

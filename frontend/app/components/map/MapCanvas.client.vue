@@ -22,13 +22,25 @@ import 'leaflet.markercluster'
 import type { ObjectMarker } from '~/types'
 import { TASHKENT_CENTER } from '~/types/constants'
 
+// metric 'deprivation' reads a different endpoint from the rest. The scoring
+// metrics publish 0-100 where higher is better; M0 runs 0-1 where higher is worse
+// and carries an interval, so it gets its own fetch, its own colour ramp and its
+// own tooltip rather than being squeezed into the score scale.
 const props = withDefaults(
   defineProps<{
     showChoropleth?: boolean
     metric?: string
+    objectType?: string
+    deprivationBound?: 'lower' | 'upper'
     selectedRegionCode?: number | null
   }>(),
-  { showChoropleth: false, metric: 'composite', selectedRegionCode: null },
+  {
+    showChoropleth: false,
+    metric: 'composite',
+    objectType: 'school',
+    deprivationBound: 'lower',
+    selectedRegionCode: null,
+  },
 )
 
 const emit = defineEmits<{ objectClick: [ObjectMarker] }>()
@@ -76,24 +88,53 @@ const createObjectIcon = (o: ObjectMarker): L.DivIcon => {
   const overcrowded = (o.capacity ?? 0) > 0 && (o.enrollment ?? 0) > (o.capacity ?? 0)
   const color = overcrowded ? '#f97316' : objectTypeColor(o.objectType)
   const size = 40
-  const html = `<div style="position:relative;background-color:${color};width:${size}px;height:${size}px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 4px 12px -2px ${color}66;">${typeSvg(o.objectType, 'white')}</div>`
+  // A coordinate reused across several facilities in the source registry is a
+  // valid point and an unknown position. It gets a dashed outline so it never
+  // reads as a surveyed location: in the non-state preschool registry 640
+  // coordinates carry 1441 objects, one of them thirty at once.
+  const border = o.coordShared ? '2px dashed #ffffff' : '2px solid white'
+  const html = `<div style="position:relative;background-color:${color};width:${size}px;height:${size}px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:${border};box-shadow:0 4px 12px -2px ${color}66;">${typeSvg(o.objectType, 'white')}</div>`
   return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] })
+}
+
+const COORD_SOURCE_LABEL: Record<string, string> = {
+  egov_inn: 'реестр data.egov.uz, соединение по ИНН',
+  osm: 'OpenStreetMap',
+  field_verified: 'полевая проверка',
+  manual: 'внесено вручную',
+  district_centroid: 'центроид района',
+  none: 'координата неизвестна',
 }
 
 const popupHtml = (o: ObjectMarker): string => {
   const label = TYPE_LABEL[o.objectType] ?? o.objectType ?? ''
+  const origin = COORD_SOURCE_LABEL[o.coordSource ?? 'none'] ?? o.coordSource ?? ''
+  const sharedNote = o.coordShared
+    ? '<div style="margin-top:6px;font-size:10px;color:#b45309;">Координата общая для нескольких объектов, положение требует полевого уточнения</div>'
+    : ''
   return `<div style="padding:12px;min-width:200px;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <span style="display:inline-flex;padding:6px;background:#e0e7ff;border-radius:8px;">${typeSvg(o.objectType, '#4f46e5', 16)}</span>
       <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;">${escapeHtml(label)}</span>
     </div>
     <div style="font-weight:900;color:#0f172a;font-size:15px;line-height:1.2;margin-bottom:8px;">${escapeHtml(o.name)}</div>
-    <div style="display:flex;align-items:center;gap:6px;color:#2563eb;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;">Подробнее →</div>
+    <div style="font-size:10px;color:#94a3b8;">Источник координаты: ${escapeHtml(origin)}</div>${sharedNote}
+    <div style="margin-top:8px;display:flex;align-items:center;gap:6px;color:#2563eb;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;">Подробнее →</div>
   </div>`
 }
 
-const scoreColor = (v: number): string =>
-  v >= 80 ? '#059669' : v >= 60 ? '#16a34a' : v >= 45 ? '#ca8a04' : v >= 30 ? '#ea580c' : v >= 15 ? '#dc2626' : '#991b1b'
+// Both ramps come from useScale. They used to sit here as literals and had already
+// drifted from the copies on the analytics pages, so one district could be one
+// colour in a table and another on the map.
+const scale = useScale()
+const scoreColor = (v: number): string => scale.score(v)
+const deprivationColor = (v: number | null): string => scale.deficiency(v)
+
+const pctText = (x: number | null): string => (x === null || x === undefined ? '-' : `${(x * 100).toFixed(1)} %`)
+
+// An interval collapses to a single figure when both bounds agree.
+const boundText = (b: { lower: number | null; upper: number | null }): string =>
+  b.lower === b.upper ? String(b.lower ?? '-') : `${b.lower ?? '-'} – ${b.upper ?? '-'}`
 
 const clusterIcon = (c: { getChildCount: () => number }): L.DivIcon => {
   const count = c.getChildCount()
@@ -132,17 +173,23 @@ const fetchObjects = async () => {
     })
     const group = cluster as unknown as { clearLayers: () => void; addLayers: (m: L.Layer[]) => void }
     group.clearLayers()
-    const markers = res.data.map((o) => {
-      const m = L.marker([o.lat, o.lng], { icon: createObjectIcon(o) })
-      m.on('click', (e) => {
-        L.DomEvent.stopPropagation(e)
-        emit('objectClick', o)
+    // /markers/objects returns coordPrecision 'exact' only, so this filter should
+    // never remove anything. It stays because a marker built from a null pair is
+    // placed at [0, 0] in the Gulf of Guinea rather than failing, which is the
+    // hardest kind of wrong position to notice.
+    const markers = res.data
+      .filter((o) => typeof o.lat === 'number' && typeof o.lng === 'number')
+      .map((o) => {
+        const m = L.marker([o.lat, o.lng], { icon: createObjectIcon(o) })
+        m.on('click', (e) => {
+          L.DomEvent.stopPropagation(e)
+          emit('objectClick', o)
+        })
+        m.bindPopup(popupHtml(o), { closeButton: false, offset: [0, -5], className: 'object-popup' })
+        m.on('mouseover', (e) => (e.target as L.Marker).openPopup())
+        m.on('mouseout', (e) => (e.target as L.Marker).closePopup())
+        return m
       })
-      m.bindPopup(popupHtml(o), { closeButton: false, offset: [0, -5], className: 'object-popup' })
-      m.on('mouseover', (e) => (e.target as L.Marker).openPopup())
-      m.on('mouseout', (e) => (e.target as L.Marker).closePopup())
-      return m
-    })
     group.addLayers(markers)
   } catch {
     /* non-critical - keep existing markers */
@@ -158,6 +205,36 @@ const scheduleFetch = () => {
 
 // ── choropleth ──────────────────────────────────────────────────────────────────
 
+const districtName = (p: any): string =>
+  p?.name?.ru || p?.name?.uz || p?.name?.en || (typeof p?.name === 'string' ? p.name : '') || '-'
+
+// Tooltip for the score metrics: one number out of a hundred, higher is better.
+const scoreTooltip = (p: any): string => {
+  const v = p?.value ?? 0
+  return `<div style="font-family:system-ui;font-size:12px;"><strong>${escapeHtml(districtName(p))}</strong><br/><span style="font-size:18px;font-weight:900;color:${scoreColor(v)}">${v}</span><span style="font-size:10px;color:#94a3b8;"> / 100</span></div>`
+}
+
+// Tooltip for M0. Carries the denominator and the interval, because a district
+// rate without the count behind it invites a comparison the sample cannot support.
+const deprivationTooltip = (p: any): string => {
+  const v = p?.value ?? null
+  if (v === null) {
+    return `<div style="font-family:system-ui;font-size:12px;"><strong>${escapeHtml(districtName(p))}</strong><br/><span style="color:#94a3b8;">объектов недостаточно для оценки (${p?.assessed ?? 0})</span></div>`
+  }
+  const dims = Object.values(p?.dimensions ?? {}) as { label: string; lower: number | null }[]
+  const worst = [...dims].sort((a, b) => (b.lower ?? 0) - (a.lower ?? 0)).slice(0, 3)
+  const rows = worst
+    .map((d) => `<div style="display:flex;justify-content:space-between;gap:12px;"><span>${escapeHtml(d.label)}</span><span style="font-weight:700;">${pctText(d.lower)}</span></div>`)
+    .join('')
+  return `<div style="font-family:system-ui;font-size:12px;min-width:190px;">
+    <strong>${escapeHtml(districtName(p))}</strong><br/>
+    <span style="font-size:18px;font-weight:900;color:${deprivationColor(v)}">${boundText(p.M0)}</span>
+    <span style="font-size:10px;color:#94a3b8;"> M0, выше = хуже</span>
+    <div style="font-size:10px;color:#94a3b8;margin:4px 0 6px;">оценено ${p.assessed}, вне оценки ${p.notAssessable}</div>
+    ${rows}
+  </div>`
+}
+
 const renderChoropleth = async () => {
   if (!map) return
   if (choroplethLayer) {
@@ -165,25 +242,31 @@ const renderChoropleth = async () => {
     choroplethLayer = null
   }
   if (!props.showChoropleth) return
+  const isDeprivation = props.metric === 'deprivation'
   try {
-    const query: Record<string, string | number> = { metric: props.metric }
+    const query: Record<string, string | number> = isDeprivation
+      ? { objectType: props.objectType, bound: props.deprivationBound }
+      : { metric: props.metric }
     if (props.selectedRegionCode != null) query.regionCode = props.selectedRegionCode
-    const res = await $api<any>('/analytics/choropleth', { query })
+    const url = isDeprivation ? '/analytics/deprivation/choropleth' : '/analytics/choropleth'
+    const res = await $api<any>(url, { query })
     const gj = res?.type === 'FeatureCollection' ? res : res?.data
     if (!gj?.features?.length) return
     const layer = L.geoJSON(gj, {
       style: (f: any) => ({
-        fillColor: scoreColor(f.properties.value ?? 0),
+        fillColor: isDeprivation
+          ? deprivationColor(f.properties.value ?? null)
+          : scoreColor(f.properties.value ?? 0),
         weight: 1.5,
         opacity: 0.8,
         color: '#475569',
-        fillOpacity: 0.5,
+        // A district held out for too few objects is drawn faint, so it reads as
+        // absent rather than as a measured low value.
+        fillOpacity: isDeprivation && f.properties.value === null ? 0.2 : 0.5,
       }),
       onEachFeature: (f: any, lyr: L.Layer) => {
-        const name = f.properties?.name?.ru || f.properties?.name?.uz || f.properties?.name?.en || '-'
-        const score = f.properties?.value ?? 0
         ;(lyr as L.Path).bindTooltip(
-          `<div style="font-family:system-ui;font-size:12px;"><strong>${escapeHtml(name)}</strong><br/><span style="font-size:18px;font-weight:900;color:${scoreColor(score)}">${score}</span><span style="font-size:10px;color:#94a3b8;"> / 100</span></div>`,
+          isDeprivation ? deprivationTooltip(f.properties) : scoreTooltip(f.properties),
           { sticky: true, direction: 'top', offset: [0, -10] },
         )
         lyr.on('mouseover', (e) => {
@@ -285,6 +368,10 @@ onMounted(async () => {
 
 watch(() => props.showChoropleth, renderChoropleth)
 watch(() => props.metric, renderChoropleth)
+// Both only affect the deprivation layer, and renderChoropleth ignores them for
+// the score metrics, so no guard is needed here.
+watch(() => props.objectType, renderChoropleth)
+watch(() => props.deprivationBound, renderChoropleth)
 watch(
   () => props.selectedRegionCode,
   (c) => {

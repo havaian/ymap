@@ -1,11 +1,11 @@
 <template>
   <header
-    class="sticky top-0 z-[1000] h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-100 dark:border-slate-800 transition-colors duration-100"
+    class="sticky top-0 z-[1000] h-16 border-b border-rule bg-paper-raised/90 backdrop-blur transition-colors duration-instant dark:border-night-rule dark:bg-night-raised/90"
   >
     <div class="h-full px-4 sm:px-6 flex items-center gap-3">
       <button
         type="button"
-        class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk lg:hidden"
         aria-label="Меню"
         @click="$emit('toggleMobile')"
       >
@@ -13,8 +13,8 @@
       </button>
 
       <div class="min-w-0">
-        <h1 class="text-xl font-black tracking-tight truncate">{{ title }}</h1>
-        <p v-if="subtitle" class="text-xs text-slate-500 dark:text-slate-400 truncate">
+        <h1 class="truncate font-display text-h3 font-semibold text-ink dark:text-paper">{{ title }}</h1>
+        <p v-if="subtitle" class="truncate text-note text-ink-muted dark:text-ink-faint">
           {{ subtitle }}
         </p>
       </div>
@@ -23,7 +23,7 @@
 
       <NuxtLink
         to="/map"
-        class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+        class="hidden items-center gap-2 rounded-control bg-prussian-600 px-4 py-2 text-body font-semibold text-paper transition-colors hover:bg-prussian-700 sm:inline-flex"
       >
         <ShieldCheck :size="16" />
         {{ $t('actions.checkObject') }}
@@ -32,7 +32,7 @@
       <NuxtLink
         to="/search"
         :aria-label="$t('nav.search')"
-        class="inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
       >
         <SearchIcon :size="18" />
       </NuxtLink>

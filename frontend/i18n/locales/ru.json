@@ -18,12 +18,22 @@
     "profile": "Профиль",
     "leaderboard": "Лидерборд",
     "help": "Помощь",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "observatory": "Обсерватория",
+    "civic": "Обращения",
+    "capacity": "Мощность",
+    "wear": "Износ",
+    "deprivation": "Депривация",
+    "verification": "Верификация",
+    "dataQuality": "Качество данных",
+    "civicOverview": "Сводка"
   },
   "groups": {
     "main": "Главная",
     "media": "Медиацентр",
-    "profile": "Профиль"
+    "profile": "Профиль",
+    "observatory": "Обсерватория",
+    "civic": "Обращения"
   },
   "actions": {
     "checkObject": "Проверить объект"

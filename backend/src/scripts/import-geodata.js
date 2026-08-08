@@ -27,7 +27,13 @@ import {
 // Config
 // ─────────────────────────────────────────────
 
-const BASE_URL = 'https://crop.agro.uz';
+// The service moved from crop.agro.uz to cyber-crop.digitagro.uz; the old host no
+// longer resolves. The base is configurable so a further move needs an env change
+// rather than a code change. Paths used: /uz/map for the CSRF session, then
+// /api/json/regions, /api/json/regions/:code, /api/json/districts/:code,
+// /api/json/district/:id, /api/plants/:id.
+// const BASE_URL = 'https://crop.agro.uz';
+const BASE_URL = (process.env.CROP_AGRO_BASE_URL || 'https://cyber-crop.digitagro.uz').replace(/\/+$/, '');
 const DEFAULT_DELAY = 1000; // 1 second between requests
 const MAX_RETRIES = 3;
 const RETRY_BACKOFF = 5000; // 5 seconds base backoff
@@ -135,7 +141,7 @@ async function apiFetch(path, attempt = 1) {
     } catch (err) {
         if (attempt < MAX_RETRIES) {
             const backoff = RETRY_BACKOFF * attempt;
-            console.warn(`  ⚠ ${path}: ${err.message} - retrying in ${backoff / 1000}s (attempt ${attempt}/${MAX_RETRIES})`);
+            console.warn(`  ⚠ ${path}: ${err.message} — retrying in ${backoff / 1000}s (attempt ${attempt}/${MAX_RETRIES})`);
             await sleep(backoff);
             return apiFetch(path, attempt + 1);
         }
@@ -162,7 +168,7 @@ function normalizeGeometry(data) {
         return data;
     }
 
-    // FeatureCollection - merge all polygon features
+    // FeatureCollection — merge all polygon features
     if (data.type === 'FeatureCollection' && data.features?.length) {
         const allCoords = [];
         for (const feature of data.features) {
@@ -178,12 +184,12 @@ function normalizeGeometry(data) {
         return { type: 'MultiPolygon', coordinates: allCoords };
     }
 
-    // GeometryCollection - unwrap first polygon
+    // GeometryCollection — unwrap first polygon
     if (data.type === 'GeometryCollection' && data.geometries?.length) {
         return normalizeGeometry(data.geometries[0]);
     }
 
-    // Feature - extract geometry
+    // Feature — extract geometry
     if (data.type === 'Feature' && data.geometry) {
         return normalizeGeometry(data.geometry);
     }
@@ -341,7 +347,7 @@ async function importRegions() {
         const centroid = computeCentroid(geometry);
         const areaKm2 = computeAreaKm2(geometry);
 
-        // Translate names - handle Tashkent city vs region
+        // Translate names — handle Tashkent city vs region
         const isTashkentCity = /shaxri|shahri/i.test(nameuz) && /toshkent/i.test(nameuz);
         const translated = isTashkentCity ? TASHKENT_CITY : translateRegion(nameuz);
 
@@ -490,7 +496,7 @@ async function fetchCropData(districts) {
             updatedCount++;
             console.log(`    🌾 ${name.en}: ${crops.length} crops`);
         } catch (err) {
-            console.warn(`    ⚠ ${name.en}: crops fetch failed - ${err.message}`);
+            console.warn(`    ⚠ ${name.en}: crops fetch failed — ${err.message}`);
         }
     }
 
@@ -516,7 +522,7 @@ async function main() {
     requestDelay = options.delay;
 
     console.log('═══════════════════════════════════════');
-    console.log('  GeoData Import - crop.agro.uz API');
+    console.log(`  GeoData Import — ${BASE_URL}`);
     console.log('═══════════════════════════════════════');
     console.log(`  Rate limit: ${requestDelay}ms between requests`);
     if (options.skipCrops) console.log('  Skipping crop data');
@@ -540,7 +546,7 @@ async function main() {
         console.log(`\n📊 Regions imported: ${regions.length}`);
 
         if (regions.length === 0) {
-            console.error('❌ No regions imported - check API connectivity');
+            console.error('❌ No regions imported — check API connectivity');
             process.exit(1);
         }
 

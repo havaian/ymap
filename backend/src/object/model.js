@@ -3,6 +3,24 @@
 
 import mongoose from 'mongoose';
 
+// GeoJSON point as its own sub-schema with `default: undefined` on the parent path.
+// Declared inline, Mongoose applies the nested `type` default and materialises
+// { type: 'Point' } with no coordinates for every document that has no position.
+// A sparse 2dsphere index then rejects the write with "Point must be an array or
+// object", because the path exists but is not a valid point. As a sub-schema the
+// path stays absent until something actually assigns coordinates.
+const pointSchema = new mongoose.Schema({
+    type: {
+        type: String,
+        enum: ['Point'],
+        required: true
+    },
+    coordinates: {
+        type: [Number],  // [lng, lat]
+        required: true
+    }
+}, { _id: false });
+
 const objectSchema = new mongoose.Schema({
     // ── Source identity ───────────────────────────────────────────────────────
     // uid is the _uid_ from the source API (row sequence number, not globally unique)
@@ -126,14 +144,8 @@ const objectSchema = new mongoose.Schema({
         default: null
     },
     location: {
-        type: {
-            type: String,
-            enum: ['Point'],
-            default: 'Point'
-        },
-        coordinates: {
-            type: [Number]  // [lng, lat] — left undefined when no real coordinate is known
-        }
+        type: pointSchema,
+        default: undefined  // left unset when no real coordinate is known
     },
     // Where the coordinate came from. 'egov_inn' means it was joined from the
     // data.egov.uz preschool registry on the tax id.

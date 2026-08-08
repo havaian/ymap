@@ -301,7 +301,7 @@ async function importRegions({ dryRun, allowDegenerate }) {
         console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
     }
 
-    if (dryRun) { console.log(`  🔍 dry run — записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
+    if (dryRun) { console.log(`  🔍 dry run - записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
 
     if (ops.length) await Region.bulkWrite(ops, { ordered: false });
     console.log(`  ✅ записано регионов: ${ops.length}`);
@@ -386,7 +386,7 @@ async function importDistricts({ dryRun, allowDegenerate }) {
         console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
     }
 
-    if (dryRun) { console.log(`  🔍 dry run — записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
+    if (dryRun) { console.log(`  🔍 dry run - записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
 
     if (ops.length) await District.bulkWrite(ops, { ordered: false });
     console.log(`  ✅ записано районов: ${ops.length}`);
@@ -403,9 +403,9 @@ async function main() {
     const allowDegenerate = args.includes('--allow-degenerate');
 
     console.log('═══════════════════════════════════════');
-    console.log('  GeoData Import — OpenStreetMap');
+    console.log('  GeoData Import - OpenStreetMap');
     console.log('═══════════════════════════════════════');
-    if (dryRun) console.log('  DRY RUN — без записи');
+    if (dryRun) console.log('  DRY RUN - без записи');
 
     const mongoUri = process.env.MONGODB_URI;
     if (!mongoUri) { console.error('❌ MONGODB_URI не задан'); process.exit(1); }
@@ -417,7 +417,7 @@ async function main() {
         const r = await importRegions({ dryRun, allowDegenerate });
         const d = await importDistricts({ dryRun, allowDegenerate });
 
-        console.log('\nДальше: node src/scripts/import-objects.js — проставит districtId');
+        console.log('\nДальше: node src/scripts/import-objects.js - проставит districtId');
 
         if (strict && (r.missing > 0 || d.missing > 0)) {
             throw new Error(`strict: без границы осталось ${r.missing} регионов и ${d.missing} районов`);

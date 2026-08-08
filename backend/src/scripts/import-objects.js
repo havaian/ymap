@@ -11,12 +11,27 @@
  * which handles Latin/Cyrillic apostrophe variants, mixed scripts, and
  * strips administrative suffixes like "tumani", "t.", "т.", etc.
  *
+ * CHANGED. District resolution no longer goes through the `tuman` string.
+ * The `code` field is the 7-digit SOATO district code and it is consistent across
+ * all three sources: 1703203 is Andijon tumani in maktab44 and Андижон т. in
+ * bogcha. Records are resolved by that number and `tuman` becomes display text.
+ * data/district-crosswalk.json holds the 198 observed districts with both spellings.
+ * Name matching survives in one place only: mapping a crosswalk entry to the
+ * District document once at startup, 198 lookups instead of one per record.
+ *
+ * CHANGED. Coordinate jitter is gone. A record with no real position keeps
+ * lat/lng null and is shown through the district choropleth.
+ *
+ * Anomalies are no longer skipped silently. Every rejected record is counted by
+ * reason and printed; --strict makes the run exit non-zero if any were rejected.
+ *
  * Usage:
  *   docker compose exec backend node src/scripts/import-objects.js
  *
  * Options:
  *   --dry-run            Print counts without writing to DB
  *   --source=ssv         Only process one source (ssv | bogcha | maktab44)
+ *   --strict             Exit with code 1 if any record was rejected
  */
 
 import 'dotenv/config';
@@ -32,15 +47,18 @@ import { normalizeUzName } from './geo-translations.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const BATCH_SIZE = 500;
+const CROSSWALK_FILE = path.join(DATA_DIR, 'district-crosswalk.json');
 
 // ── Coordinate jitter ─────────────────────────────────────────────────────────
+// DISABLED. Jittering a district centroid produced positions that look precise and
+// are not. Kept here so the previous behaviour stays readable in history.
 // ±1200 m in degrees at ~41°N latitude
-const LAT_JITTER = 0.0108;   // 1200 / 111_000
-const LNG_JITTER = 0.0144;   // 1200 / (111_000 * cos(41°))
-
-function jitter(center, range) {
-    return center + (Math.random() * 2 - 1) * range;
-}
+// const LAT_JITTER = 0.0108;   // 1200 / 111_000
+// const LNG_JITTER = 0.0144;   // 1200 / (111_000 * cos(41°))
+//
+// function jitter(center, range) {
+//     return center + (Math.random() * 2 - 1) * range;
+// }
 
 // ── Build lookup structures from DB ──────────────────────────────────────────
 //
@@ -97,35 +115,108 @@ async function buildCaches() {
     return { regionsByNorm, districtsByRegion };
 }
 
-// ── Resolve a single record to a district ─────────────────────────────────────
+// ── Crosswalk: SOATO district code → District document ───────────────────────
+//
+// The crosswalk file lists every district code observed in the source data with
+// both its Latin and Cyrillic spellings. Matching a code to the District
+// collection still needs names, because District rows come from crop.agro.uz and
+// carry no SOATO code — but it happens 198 times at startup instead of once per
+// record, and it has both spellings to try instead of one.
 
-function resolveDistrict(viloyat, tuman, regionsByNorm, districtsByRegion) {
-    // Step 1: viloyat → regionCode
-    const regionKey = normalizeUzName(viloyat);
-    const regionCode = regionsByNorm.get(regionKey);
-    if (!regionCode) return null;
+function loadCrosswalk() {
+    if (!fs.existsSync(CROSSWALK_FILE)) {
+        throw new Error(`district-crosswalk.json not found at ${CROSSWALK_FILE}`);
+    }
+    const entries = JSON.parse(fs.readFileSync(CROSSWALK_FILE, 'utf-8'));
+    const byCode = new Map();
+    for (const e of entries) byCode.set(String(e.districtCode), e);
+    return byCode;
+}
 
-    // Step 2: tuman → district within that region
-    const tumanKey = normalizeUzName(tuman);
-    const candidates = districtsByRegion.get(regionCode) || [];
+function bindCrosswalkToDistricts(crosswalk, districtsByRegion) {
+    const codeToDistrict = new Map();
+    const unbound = [];
 
-    // Try exact match first
-    let match = candidates.find(d => d.normNames.includes(tumanKey));
+    for (const [code, entry] of crosswalk) {
+        const regionCode = Number(entry.regionCode);
+        const candidates = districtsByRegion.get(regionCode) || [];
 
-    // Fallback: startsWith (handles minor suffix differences)
-    if (!match) {
-        match = candidates.find(d =>
-            d.normNames.some(n => n.startsWith(tumanKey) || tumanKey.startsWith(n))
-        );
+        const keys = [...entry.nameLatin, ...entry.nameCyrillic]
+            .map(n => normalizeUzName(n))
+            .filter(Boolean);
+
+        let match = candidates.find(d => keys.some(k => d.normNames.includes(k)));
+        if (!match) {
+            match = candidates.find(d =>
+                keys.some(k => d.normNames.some(n => n.startsWith(k) || k.startsWith(n)))
+            );
+        }
+
+        if (!match) {
+            unbound.push({ code, names: [...entry.nameLatin, ...entry.nameCyrillic], regionCode });
+            continue;
+        }
+
+        codeToDistrict.set(code, {
+            regionCode: match.regionCode,
+            districtId: match._id,
+            nameKeys: keys,
+        });
     }
 
-    if (!match) return null;
+    console.log(`  🔗 Crosswalk: ${codeToDistrict.size}/${crosswalk.size} district codes bound to District docs`);
+    if (unbound.length > 0) {
+        console.warn(`  ⚠️  ${unbound.length} district codes have no matching District document:`);
+        for (const u of unbound) console.warn(`       ${u.code}  region ${u.regionCode}  ${u.names.join(' | ')}`);
+    }
+
+    return codeToDistrict;
+}
+
+// ── Resolve a single record to a district ─────────────────────────────────────
+//
+// Returns { districtCode, regionCode, districtId, flags } or { error }.
+// The record's own tuman string is not used to find the district. It is only
+// compared against the crosswalk afterwards, so that a record filed under the
+// wrong code is reported instead of quietly landing in another oblast. One such
+// record exists in bogcha today: a Romitan (Bukhara) object carrying 1730224,
+// which is Rishton in Fergana.
+
+function resolveByCode(row, crosswalk, codeToDistrict) {
+    const flags = [];
+    const raw = row.code;
+
+    if (raw === null || raw === undefined || raw === '') {
+        return { error: 'code_missing', flags };
+    }
+
+    const code = String(raw);
+    if (code.length !== 7) {
+        return { error: 'code_length', code, flags };
+    }
+
+    if (row.parent_code !== null && row.parent_code !== undefined
+        && code.slice(0, 4) !== String(row.parent_code)) {
+        flags.push('parent_code_mismatch');
+    }
+
+    const bound = codeToDistrict.get(code);
+    if (!bound) {
+        return { error: 'code_unknown', code, flags };
+    }
+
+    // Consistency check only — never overrides the code.
+    const tumanKey = normalizeUzName(row.tuman);
+    if (tumanKey && !bound.nameKeys.includes(tumanKey)) {
+        const near = bound.nameKeys.some(n => n.startsWith(tumanKey) || tumanKey.startsWith(n));
+        if (!near) flags.push('district_name_mismatch');
+    }
 
     return {
-        lat: jitter(match.lat, LAT_JITTER),
-        lng: jitter(match.lng, LNG_JITTER),
-        regionCode: match.regionCode,
-        districtId: match._id,
+        districtCode: code,
+        regionCode: bound.regionCode,
+        districtId: bound.districtId,
+        flags,
     };
 }
 
@@ -134,11 +225,60 @@ function resolveDistrict(viloyat, tuman, regionsByNorm, districtsByRegion) {
 function str(v) { return (v != null && v !== '') ? String(v) : null; }
 function num(v) { const n = parseInt(v, 10); return isNaN(n) ? null : n; }
 
+// kapital_tamir carries two different meanings. bogcha and maktab44 store a year,
+// ssv stores a category. Parsing them apart keeps the wear model from reading
+// "ha_kapital" as a number and from treating a missing year as year zero.
+const REPAIR_STATUSES = ['ha_kapital', 'ha_joriy', 'ha_rekon', 'yuq_remont'];
+const MIN_YEAR = 1850;
+const MAX_YEAR = new Date().getFullYear();
+
+function repairYear(v) {
+    const n = parseInt(v, 10);
+    if (isNaN(n) || n < MIN_YEAR || n > MAX_YEAR) return null;
+    return n;
+}
+
+function repairStatus(v) {
+    const s = str(v);
+    return REPAIR_STATUSES.includes(s) ? s : null;
+}
+
+function buildYear(v) {
+    const n = parseInt(v, 10);
+    if (isNaN(n) || n < MIN_YEAR || n > MAX_YEAR) return null;
+    return n;
+}
+
+// Record-level consistency checks. These do not reject anything, they annotate,
+// so that the data quality report can be produced from the collection itself.
+function qualityFlags(row, base) {
+    const flags = [...base];
+    const cap = num(row.sigimi);
+    const enr = num(row.umumiy_uquvchi);
+    const build = buildYear(row.qurilish_yili);
+    const repair = repairYear(row.kapital_tamir);
+
+    if (cap !== null && cap <= 0) flags.push('capacity_zero');
+    if (enr !== null && enr <= 0) flags.push('enrolment_zero');
+    if (build && repair && repair < build) flags.push('repair_before_build');
+    if (cap && enr && cap > 0 && enr / cap > 3) flags.push('load_implausible');
+
+    return flags;
+}
+
+function loadFactor(row) {
+    const cap = num(row.sigimi);
+    const enr = num(row.umumiy_uquvchi);
+    if (!cap || cap <= 0 || enr === null) return null;
+    return Number((enr / cap).toFixed(4));
+}
+
 // ── Per-source transforms ─────────────────────────────────────────────────────
 
 function transformSSV(row, coords) {
     return {
         uid: row._uid_,
+        sourceId: row.id,
         inn: str(row.inn),
         code: row.code,
         parentCode: row.parent_code,
@@ -149,11 +289,12 @@ function transformSSV(row, coords) {
         nameEn: null,
         viloyat: row.viloyat,
         tuman: row.tuman,
-        lat: coords.lat,
-        lng: coords.lng,
-        location: { type: 'Point', coordinates: [coords.lng, coords.lat] },
+        // Coordinates are not set here any more. import-egov-coords.js fills them
+        // from the data.egov.uz registry by tax id; anything unmatched stays null
+        // and is drawn through the district choropleth.
         regionCode: coords.regionCode,
         districtId: coords.districtId,
+        qualityFlags: qualityFlags(row, coords.flags),
         details: {
             materialSten: str(row.material_sten),
             elektrKunDavomida: str(row.elektr_kun_davomida),
@@ -161,6 +302,9 @@ function transformSSV(row, coords) {
             internet: str(row.internet),
             binoIchidaSuv: str(row.bino_ichida_suv),
             kapitalTamir: str(row.kapital_tamir),
+            // ssv stores a category here, never a year
+            lastCapitalRepairYear: null,
+            repairStatus: repairStatus(row.kapital_tamir),
             qurilishYili: str(row.qurilish_yili),
         },
         sourceUpdatedAt: row.updated ? new Date(row.updated) : null,
@@ -171,6 +315,7 @@ function transformSSV(row, coords) {
 function transformBogcha(row, coords) {
     return {
         uid: row._uid_,
+        sourceId: row.id,
         inn: str(row.inn),
         code: row.code,
         parentCode: row.parent_code,
@@ -181,11 +326,12 @@ function transformBogcha(row, coords) {
         nameEn: null,
         viloyat: row.viloyat,
         tuman: row.tuman,
-        lat: coords.lat,
-        lng: coords.lng,
-        location: { type: 'Point', coordinates: [coords.lng, coords.lat] },
+        // Coordinates are not set here any more. import-egov-coords.js fills them
+        // from the data.egov.uz registry by tax id; anything unmatched stays null
+        // and is drawn through the district choropleth.
         regionCode: coords.regionCode,
         districtId: coords.districtId,
+        qualityFlags: qualityFlags(row, coords.flags),
         details: {
             materialSten: str(row.material_sten),
             elektrKunDavomida: str(row.elektr_kun_davomida),
@@ -194,10 +340,13 @@ function transformBogcha(row, coords) {
             aktivZalHolati: str(row.aktiv_zal_holati),
             oshhonaHolati: str(row.oshhona_holati),
             kapitalTamir: str(row.kapital_tamir),
+            lastCapitalRepairYear: repairYear(row.kapital_tamir),
+            repairStatus: null,
             qurilishYili: str(row.qurilish_yili),
             sigimi: num(row.sigimi),
             umumiyUquvchi: num(row.umumiy_uquvchi),
         },
+        loadFactor: loadFactor(row),
         sourceUpdatedAt: row.updated ? new Date(row.updated) : null,
         lastSyncedAt: new Date(),
     };
@@ -206,6 +355,7 @@ function transformBogcha(row, coords) {
 function transformMaktab(row, coords) {
     return {
         uid: row._uid_,
+        sourceId: row.id,
         inn: str(row.inn),
         code: row.code,
         parentCode: row.parent_code,
@@ -216,11 +366,12 @@ function transformMaktab(row, coords) {
         nameEn: str(row.obekt_nomi_en),
         viloyat: row.viloyat,
         tuman: row.tuman,
-        lat: coords.lat,
-        lng: coords.lng,
-        location: { type: 'Point', coordinates: [coords.lng, coords.lat] },
+        // Coordinates are not set here any more. import-egov-coords.js fills them
+        // from the data.egov.uz registry by tax id; anything unmatched stays null
+        // and is drawn through the district choropleth.
         regionCode: coords.regionCode,
         districtId: coords.districtId,
+        qualityFlags: qualityFlags(row, coords.flags),
         details: {
             materialSten: str(row.material_sten),
             elektrKunDavomida: str(row.elektr_kun_davomida),
@@ -231,10 +382,13 @@ function transformMaktab(row, coords) {
             aktivZalHolati: str(row.aktiv_zal_holati),
             oshhonaHolati: str(row.oshhona_holati),
             kapitalTamir: str(row.kapital_tamir),
+            lastCapitalRepairYear: repairYear(row.kapital_tamir),
+            repairStatus: null,
             qurilishYili: str(row.qurilish_yili),
             sigimi: num(row.sigimi),
             umumiyUquvchi: num(row.umumiy_uquvchi),
         },
+        loadFactor: loadFactor(row),
         sourceUpdatedAt: row.updated ? new Date(row.updated) : null,
         lastSyncedAt: new Date(),
     };
@@ -248,7 +402,7 @@ function transformMaktab(row, coords) {
  * @param {boolean}       options.dryRun      Skip DB writes when true
  * @param {function}      options.onProgress  (phase, done, total) callback
  */
-export async function importObjects({ source = null, dryRun = false, onProgress = () => { } } = {}) {
+export async function importObjects({ source = null, dryRun = false, strict = false, onProgress = () => { } } = {}) {
     const SOURCES = [
         { key: 'ssv', file: 'ssv.json', transform: transformSSV },
         { key: 'bogcha', file: 'bogcha.json', transform: transformBogcha },
@@ -260,6 +414,8 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
 
     onProgress('loading_districts', 0, 1);
     const { regionsByNorm, districtsByRegion } = await buildCaches();
+    const crosswalk = loadCrosswalk();
+    const codeToDistrict = bindCrosswalkToDistricts(crosswalk, districtsByRegion);
     onProgress('loading_districts', 1, 1);
 
     const totals = { upserted: 0, skipped: 0, noDistrict: 0 };
@@ -278,30 +434,56 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
         console.log(`\n📂 ${key}: ${rows.length} records`);
         onProgress(`processing_${key}`, 0, rows.length);
 
-        // Collect unresolved pairs for diagnostics
-        const unresolved = new Set();
+        // Rejections are counted by reason and printed in full. Nothing is dropped
+        // silently: an unresolved record is a defect in the source or in the
+        // crosswalk, and both need to be visible.
+        const rejected = { code_missing: [], code_length: [], code_unknown: [] };
+        const flagCounts = new Map();
         const bulkOps = [];
-        let noDistrict = 0;
 
         for (const row of rows) {
-            if (!row.code) { totals.skipped++; continue; }
+            const resolved = resolveByCode(row, crosswalk, codeToDistrict);
 
-            const coords = resolveDistrict(row.viloyat, row.tuman, regionsByNorm, districtsByRegion);
-
-            if (!coords) {
-                unresolved.add(`${row.viloyat} / ${row.tuman}`);
-                noDistrict++;
+            if (resolved.error) {
+                rejected[resolved.error].push({
+                    id: row.id,
+                    code: row.code,
+                    viloyat: row.viloyat,
+                    tuman: row.tuman,
+                });
                 totals.skipped++;
                 continue;
             }
 
+            const doc = transform(row, resolved);
+            for (const f of doc.qualityFlags) flagCounts.set(f, (flagCounts.get(f) || 0) + 1);
+
             bulkOps.push({
                 updateOne: {
-                    filter: { code: row.code, sourceApi: key === 'ssv' ? 'ssv' : key === 'bogcha' ? 'bogcha' : 'maktab44' },
-                    update: { $set: transform(row, coords) },
+                    filter: { sourceId: row.id, sourceApi: key },
+                    update: { $set: doc },
                     upsert: true,
                 }
             });
+        }
+
+        const noDistrict = rejected.code_missing.length
+            + rejected.code_length.length
+            + rejected.code_unknown.length;
+
+        for (const [reason, list] of Object.entries(rejected)) {
+            if (list.length === 0) continue;
+            console.warn(`  ⚠️  ${reason}: ${list.length} records`);
+            for (const r of list) {
+                console.warn(`       id=${r.id} code=${r.code} ${r.viloyat} / ${r.tuman}`);
+            }
+        }
+
+        if (flagCounts.size > 0) {
+            console.log('  🏷  quality flags:');
+            for (const [f, n] of [...flagCounts].sort((a, b) => b[1] - a[1])) {
+                console.log(`       ${f}: ${n}`);
+            }
         }
 
         totals.noDistrict += noDistrict;
@@ -329,7 +511,12 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
         console.log(`  ✅ ${key}: ${done} upserted`);
     }
 
-    console.log(`\n✅ Import complete — ${totals.upserted} upserted, ${totals.skipped} skipped (${totals.noDistrict} no-district)`);
+    console.log(`\n✅ Import complete — ${totals.upserted} upserted, ${totals.skipped} rejected (${totals.noDistrict} unresolved district)`);
+
+    if (strict && totals.skipped > 0) {
+        throw new Error(`strict mode: ${totals.skipped} records rejected`);
+    }
+
     return totals;
 }
 
@@ -338,12 +525,14 @@ export async function importObjects({ source = null, dryRun = false, onProgress 
 async function main() {
     const args = process.argv.slice(2);
     const dryRun = args.includes('--dry-run');
+    const strict = args.includes('--strict');
     const srcArg = args.find(a => a.startsWith('--source='))?.split('=')[1] || null;
 
     console.log('═══════════════════════════════════════');
     console.log('  Object Import — local JSON files');
     console.log('═══════════════════════════════════════');
     if (dryRun) console.log('  DRY RUN — no writes');
+    if (strict) console.log('  STRICT — non-zero exit if anything is rejected');
     if (srcArg) console.log(`  Source filter: ${srcArg}`);
 
     const mongoUri = process.env.MONGODB_URI;
@@ -353,7 +542,7 @@ async function main() {
     console.log('✅ Connected to MongoDB\n');
 
     try {
-        await importObjects({ source: srcArg, dryRun });
+        await importObjects({ source: srcArg, dryRun, strict });
     } finally {
         await mongoose.disconnect();
     }

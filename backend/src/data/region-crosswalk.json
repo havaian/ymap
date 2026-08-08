@@ -1,0 +1,142 @@
+[
+  {
+    "regionCode": "1703",
+    "nameCanonical": "Andijon viloyati",
+    "nameRu": "Андижанская область",
+    "variants": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "objectCount": 306
+  },
+  {
+    "regionCode": "1706",
+    "nameCanonical": "Buxoro viloyati",
+    "nameRu": "Бухарская область",
+    "variants": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "objectCount": 100
+  },
+  {
+    "regionCode": "1708",
+    "nameCanonical": "Jizzax viloyati",
+    "nameRu": "Джизакская область",
+    "variants": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "objectCount": 88
+  },
+  {
+    "regionCode": "1710",
+    "nameCanonical": "Qashqadaryo viloyati",
+    "nameRu": "Кашкадарьинская область",
+    "variants": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "objectCount": 249
+  },
+  {
+    "regionCode": "1712",
+    "nameCanonical": "Navoiy viloyati",
+    "nameRu": "Навоийская область",
+    "variants": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "objectCount": 45
+  },
+  {
+    "regionCode": "1714",
+    "nameCanonical": "Namangan viloyati",
+    "nameRu": "Наманганская область",
+    "variants": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "objectCount": 142
+  },
+  {
+    "regionCode": "1718",
+    "nameCanonical": "Samarqand viloyati",
+    "nameRu": "Самаркандская область",
+    "variants": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "objectCount": 183
+  },
+  {
+    "regionCode": "1722",
+    "nameCanonical": "Surxondaryo viloyati",
+    "nameRu": "Сурхандарьинская область",
+    "variants": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "objectCount": 192
+  },
+  {
+    "regionCode": "1724",
+    "nameCanonical": "Sirdaryo viloyati",
+    "nameRu": "Сырдарьинская область",
+    "variants": [
+      "Sirdaryo",
+      "Sirdaryo viloyati"
+    ],
+    "objectCount": 60
+  },
+  {
+    "regionCode": "1726",
+    "nameCanonical": "Toshkent shahar",
+    "nameRu": "город Ташкент",
+    "variants": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "objectCount": 99
+  },
+  {
+    "regionCode": "1727",
+    "nameCanonical": "Toshkent viloyati",
+    "nameRu": "Ташкентская область",
+    "variants": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "objectCount": 328
+  },
+  {
+    "regionCode": "1730",
+    "nameCanonical": "Farg'ona viloyati",
+    "nameRu": "Ферганская область",
+    "variants": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "objectCount": 168
+  },
+  {
+    "regionCode": "1733",
+    "nameCanonical": "Xorazm viloyati",
+    "nameRu": "Хорезмская область",
+    "variants": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "objectCount": 94
+  },
+  {
+    "regionCode": "1735",
+    "nameCanonical": "Qoraqolpog'iston Respublikasi",
+    "nameRu": "Республика Каракалпакстан",
+    "variants": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "objectCount": 157
+  }
+]

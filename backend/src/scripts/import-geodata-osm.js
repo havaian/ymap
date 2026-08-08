@@ -1,0 +1,356 @@
+/**
+ * backend/src/scripts/import-geodata-osm.js
+ *
+ * Loads the GeoJSON written by fetch-osm-boundaries.js into the Region and
+ * District collections, matching each boundary to its SOATO code through
+ * data/region-crosswalk.json and data/district-crosswalk.json.
+ *
+ * Replaces import-geodata.js, which pulled from crop.agro.uz. That service moved
+ * and closed its API behind an encrypted session, so it is no longer usable.
+ * The old script is kept in the repository for reference.
+ *
+ * Note on Region.code: the previous source numbered regions 10-23 in its own
+ * scheme, which never lined up with anything else. Regions are now keyed by their
+ * SOATO code (1703 to 1735), the same four digits that start every district code
+ * and every parent_code in the duasr.uz registries. One numbering across the
+ * whole project.
+ *
+ * Nothing is matched by loose name comparison at import time. Names are used once,
+ * against the crosswalk, and every boundary that fails to match is listed.
+ *
+ * Usage:
+ *   docker compose exec backend node src/scripts/import-geodata-osm.js --dry-run
+ *   docker compose exec backend node src/scripts/import-geodata-osm.js
+ *
+ * Options:
+ *   --dry-run    Report matches without writing
+ *   --strict     Exit non-zero if any crosswalk entry found no boundary
+ */
+
+import 'dotenv/config';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+import Region from '../region/model.js';
+import District from '../district/model.js';
+import { normalizeUzName } from './geo-translations.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = path.join(__dirname, '..', 'data');
+
+const FILES = {
+    regions: 'osm-regions.geojson',
+    districts: 'osm-districts.geojson',
+    regionCrosswalk: 'region-crosswalk.json',
+    districtCrosswalk: 'district-crosswalk.json'
+};
+
+const PRINT_LIMIT = 25;
+
+// ── Geometry helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Area-weighted centroid of the largest outer ring, in degrees. Good enough as a
+ * label anchor for a choropleth. Not a true centre of mass for shapes with holes,
+ * and it is not used for any measurement, only for placing a marker.
+ */
+function ringCentroid(ring) {
+    let a = 0, cx = 0, cy = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [x0, y0] = ring[j];
+        const [x1, y1] = ring[i];
+        const f = x0 * y1 - x1 * y0;
+        a += f;
+        cx += (x0 + x1) * f;
+        cy += (y0 + y1) * f;
+    }
+    if (a === 0) {
+        const n = ring.length;
+        return [ring.reduce((s, p) => s + p[0], 0) / n, ring.reduce((s, p) => s + p[1], 0) / n];
+    }
+    a *= 0.5;
+    return [cx / (6 * a), cy / (6 * a)];
+}
+
+function ringAreaAbs(ring) {
+    let a = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        a += ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1];
+    }
+    return Math.abs(a / 2);
+}
+
+function outerRings(geometry) {
+    if (geometry.type === 'Polygon') return [geometry.coordinates[0]];
+    if (geometry.type === 'MultiPolygon') return geometry.coordinates.map(p => p[0]);
+    return [];
+}
+
+function centroidOf(geometry) {
+    const rings = outerRings(geometry).filter(r => Array.isArray(r) && r.length >= 4);
+    if (rings.length === 0) return null;
+    const largest = rings.reduce((best, r) => (ringAreaAbs(r) > ringAreaAbs(best) ? r : best), rings[0]);
+    return ringCentroid(largest);
+}
+
+/**
+ * Spherical excess over all outer rings, minus inner rings, in square kilometres.
+ */
+function areaKm2(geometry) {
+    const R = 6371.0088;
+    const rad = d => d * Math.PI / 180;
+
+    const ringArea = ring => {
+        if (!Array.isArray(ring) || ring.length < 4) return 0;
+        let total = 0;
+        for (let i = 0; i < ring.length - 1; i++) {
+            const [lon1, lat1] = ring[i];
+            const [lon2, lat2] = ring[i + 1];
+            total += (rad(lon2) - rad(lon1)) * (2 + Math.sin(rad(lat1)) + Math.sin(rad(lat2)));
+        }
+        return Math.abs(total * R * R / 2);
+    };
+
+    if (geometry.type === 'Polygon') {
+        const [outer, ...holes] = geometry.coordinates;
+        return ringArea(outer) - holes.reduce((s, h) => s + ringArea(h), 0);
+    }
+    if (geometry.type === 'MultiPolygon') {
+        return geometry.coordinates.reduce((sum, poly) => {
+            const [outer, ...holes] = poly;
+            return sum + ringArea(outer) - holes.reduce((s, h) => s + ringArea(h), 0);
+        }, 0);
+    }
+    return 0;
+}
+
+// ── Matching ─────────────────────────────────────────────────────────────────
+
+/**
+ * Every name variant OSM offers for one boundary. `name` is normally Uzbek Latin,
+ * `name:oz` and `name:uz-Cyrl` carry Cyrillic where mappers bothered.
+ */
+function osmNames(props) {
+    const keys = ['name', 'name:uz', 'name:oz', 'name:uz-Cyrl', 'name:uz-Latn',
+        'name:ru', 'name:en', 'official_name', 'alt_name', 'int_name'];
+    const out = [];
+    for (const k of keys) {
+        const v = props[k];
+        if (typeof v === 'string' && v.trim()) out.push(v.trim());
+    }
+    return out;
+}
+
+function normSet(names) {
+    return new Set(names.map(n => normalizeUzName(n)).filter(Boolean));
+}
+
+/**
+ * Exact normalised match first, then a prefix relation. No fuzzy scoring: a wrong
+ * boundary attached to a district is worse than a missing one, because it is
+ * invisible in the output and wrong on the map.
+ */
+function matchFeature(feature, entries) {
+    const fNames = normSet(osmNames(feature.properties || {}));
+    if (fNames.size === 0) return null;
+
+    for (const e of entries) {
+        for (const key of e.normKeys) {
+            if (fNames.has(key)) return { entry: e, how: 'exact' };
+        }
+    }
+    for (const e of entries) {
+        for (const key of e.normKeys) {
+            for (const f of fNames) {
+                if (f.startsWith(key) || key.startsWith(f)) return { entry: e, how: 'prefix' };
+            }
+        }
+    }
+    return null;
+}
+
+function readJson(file) {
+    const p = path.join(DATA_DIR, file);
+    if (!fs.existsSync(p)) throw new Error(`${file} не найден в ${DATA_DIR}`);
+    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+}
+
+// ── Import ───────────────────────────────────────────────────────────────────
+
+async function importRegions({ dryRun }) {
+    const geo = readJson(FILES.regions);
+    const cw = readJson(FILES.regionCrosswalk);
+
+    const entries = cw.map(e => ({
+        ...e,
+        normKeys: [...normSet([e.nameCanonical, ...(e.variants || [])])]
+    }));
+
+    const feats = (geo.features || []).filter(f =>
+        f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
+
+    console.log(`\n📍 Регионы: ${feats.length} границ в OSM, ${entries.length} в справочнике`);
+
+    const ops = [];
+    const matched = new Set();
+    const unmatchedFeatures = [];
+
+    for (const f of feats) {
+        const m = matchFeature(f, entries);
+        if (!m) { unmatchedFeatures.push(osmNames(f.properties)[0] || '(без имени)'); continue; }
+        if (matched.has(m.entry.regionCode)) continue;  // first match wins
+        matched.add(m.entry.regionCode);
+
+        const centroid = centroidOf(f.geometry);
+        if (!centroid) { console.warn(`  ⚠️  ${m.entry.nameCanonical}: не удалось вычислить центроид`); continue; }
+
+        ops.push({
+            updateOne: {
+                filter: { code: Number(m.entry.regionCode) },
+                update: {
+                    $set: {
+                        code: Number(m.entry.regionCode),
+                        name: {
+                            uz: m.entry.nameCanonical,
+                            ru: m.entry.nameRu || m.entry.nameCanonical,
+                            en: f.properties['name:en'] || m.entry.nameCanonical
+                        },
+                        geometry: f.geometry,
+                        centroid: { type: 'Point', coordinates: centroid },
+                        areaKm2: Math.round(areaKm2(f.geometry))
+                    }
+                },
+                upsert: true
+            }
+        });
+    }
+
+    const missing = entries.filter(e => !matched.has(e.regionCode));
+    console.log(`  сопоставлено: ${matched.size}/${entries.length}`);
+    if (missing.length) {
+        console.warn(`  ⚠️  без границы: ${missing.map(e => `${e.regionCode} ${e.nameCanonical}`).join(', ')}`);
+    }
+    if (unmatchedFeatures.length) {
+        console.log(`  границ OSM без пары в справочнике: ${unmatchedFeatures.length}`);
+        console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
+    }
+
+    if (dryRun) { console.log(`  🔍 dry run — записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
+
+    if (ops.length) await Region.bulkWrite(ops, { ordered: false });
+    console.log(`  ✅ записано регионов: ${ops.length}`);
+    return { written: ops.length, missing: missing.length };
+}
+
+async function importDistricts({ dryRun }) {
+    const geo = readJson(FILES.districts);
+    const cw = readJson(FILES.districtCrosswalk);
+
+    const entries = cw.map(e => ({
+        ...e,
+        normKeys: [...normSet([...(e.nameLatin || []), ...(e.nameCyrillic || [])])]
+    }));
+
+    const feats = (geo.features || []).filter(f =>
+        f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
+
+    console.log(`\n📍 Районы: ${feats.length} границ в OSM, ${entries.length} в справочнике`);
+
+    const ops = [];
+    const matched = new Map();
+    const unmatchedFeatures = [];
+    let byPrefix = 0;
+
+    for (const f of feats) {
+        const m = matchFeature(f, entries);
+        if (!m) { unmatchedFeatures.push(osmNames(f.properties)[0] || '(без имени)'); continue; }
+        if (matched.has(m.entry.districtCode)) continue;
+        if (m.how === 'prefix') byPrefix++;
+        matched.set(m.entry.districtCode, f);
+
+        const centroid = centroidOf(f.geometry);
+        if (!centroid) { console.warn(`  ⚠️  ${m.entry.districtCode}: не удалось вычислить центроид`); continue; }
+
+        // apiId used to hold the crop.agro identifier and is uniquely indexed.
+        // The OSM relation id takes that slot: stable, and it says where the
+        // geometry came from.
+        const osmId = Number(String(f.properties.id || f.id || '').replace(/\D/g, '')) || null;
+
+        ops.push({
+            updateOne: {
+                filter: { apiId: osmId },
+                update: {
+                    $set: {
+                        apiId: osmId,
+                        regionCode: Number(m.entry.regionCode),
+                        cadNum: m.entry.districtCode,
+                        name: {
+                            uz: (m.entry.nameLatin || [])[0] || f.properties.name || m.entry.districtCode,
+                            ru: f.properties['name:ru'] || (m.entry.nameCyrillic || [])[0] || '',
+                            en: f.properties['name:en'] || (m.entry.nameLatin || [])[0] || m.entry.districtCode
+                        },
+                        geometry: f.geometry,
+                        centroid: { type: 'Point', coordinates: centroid },
+                        areaKm2: Math.round(areaKm2(f.geometry))
+                    }
+                },
+                upsert: true
+            }
+        });
+    }
+
+    const missing = entries.filter(e => !matched.has(e.districtCode));
+    console.log(`  сопоставлено: ${matched.size}/${entries.length} (по префиксу: ${byPrefix})`);
+    if (missing.length) {
+        console.warn(`  ⚠️  без границы: ${missing.length}`);
+        for (const e of missing.slice(0, PRINT_LIMIT)) {
+            console.warn(`     ${e.districtCode}  ${[...(e.nameLatin || []), ...(e.nameCyrillic || [])].join(' | ')}`);
+        }
+        if (missing.length > PRINT_LIMIT) console.warn(`     ... и ещё ${missing.length - PRINT_LIMIT}`);
+    }
+    if (unmatchedFeatures.length) {
+        console.log(`  границ OSM без пары в справочнике: ${unmatchedFeatures.length}`);
+        console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
+    }
+
+    if (dryRun) { console.log(`  🔍 dry run — записали бы ${ops.length}`); return { written: 0, missing: missing.length }; }
+
+    if (ops.length) await District.bulkWrite(ops, { ordered: false });
+    console.log(`  ✅ записано районов: ${ops.length}`);
+    return { written: ops.length, missing: missing.length };
+}
+
+async function main() {
+    const args = process.argv.slice(2);
+    const dryRun = args.includes('--dry-run');
+    const strict = args.includes('--strict');
+
+    console.log('═══════════════════════════════════════');
+    console.log('  GeoData Import — OpenStreetMap');
+    console.log('═══════════════════════════════════════');
+    if (dryRun) console.log('  DRY RUN — без записи');
+
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) { console.error('❌ MONGODB_URI не задан'); process.exit(1); }
+
+    await mongoose.connect(mongoUri);
+    console.log('✅ Подключено к MongoDB');
+
+    try {
+        const r = await importRegions({ dryRun });
+        const d = await importDistricts({ dryRun });
+
+        console.log('\nДальше: node src/scripts/import-objects.js — проставит districtId');
+
+        if (strict && (r.missing > 0 || d.missing > 0)) {
+            throw new Error(`strict: без границы осталось ${r.missing} регионов и ${d.missing} районов`);
+        }
+    } finally {
+        await mongoose.disconnect();
+    }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch(err => { console.error('\n❌', err.message); process.exit(1); });
+}

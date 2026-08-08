@@ -305,6 +305,31 @@ async function runQuery(levels, endpoints) {
  * Reports what actually came back, so a partial or wrong result is visible
  * before it reaches the database.
  */
+/**
+ * Vertices across every outer ring of a feature. This is the number that separates
+ * a traced administrative boundary from a bounding box wearing one.
+ *
+ * It is checked here because the earlier failure mode was silent: the buggy query
+ * `out geom tags;` suppressed member output, whatever built the file fell back to
+ * the relation's `bounds`, and the result was 175 perfectly valid five-point
+ * rectangles. Every downstream check passed - they were polygons, they had names,
+ * they matched the crosswalk, they imported cleanly - and the defect only surfaced
+ * when somebody looked at the map.
+ */
+function vertexCount(geometry) {
+    if (!geometry) return 0;
+    if (geometry.type === 'Polygon') return (geometry.coordinates?.[0] || []).length;
+    if (geometry.type === 'MultiPolygon') {
+        return (geometry.coordinates || []).reduce((n, poly) => n + (poly[0] || []).length, 0);
+    }
+    return 0;
+}
+
+// A closed quadrilateral is five points: four corners and the repeat that closes
+// the ring. Nothing traced from OSM is that simple, so anything at or below this
+// is a box.
+const RECTANGLE_MAX_VERTICES = 6;
+
 function describe(geojson, label) {
     const feats = geojson.features || [];
     const byType = {};
@@ -325,10 +350,19 @@ function describe(geojson, label) {
     console.log(`    полигональных: ${polygonal}`);
     console.log(`    с тегом name: ${withName}, с name:ru: ${withRu}`);
 
+    const counts = feats.map(f => vertexCount(f.geometry)).filter(n => n > 0).sort((a, b) => a - b);
+    const median = counts.length ? counts[Math.floor(counts.length / 2)] : 0;
+    const rectangles = feats.filter(f => {
+        const n = vertexCount(f.geometry);
+        return n > 0 && n <= RECTANGLE_MAX_VERTICES;
+    }).length;
+    console.log(`    вершин: минимум ${counts[0] ?? 0}, медиана ${median}, максимум ${counts[counts.length - 1] ?? 0}`);
+    if (rectangles > 0) console.log(`    ⚠️  прямоугольных (<= ${RECTANGLE_MAX_VERTICES} вершин): ${rectangles}`);
+
     const sample = feats.slice(0, 8).map(f => f.properties?.name).filter(Boolean);
     if (sample.length) console.log(`    примеры имён: ${sample.join(', ')}`);
 
-    return { count: feats.length, polygonal };
+    return { count: feats.length, polygonal, rectangles, medianVertices: median };
 }
 
 async function main() {
@@ -375,6 +409,17 @@ async function main() {
 
         if (stats.polygonal === 0) {
             console.error('  ❌ ни одного полигона. Файл не записан.');
+            continue;
+        }
+
+        // The check that was missing. A bounding box is a valid polygon, so the
+        // test above passes it, and so does every step after it. Refusing here is
+        // the only place where a degenerate file is still cheap to throw away.
+        if (stats.rectangles > 0) {
+            console.error(`  ❌ ${stats.rectangles} из ${stats.count} объектов - прямоугольники (медиана вершин ${stats.medianVertices}).`);
+            console.error('     Это bbox, а не границы. Скорее всего в запросе снова стоит `out geom tags;`:');
+            console.error('     `tags` подавляет вывод членов отношения, остаются только bounds.');
+            console.error('     Файл не записан. Запустите с --debug --dump-raw и посмотрите ответ.');
             continue;
         }
 

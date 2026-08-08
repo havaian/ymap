@@ -90,6 +90,48 @@ function outerRings(geometry) {
     return [];
 }
 
+// A closed quadrilateral is five points: four corners plus the repeat that closes
+// the ring. Nothing traced from OSM is that simple.
+const RECTANGLE_MAX_VERTICES = 6;
+
+function vertexCount(geometry) {
+    return outerRings(geometry).reduce((n, r) => n + (Array.isArray(r) ? r.length : 0), 0);
+}
+
+/**
+ * Refuses to import bounding boxes.
+ *
+ * This gate exists because its absence cost a full pipeline run without anyone
+ * noticing. A buggy Overpass query returned relations with no members, whatever
+ * built the file fell back to their `bounds`, and 175 five-point rectangles went
+ * into the database. Nothing objected: they were valid polygons, they carried
+ * names, they matched the crosswalk, they wrote cleanly, and areaKm2 computed off
+ * a bbox is a plausible-looking number. The defect surfaced only when somebody
+ * opened the map and saw squares.
+ *
+ * A wrong boundary is worse than a missing one, because a missing one is visible.
+ */
+function assertNotBoxes(features, label, allowDegenerate) {
+    const counts = features.map(f => vertexCount(f.geometry)).filter(n => n > 0);
+    if (counts.length === 0) return;
+
+    const boxes = counts.filter(n => n <= RECTANGLE_MAX_VERTICES).length;
+    const sorted = [...counts].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+
+    console.log(`  вершин: минимум ${sorted[0]}, медиана ${median}, максимум ${sorted[sorted.length - 1]}`);
+    if (boxes === 0) return;
+
+    console.error(`  ❌ ${boxes} из ${counts.length} границ (${label}) - прямоугольники.`);
+    console.error('     Это bbox, а не контуры. Источник файла испорчен, импортировать нечего.');
+    console.error('     Перекачать: node src/scripts/fetch-osm-boundaries.js --debug');
+    if (allowDegenerate) {
+        console.error('     --allow-degenerate: продолжаю вопреки этому.');
+        return;
+    }
+    throw new Error(`${label}: геометрия вырождена, импорт остановлен`);
+}
+
 function centroidOf(geometry) {
     const rings = outerRings(geometry).filter(r => Array.isArray(r) && r.length >= 4);
     if (rings.length === 0) return null;
@@ -192,7 +234,7 @@ function readJson(file) {
 
 // ── Import ───────────────────────────────────────────────────────────────────
 
-async function importRegions({ dryRun }) {
+async function importRegions({ dryRun, allowDegenerate }) {
     const geo = readJson(FILES.regions);
     const cw = readJson(FILES.regionCrosswalk);
 
@@ -205,6 +247,7 @@ async function importRegions({ dryRun }) {
         f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
 
     console.log(`\n📍 Регионы: ${feats.length} границ в OSM, ${entries.length} в справочнике`);
+    assertNotBoxes(feats, 'регионы', allowDegenerate);
 
     const ops = [];
     const matched = new Set();
@@ -265,7 +308,7 @@ async function importRegions({ dryRun }) {
     return { written: ops.length, missing: missing.length };
 }
 
-async function importDistricts({ dryRun }) {
+async function importDistricts({ dryRun, allowDegenerate }) {
     const geo = readJson(FILES.districts);
     const cw = readJson(FILES.districtCrosswalk);
 
@@ -278,6 +321,7 @@ async function importDistricts({ dryRun }) {
         f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
 
     console.log(`\n📍 Районы: ${feats.length} границ в OSM, ${entries.length} в справочнике`);
+    assertNotBoxes(feats, 'районы', allowDegenerate);
 
     const ops = [];
     const matched = new Map();
@@ -353,6 +397,10 @@ async function main() {
     const args = process.argv.slice(2);
     const dryRun = args.includes('--dry-run');
     const strict = args.includes('--strict');
+    // Escape hatch, deliberately awkward to type. There is no legitimate reason to
+    // load rectangles; the flag exists so a future case nobody predicted is not
+    // blocked by a check written today.
+    const allowDegenerate = args.includes('--allow-degenerate');
 
     console.log('═══════════════════════════════════════');
     console.log('  GeoData Import — OpenStreetMap');
@@ -366,8 +414,8 @@ async function main() {
     console.log('✅ Подключено к MongoDB');
 
     try {
-        const r = await importRegions({ dryRun });
-        const d = await importDistricts({ dryRun });
+        const r = await importRegions({ dryRun, allowDegenerate });
+        const d = await importDistricts({ dryRun, allowDegenerate });
 
         console.log('\nДальше: node src/scripts/import-objects.js — проставит districtId');
 

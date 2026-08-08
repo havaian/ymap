@@ -7,6 +7,16 @@
  * Run audit-geodata.js first. This script deletes; it is dry-run by default and
  * needs --apply to write anything.
  *
+ * STATUS, 2026-08-08. On the live database this script has nothing to do. The
+ * audit came back with 163 districts, all of them keyed on an OSM relation id,
+ * zero legacy documents and zero SOATO codes held twice. The duplicate hypothesis
+ * this script was written for did not hold: the boundaries are wrong because they
+ * are bounding boxes, not because there are two sets of them.
+ *
+ * It is kept, not deleted, for one reason: import-geodata.js is still in the
+ * repository and still upserts on the crop.agro identifier. If anyone runs it, the
+ * duplicate set appears for real, and this is the way back.
+ *
  * Safety rules, in order:
  *   1. Nothing is deleted unless a replacement exists. If the OSM set is empty
  *      the script refuses outright: an empty collection draws no choropleth at

@@ -24,6 +24,7 @@ import { getChanges, getChangeTimeline } from './changes.js';
 import { getVerificationQueue, getVerificationQueueAudit } from './verification-queue.js';
 import { getCapacity } from './capacity.js';
 import { getWear } from './wear.js';
+import { getComposite } from './composite.js';
 import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = Router();
@@ -59,6 +60,12 @@ router.get('/changes', cacheMiddleware(900, 'analytics'), getChanges);
 // left uncached so it reflects what was just served.
 router.get('/verification-queue/audit', getVerificationQueueAudit);
 router.get('/verification-queue', getVerificationQueue);
+
+// A thousand perturbation runs over every district, so it is the most expensive
+// read in the API. It also moves only when an import runs, which is what makes a
+// long cache correct rather than merely convenient. Query parameters, including
+// the weights and the seed, are part of the cache key.
+router.get('/composite', cacheMiddleware(900, 'analytics'), getComposite);
 
 router.get('/capacity', cacheMiddleware(900, 'analytics'), getCapacity);
 router.get('/wear', cacheMiddleware(900, 'analytics'), getWear);

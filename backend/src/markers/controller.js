@@ -30,13 +30,32 @@ export const getObjectMarkers = async (req, res) => {
         filter.lng = { $gte: parseFloat(swLng), $lte: parseFloat(neLng) };
     }
 
-    const docs = await Object_.find(filter)
-        .select('lat lng name objectType sourceApi coordPrecision coordSource coordShared details.sigimi details.umumiyUquvchi')
-        .lean();
+    // Payload cap. Today the collection holds 2198 objects and only a few hundred
+    // carry an exact coordinate, so nothing is cut. After import-egov-coords.js
+    // runs for real and the school registry lands, a country-wide viewport would
+    // ask for tens of thousands of points in one response, and the browser spends
+    // longer building markers than the request spends in flight. The cap is
+    // reported back so the client can say the view is partial instead of quietly
+    // showing a subset.
+    const MAX_MARKERS = 4000;
+    const requested = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(requested) && requested > 0
+        ? Math.min(requested, MAX_MARKERS)
+        : MAX_MARKERS;
+
+    const [docs, total] = await Promise.all([
+        Object_.find(filter)
+            .select('lat lng name objectType sourceApi coordPrecision coordSource coordShared details.sigimi details.umumiyUquvchi')
+            .limit(limit)
+            .lean(),
+        Object_.countDocuments(filter)
+    ]);
 
     res.json({
         success: true,
         count: docs.length,
+        total,
+        truncated: total > docs.length,
         data: docs.map(d => ({
             id: d._id.toString(),
             lat: d.lat,

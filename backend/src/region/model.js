@@ -29,6 +29,25 @@ const regionSchema = new mongoose.Schema({
             required: true
         }
     },
+    // Render copy. Same reason as District.geometrySimplified: the outline drawn
+    // around a selected region is read at a zoom where whole viloyats fit on
+    // screen, and source resolution there costs frames for detail nobody can see.
+    //
+    // This field was missing while simplify-boundaries.js already wrote to it.
+    // Mongoose strips unknown paths from an update under the default strict mode,
+    // so the region half of that script reported success and stored nothing.
+    //
+    // No 2dsphere index, deliberately: a simplified ring can self-intersect and
+    // the index would reject the whole document.
+    geometrySimplified: {
+        type: {
+            type: String,
+            enum: ['MultiPolygon', 'Polygon']
+        },
+        coordinates: {
+            type: mongoose.Schema.Types.Mixed
+        }
+    },
     centroid: {
         type: {
             type: String,

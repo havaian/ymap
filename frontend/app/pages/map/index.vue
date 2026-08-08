@@ -83,7 +83,7 @@
         @object-click="onObjectClick"
       />
       <template #fallback>
-        <div class="w-full h-full flex items-center justify-center text-slate-400">Загрузка карты…</div>
+        <div class="flex h-full w-full items-center justify-center text-body text-ink-faint">Загрузка карты…</div>
       </template>
     </ClientOnly>
   </div>
@@ -133,6 +133,8 @@ const regionName = (r: RegionListItem) => {
   return n?.ru || n?.uz || n?.en || `Регион ${r.code}`
 }
 
-// Object detail (popup "Подробнее" -> detail view) is open question ОВ №6; left as a hook.
-const onObjectClick = (_o: ObjectMarker) => {}
+// ОВ №6 closed: the marker opens the facility card. The map answers "where" and
+// the card answers "on what basis", and until this route existed a click on a
+// point had nowhere to go.
+const onObjectClick = (o: ObjectMarker) => navigateTo(`/objects/${o.id}`)
 </script>

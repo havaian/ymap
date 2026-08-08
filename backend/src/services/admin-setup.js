@@ -49,6 +49,9 @@ async function bootstrapAdmin() {
             await User.updateOne({ _id: existing._id }, { role: 'ADMIN' });
             console.log('🔧 Fixed admin role for', adminEmail);
         }
+        if (existing.emailVerified !== true) {
+            await User.updateOne({ _id: existing._id }, { emailVerified: true });
+        }
         console.log('✅ Admin account verified:', adminEmail);
         return;
     }
@@ -58,7 +61,10 @@ async function bootstrapAdmin() {
         name: adminName,
         email: adminEmail,
         password: hashedPassword,
-        role: 'ADMIN'
+        role: 'ADMIN',
+        // Bootstrapped accounts skip the confirmation gate: their address is set by
+        // the operator in the environment, and there is no inbox to click through.
+        emailVerified: true
     });
 
     console.log('✅ Admin account created:', adminEmail);
@@ -75,6 +81,11 @@ async function bootstrapDemoCitizens() {
             if (existing.role !== 'CITIZEN') {
                 await User.updateOne({ _id: existing._id }, { role: 'CITIZEN' });
             }
+            // Accounts created before the confirmation gate existed have no flag at
+            // all, and a missing flag must not lock out a working demo login.
+            if (existing.emailVerified !== true) {
+                await User.updateOne({ _id: existing._id }, { emailVerified: true });
+            }
             continue;
         }
 
@@ -83,7 +94,8 @@ async function bootstrapDemoCitizens() {
             email: citizen.email,
             password: hashedPassword,
             role: 'CITIZEN',
-            district: citizen.district
+            district: citizen.district,
+            emailVerified: true
         });
 
         console.log('✅ Demo citizen created:', citizen.email);

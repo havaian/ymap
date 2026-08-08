@@ -8,7 +8,7 @@
  * database. Mongoose creates new indexes on model init but never removes old
  * ones, so a replaced unique key keeps rejecting inserts under the old rule.
  * Concretely: the Object model used to declare { inn, code, sourceApi } as unique.
- * That key cannot hold - inn repeats within a source (392 ssv records share 166
+ * That key cannot hold — inn repeats within a source (392 ssv records share 166
  * tax ids) and code is the district code shared by every object in that district.
  * It is now { sourceId, sourceApi }, and the old index has to go or the import
  * fails on duplicates.
@@ -101,7 +101,7 @@ async function main() {
     console.log('═══════════════════════════════════════');
     console.log('  Index sync');
     console.log('═══════════════════════════════════════');
-    if (dryRun) console.log('  DRY RUN - nothing is applied');
+    if (dryRun) console.log('  DRY RUN — nothing is applied');
 
     const mongoUri = process.env.MONGODB_URI;
     if (!mongoUri) { console.error('❌ MONGODB_URI not set'); process.exit(1); }

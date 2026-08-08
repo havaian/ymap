@@ -1,113 +1,128 @@
 <template>
-  <div class="mx-auto max-w-3xl px-4 sm:px-6 py-6">
-    <!-- Loading -->
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
     <div v-if="loading" class="flex items-center justify-center py-24">
-      <Loader2 class="w-8 h-8 animate-spin text-blue-600" />
+      <Loader2 class="h-7 w-7 animate-spin text-prussian-500" />
     </div>
 
-    <!-- Error -->
-    <p v-else-if="!d" class="text-center text-sm text-slate-400 py-24">
+    <p v-else-if="!d" class="py-24 text-center text-body text-ink-muted dark:text-ink-faint">
       Не удалось загрузить профиль
     </p>
 
     <template v-else>
-      <!-- Hero card -->
-      <div class="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div class="h-24 bg-gradient-to-r from-blue-600 to-indigo-600" />
-        <div class="px-6 pb-6">
-          <div class="-mt-10 mb-4 flex items-end justify-between">
-            <div class="w-20 h-20 rounded-[1.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-900 shadow-lg flex items-center justify-center text-3xl">
-              {{ level.icon }}
-            </div>
-            <span class="text-xs font-black px-3 py-1.5 rounded-full" :class="[level.bg, level.color]">
-              {{ level.label }}
-            </span>
+      <!-- Identity. The gradient banner and the floating avatar tile are gone: this
+           is a record about a contributor, and a header image says nothing about it. -->
+      <section class="panel p-6">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="eyebrow">Участник</p>
+            <h1 class="mt-1 font-display text-h2 font-semibold tracking-tight text-ink dark:text-paper">
+              {{ d.user.name }}
+            </h1>
+            <p class="mt-1 text-note text-ink-muted dark:text-ink-faint">
+              В проекте с {{ joinedDate }}
+            </p>
           </div>
-          <h2 class="text-2xl font-black text-slate-800 dark:text-white">{{ d.user.name }}</h2>
-          <div class="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400">
-            <span class="flex items-center gap-1">
-              <Calendar :size="13" />
-              {{ joinedDate }}
-            </span>
-            <span class="flex items-center gap-1 font-bold text-amber-500">
-              <Star :size="13" />
-              {{ points }} очков
-            </span>
+          <span class="rounded-control px-3 py-1.5 text-label font-semibold" :class="[level.bg, level.color]">
+            {{ level.icon }} {{ level.label }}
+          </span>
+        </div>
+
+        <div class="mt-6 border-t border-rule pt-5 dark:border-night-rule">
+          <div class="flex items-baseline justify-between gap-4">
+            <MeasuredValue :value="points" unit="очков" size="lg" />
+            <p v-if="nextLevel" class="text-note text-ink-muted dark:text-ink-faint">
+              До «{{ nextLevel.label }}» {{ nextLevel.min - points }}
+            </p>
+            <p v-else class="text-note" :style="{ color: SCALE_COLORS.ok }">Максимальный уровень</p>
           </div>
 
-          <div v-if="nextLevel" class="mt-4">
-            <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
-              <span>{{ level.label }}</span>
-              <span>{{ nextLevel.label }} через {{ nextLevel.min - points }} оч.</span>
-            </div>
-            <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div class="h-full bg-blue-500 rounded-full transition-[width] duration-300" :style="{ width: progress + '%' }" />
-            </div>
+          <!-- The same span primitive the observatory pages use for a bound: the
+               filled part is what is earned, the light continuation is what the
+               next level needs. -->
+          <div v-if="nextLevel" class="span-track mt-3">
+            <div class="span-upper w-full" :style="{ backgroundColor: SCALE_COLORS.ok }" />
+            <div class="span-lower" :style="{ width: progress + '%', backgroundColor: SCALE_COLORS.ok }" />
           </div>
-          <p v-else class="mt-3 text-xs font-bold text-emerald-500">🏆 Максимальный уровень достигнут!</p>
+          <div v-if="nextLevel" class="mt-1.5 flex justify-between text-label text-ink-faint">
+            <span>{{ level.label }}</span>
+            <span class="font-mono">{{ level.min }} – {{ nextLevel.min }}</span>
+          </div>
         </div>
+      </section>
+
+      <!-- Counts, each with what it is counted out of. -->
+      <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StatPanel
+          v-for="s in stats"
+          :key="s.label"
+          :label="s.label"
+          :value="s.value"
+          :denominator="s.sub"
+        />
       </div>
 
-      <!-- Stats -->
-      <div class="grid grid-cols-2 gap-3 mt-5">
-        <div v-for="s in stats" :key="s.label" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-          <div class="flex items-center gap-2 mb-2">
-            <component :is="s.icon" :size="16" :class="s.iconClass" />
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ s.label }}</span>
-          </div>
-          <p class="text-3xl font-black text-slate-800 dark:text-white">{{ s.value }}</p>
-          <p class="text-[11px] text-slate-400 mt-1">{{ s.sub }}</p>
-        </div>
-      </div>
-
-      <!-- Badges -->
-      <div class="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 mt-5">
-        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-          Достижения ({{ earnedBadges.length }}/{{ BADGES.length }})
-        </h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div v-for="b in allBadges" :key="b.id" class="flex flex-col items-center text-center gap-2">
-            <div
-              class="w-14 h-14 rounded-full flex items-center justify-center"
-              :class="b.earned ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+      <section class="panel mt-4 p-6">
+        <SectionHead
+          title="Достижения"
+          eyebrow="Отметки"
+          :note="`Открыто ${earnedBadges.length} из ${BADGES.length}. Два критерия пока не имеют источника данных и заперты.`"
+        />
+        <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div v-for="b in allBadges" :key="b.id" class="flex flex-col items-center gap-2 text-center">
+            <span
+              class="flex h-12 w-12 items-center justify-center rounded-control"
+              :class="b.earned
+                ? 'bg-prussian-600 text-paper'
+                : 'bg-paper-sunk text-ink-faint dark:bg-night-sunk'"
             >
-              <component :is="b.earned ? b.icon : LockIcon" :size="20" />
-            </div>
-            <span class="text-[11px] font-bold leading-tight" :class="b.earned ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'">
+              <component :is="b.earned ? b.icon : LockIcon" :size="18" />
+            </span>
+            <span
+              class="text-label leading-tight"
+              :class="b.earned ? 'text-ink dark:text-paper' : 'text-ink-faint'"
+            >
               {{ b.label }}
             </span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Recent issues -->
-      <div v-if="d.activity.recentIssues.length" class="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 mt-5">
-        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Последние обращения</h3>
-        <div class="space-y-2">
-          <div v-for="issue in d.activity.recentIssues" :key="issue.id" class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ issue.title }}</p>
-              <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-[10px] text-slate-400">{{ categoryShort(issue.category) }}</span>
-                <span class="text-[10px] font-bold" :class="statusClass(issue.status)">{{ statusLabel(issue.status) }}</span>
+      <section v-if="d.activity.recentIssues.length" class="panel mt-4 p-6">
+        <SectionHead title="Последние обращения" eyebrow="История" />
+        <div class="mt-4 divide-y divide-rule dark:divide-night-rule">
+          <div
+            v-for="issue in d.activity.recentIssues"
+            :key="issue.id"
+            class="flex items-center gap-3 py-3"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-body font-medium text-ink dark:text-paper">{{ issue.title }}</p>
+              <div class="mt-0.5 flex items-center gap-2 text-label text-ink-faint">
+                <span>{{ categoryShort(issue.category) }}</span>
+                <span :style="{ color: statusColor(issue.status) }">{{ statusLabel(issue.status) }}</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-400 flex-shrink-0">{{ formatDate(issue.createdAt) }}</span>
+            <span class="shrink-0 font-mono text-label text-ink-faint">{{ formatDate(issue.createdAt) }}</span>
           </div>
         </div>
-      </div>
+      </section>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import {
-  Loader2, Calendar, Star, FileText, ThumbsUp, CheckCircle2, TrendingUp,
+  Loader2, Star, FileText, ThumbsUp, CheckCircle2, TrendingUp,
   Flag, ShieldCheck, Shield, Zap, Award, Crown, Lock as LockIcon,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import type { ProfileData } from '~/types'
 
+// REWORKED to the register design system. The page was built on the stock palette:
+// a blue-to-indigo banner, rounded-[2rem] cards, font-black on every figure and one
+// emerald "🏆 Максимальный уровень достигнут!" line. The numbers themselves did not
+// change - only how they are set, and the level bar now uses the same span
+// primitive as every bound in the observatory section.
 definePageMeta({
   layout: 'app',
   middleware: 'auth',
@@ -117,6 +132,7 @@ definePageMeta({
 useSeoMeta({ title: 'Профиль - Y.Map' })
 
 const { $api } = useNuxtApp()
+const { SCALE_COLORS } = useScale()
 const data = ref<ProfileData | null>(null)
 const loading = ref(true)
 
@@ -170,10 +186,15 @@ const stats = computed(() => {
   const a = d.value?.activity
   if (!a) return []
   return [
-    { label: 'Обращения', value: a.issues.total, icon: FileText, iconClass: 'text-blue-500', sub: `Решено: ${a.issues.resolved}` },
-    { label: 'Голоса', value: a.votesGiven, icon: ThumbsUp, iconClass: 'text-violet-500', sub: 'Отдано за чужие обращения' },
-    { label: 'Проверки', value: a.verifications.done + a.verifications.problem, icon: CheckCircle2, iconClass: 'text-teal-500', sub: `Подтвердил: ${a.verifications.done} · Оспорил: ${a.verifications.problem}` },
-    { label: 'Признание', value: a.issues.totalVotes, icon: TrendingUp, iconClass: 'text-amber-500', sub: 'Голосов получено' },
+    { label: 'Обращения', value: a.issues.total, icon: FileText, sub: `Решено: ${a.issues.resolved}` },
+    { label: 'Голоса', value: a.votesGiven, icon: ThumbsUp, sub: 'Отдано за чужие обращения' },
+    {
+      label: 'Проверки',
+      value: a.verifications.done + a.verifications.problem,
+      icon: CheckCircle2,
+      sub: `Подтвердил: ${a.verifications.done} · Оспорил: ${a.verifications.problem}`,
+    },
+    { label: 'Признание', value: a.issues.totalVotes, icon: TrendingUp, sub: 'Голосов получено' },
   ]
 })
 
@@ -188,7 +209,9 @@ const CATEGORY_SHORT: Record<string, string> = {
 }
 const categoryShort = (c: string) => CATEGORY_SHORT[c] ?? c
 const statusLabel = (s: string) => (s === 'Resolved' ? 'Решено' : s === 'In Progress' ? 'В работе' : 'Открыто')
-const statusClass = (s: string) =>
-  s === 'Resolved' ? 'text-emerald-500' : s === 'In Progress' ? 'text-amber-500' : 'text-red-500'
+// Status reads off the same ramp as everything else: resolved is sufficient,
+// open is not, in progress sits between them.
+const statusColor = (s: string) =>
+  s === 'Resolved' ? SCALE_COLORS.ok : s === 'In Progress' ? SCALE_COLORS.mild : SCALE_COLORS.bad
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString('ru-RU')
 </script>

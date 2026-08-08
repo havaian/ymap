@@ -1,6 +1,6 @@
 <template>
   <header
-    class="sticky top-0 z-[1000] h-16 border-b border-rule bg-paper-raised/90 backdrop-blur transition-colors duration-instant dark:border-night-rule dark:bg-night-raised/90"
+    class="sticky top-0 z-[1000] h-16 border-b border-rule bg-paper-raised transition-colors duration-instant dark:border-night-rule dark:bg-night-raised"
   >
     <div class="h-full px-4 sm:px-6 flex items-center gap-3">
       <button

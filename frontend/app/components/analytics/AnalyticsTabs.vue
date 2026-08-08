@@ -41,6 +41,7 @@ const SECTIONS = [
       { to: '/analytics/capacity', label: 'Мощность' },
       { to: '/analytics/wear', label: 'Износ' },
       { to: '/analytics/deprivation', label: 'Депривация' },
+      { to: '/analytics/composite', label: 'Композит' },
       { to: '/analytics/verification', label: 'Верификация' },
       { to: '/analytics/data-quality', label: 'Качество данных' },
     ],

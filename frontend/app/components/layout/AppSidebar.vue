@@ -16,11 +16,7 @@
     <!-- Logo + collapse -->
     <div class="flex h-16 items-center gap-2 border-b border-rule px-4 dark:border-night-rule">
       <NuxtLink to="/" class="flex items-center gap-2 overflow-hidden">
-        <span
-          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-prussian-600 text-paper"
-        >
-          <MapIcon :size="20" />
-        </span>
+        <BrandMark :size="36" />
         <span v-if="!collapsed" class="whitespace-nowrap font-display text-lead font-semibold tracking-tight">Y.Map</span>
       </NuxtLink>
       <button
@@ -88,7 +84,7 @@
       </NuxtLink>
       <button
         type="button"
-        class="w-full sidebar-item text-red-500 hover:!bg-red-50 dark:hover:!bg-red-900/20"
+        class="w-full sidebar-item text-scale-bad hover:!bg-paper-sunk dark:hover:!bg-night-sunk"
         :class="collapsed ? 'justify-center' : ''"
         :title="collapsed ? $t('nav.logout') : undefined"
         @click="onLogout"
@@ -103,7 +99,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import {
-  Map as MapIcon,
   BarChart3,
   MapPin,
   Newspaper,
@@ -120,6 +115,7 @@ import {
   ClipboardCheck,
   Database,
   LayoutDashboard,
+  Layers,
 } from 'lucide-vue-next'
 
 defineProps<{ collapsed: boolean; mobileOpen: boolean }>()
@@ -162,6 +158,7 @@ const groups: NavGroup[] = [
       { to: '/analytics/capacity', label: 'nav.capacity', icon: Gauge },
       { to: '/analytics/wear', label: 'nav.wear', icon: Building2 },
       { to: '/analytics/deprivation', label: 'nav.deprivation', icon: BarChart3 },
+      { to: '/analytics/composite', label: 'nav.composite', icon: Layers },
       { to: '/analytics/verification', label: 'nav.verification', icon: ClipboardCheck },
       { to: '/analytics/data-quality', label: 'nav.dataQuality', icon: Database },
     ],

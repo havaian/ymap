@@ -1,40 +1,52 @@
 <template>
-  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+  <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
     <AnalyticsTabs />
 
     <div v-if="loading" class="flex items-center justify-center py-24">
-      <Loader2 class="w-8 h-8 animate-spin text-blue-600" />
+      <Loader2 class="h-7 w-7 animate-spin text-prussian-500" />
     </div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <!-- By regions (real - /regions/summary) -->
-      <div class="bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <h3 class="text-xl font-black text-slate-800 dark:text-white">Удовлетворенность по регионам</h3>
-        <p class="text-sm text-slate-400">Распределение по {{ regions.length }} регионам</p>
+      <section class="panel p-6">
+        <SectionHead
+          title="Доля закрытых обращений"
+          eyebrow="По регионам"
+          :note="`${regions.length} регионов. Регион без обращений показывает 0 % как отсутствие наблюдений, а не как результат.`"
+        />
         <div class="mt-6 space-y-4">
           <div v-for="r in sortedRegions" :key="r.code">
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-baseline justify-between gap-3">
               <div class="min-w-0">
-                <p class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate">{{ regionName(r) }}</p>
-                <p class="text-[11px] text-slate-400">{{ r.issueCount }} обращений · {{ r.objectCount }} объектов</p>
+                <p class="truncate text-body font-medium text-ink dark:text-paper">{{ regionName(r) }}</p>
+                <p class="font-mono text-label text-ink-faint">
+                  {{ r.issueCount }} обращений · {{ r.objectCount }} объектов
+                </p>
               </div>
-              <span class="text-lg font-black text-slate-800 dark:text-white shrink-0">{{ r.resolutionRate ?? 0 }}%</span>
+              <MeasuredValue
+                :value="r.resolutionRate ?? 0"
+                unit="%"
+                :color="barColor(r.resolutionRate ?? 0)"
+              />
             </div>
-            <div class="mt-2 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" :style="{ width: (r.resolutionRate ?? 0) + '%', backgroundColor: barColor(r.resolutionRate ?? 0) }" />
+            <div class="span-track mt-2">
+              <div
+                class="span-lower"
+                :style="{ width: (r.resolutionRate ?? 0) + '%', backgroundColor: barColor(r.resolutionRate ?? 0) }"
+              />
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- By organs (blocked - Agency Dashboard) -->
-      <div class="bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <h3 class="text-xl font-black text-slate-800 dark:text-white">Удовлетворенность по органам</h3>
-        <p class="text-sm text-slate-400">Распределение по органам</p>
-        <div class="mt-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center text-sm text-slate-400">
-          Данные по органам появятся после подключения Agency Dashboard
-        </div>
-      </div>
+      <section class="panel p-6">
+        <SectionHead title="Разрез по органам" eyebrow="По ведомствам" />
+        <NoteBlock class="mt-6" tone="caution" title="Источник не подключён">
+          Разрез по органам появится после подключения Agency Dashboard. Пустой график
+          вместо этой строки читался бы как ноль обращений, что неверно.
+        </NoteBlock>
+      </section>
     </div>
   </div>
 </template>
@@ -42,6 +54,10 @@
 <script setup lang="ts">
 import { Loader2 } from 'lucide-vue-next'
 
+// REWORKED to the register design system. The bar colours were four literals
+// (#3b82f6 / #eab308 / #f97316 / #ef4444) and had already drifted from the ladder
+// used on the map: the same region could be one colour here and another there.
+// Both now come from useScale.
 definePageMeta({
   layout: 'app',
   // Этап 10: аналитика публичная (ТЗ раздел 3.4) - гейт логина снят.
@@ -61,6 +77,7 @@ interface RegionSummary {
 }
 
 const { $api } = useNuxtApp()
+const scale = useScale()
 const regions = ref<RegionSummary[]>([])
 const loading = ref(true)
 
@@ -85,5 +102,7 @@ const regionName = (r: RegionSummary) => {
   return n?.ru || n?.uz || n?.en || `Регион ${r.code}`
 }
 
-const barColor = (v: number) => (v >= 70 ? '#3b82f6' : v >= 50 ? '#eab308' : v >= 30 ? '#f97316' : '#ef4444')
+// Higher resolution rate is better, so it goes through completeness rather than
+// deficiency.
+const barColor = (v: number) => scale.completeness(v / 100)
 </script>

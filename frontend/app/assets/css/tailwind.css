@@ -348,23 +348,39 @@
   }
 }
 
-/* Scrollbar styling ported from the old index.html (global, theme-aware). */
+/* Scrollbar. Ported from the old index.html, then moved onto the tokens: the four
+   hex values here were slate-900 / slate-300 / slate-700 / slate-400 and were the
+   last place in the stylesheet still holding the previous palette. */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-.dark ::-webkit-scrollbar-track {
-  background: #0f172a;
-}
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: theme('colors.rule.strong');
   border-radius: 3px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: theme('colors.ink.faint');
+}
+.dark ::-webkit-scrollbar-track {
+  background: theme('colors.night.sunk');
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: theme('colors.night.rule');
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.prussian.500');
+}
+
+/* Firefox reads a different pair of properties and otherwise keeps the platform
+   scrollbar, which is a wide light grey bar against the dark theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.rule.strong') transparent;
+}
+.dark * {
+  scrollbar-color: theme('colors.night.rule') transparent;
 }

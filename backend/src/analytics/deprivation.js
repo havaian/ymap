@@ -442,7 +442,11 @@ export const getDeprivationChoropleth = async (req, res) => {
 
         const byCode = new Map(result.districts.filter(d => d.districtCode).map(d => [d.districtCode, d]));
         const districtDocs = await District.find({ cadNum: { $in: [...byCode.keys()] } })
-            .select('cadNum name regionCode areaKm2 geometry')
+            // geometrySimplified is the render copy from simplify-boundaries.js.
+            // Full geometry stays selected as the fallback: a district imported
+            // after the last simplification run has no copy yet, and drawing it
+            // heavy beats leaving a hole in the layer.
+            .select('cadNum name regionCode areaKm2 geometry geometrySimplified')
             .lean();
 
         const features = districtDocs
@@ -469,7 +473,7 @@ export const getDeprivationChoropleth = async (req, res) => {
                         notAssessable: d.notAssessable,
                         dimensions: d.dimensions
                     },
-                    geometry: doc.geometry
+                    geometry: doc.geometrySimplified?.coordinates ? doc.geometrySimplified : doc.geometry
                 };
             });
 

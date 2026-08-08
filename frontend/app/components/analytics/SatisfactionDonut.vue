@@ -1,56 +1,62 @@
 <template>
-  <div class="flex flex-col md:flex-row items-center gap-8">
-    <div class="relative shrink-0" style="width: 200px; height: 200px;">
-      <svg viewBox="0 0 200 200" class="w-full h-full -rotate-90">
-        <circle cx="100" cy="100" :r="radius" fill="none" :stroke="colorB" stroke-width="20" />
+  <div class="flex flex-col items-center gap-8 md:flex-row">
+    <div class="relative shrink-0" style="width: 180px; height: 180px;">
+      <svg viewBox="0 0 200 200" class="h-full w-full -rotate-90">
+        <circle cx="100" cy="100" :r="radius" fill="none" :stroke="restColor" stroke-width="18" />
         <circle
-          cx="100" cy="100" :r="radius" fill="none" :stroke="colorA" stroke-width="20"
-          stroke-linecap="round" :stroke-dasharray="`${dash} ${circumference - dash}`"
+          cx="100" cy="100" :r="radius" fill="none" :stroke="mainColor" stroke-width="18"
+          :stroke-dasharray="`${dash} ${circumference - dash}`"
         />
       </svg>
       <div class="absolute inset-0 flex flex-col items-center justify-center">
-        <span class="text-4xl font-black text-slate-800 dark:text-white">{{ percent }}%</span>
-        <span class="text-[11px] text-slate-400">{{ centerLabel }}</span>
+        <span class="font-display text-figure font-semibold tabular text-ink dark:text-paper">{{ percent }}%</span>
+        <span class="text-label text-ink-faint">{{ centerLabel }}</span>
       </div>
     </div>
 
-    <div class="flex-1 w-full max-w-md space-y-3">
-      <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3">
-        <span class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-          <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: colorA }" />
+    <div class="w-full max-w-md flex-1 space-y-2">
+      <div class="flex items-center justify-between rounded-control bg-paper-sunk px-4 py-3 dark:bg-night-sunk">
+        <span class="flex items-center gap-2 text-body font-medium text-ink dark:text-paper">
+          <span class="h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: mainColor }" />
           {{ labelA }}
         </span>
-        <span class="text-sm font-black text-slate-700 dark:text-slate-200">{{ percent }}%</span>
+        <span class="font-mono text-body font-semibold text-ink dark:text-paper">{{ percent }}%</span>
       </div>
-      <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3">
-        <span class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-          <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: colorB }" />
+      <div class="flex items-center justify-between rounded-control bg-paper-sunk px-4 py-3 dark:bg-night-sunk">
+        <span class="flex items-center gap-2 text-body font-medium text-ink dark:text-paper">
+          <span class="h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: restColor }" />
           {{ labelB }}
         </span>
-        <span class="text-sm font-black text-slate-700 dark:text-slate-200">{{ 100 - percent }}%</span>
+        <span class="font-mono text-body font-semibold text-ink dark:text-paper">{{ 100 - percent }}%</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+// REWORKED. The two colours were literals - #3b82f6 against #ef4444 - and a share
+// this high in saturated red asserted more than the figure supports. Both now come
+// off useScale, so the same completeness reads as the same colour here, in a table
+// and on the choropleth. stroke-linecap="round" is dropped: a rounded cap overhangs
+// the arc and makes a small share look larger than it is.
 const props = withDefaults(
   defineProps<{
     percent: number
     labelA?: string
     labelB?: string
     centerLabel?: string
-    colorA?: string
-    colorB?: string
   }>(),
   {
     labelA: 'Удовлетворены',
     labelB: 'Не удовлетворены',
     centerLabel: 'Удовлетворенность',
-    colorA: '#3b82f6',
-    colorB: '#ef4444',
   },
 )
+
+const scale = useScale()
+
+const mainColor = computed(() => scale.completeness(props.percent / 100))
+const restColor = scale.SCALE_COLORS.none
 
 const radius = 80
 const circumference = 2 * Math.PI * radius

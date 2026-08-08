@@ -13,6 +13,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { authMiddleware, strictAuthMiddleware } from './middleware/auth.js';
 import { adminOnly } from './middleware/adminOnly.js';
 import { ensureAdminExists } from './services/admin-setup.js';
+import { checkMailer } from './services/mailer.js';
 
 import authRoutes from './auth/routes.js';
 import aiRoutes from './ai/routes.js';
@@ -45,9 +46,37 @@ app.use(cors({
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
+// Credential guessing. Tight on purpose: twenty tries a quarter of an hour is far
+// more than a person needs and far less than a dictionary run.
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
+    message: { success: false, message: 'Too many attempts, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Confirming an address is not a credential attempt and must not share a counter
+// with one. Opening the link from a letter is a request against /auth/verify-email,
+// and on a shared address - one office, one mobile carrier NAT - a handful of
+// people signing up would otherwise spend the login budget and lock each other out
+// of their own accounts. The token is 32 random bytes, so guessing is not the
+// threat model here; this window only stops a loop.
+const verifyLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 120,
+    message: { success: false, message: 'Too many attempts, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Registration and resend both send mail, so the limit here protects a mailbox and
+// the sending reputation rather than a password. Per-account throttling is separate
+// and lives in the controller as verifySentAt, because this one is per IP and an IP
+// is shared.
+const signupLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 15,
     message: { success: false, message: 'Too many attempts, please try again later' },
     standardHeaders: true,
     legacyHeaders: false
@@ -89,6 +118,16 @@ app.get('/health', (req, res) => {
 });
 
 // ── Public routes ─────────────────────────────────────────────────────────────
+// Three different windows on one router. Order matters: the specific paths are
+// mounted before the catch-all, so /login keeps the strict limiter while confirming
+// an address and asking for a new letter get their own budgets.
+app.use('/api/auth/verify-email', verifyLimiter);
+app.use('/api/auth/register', signupLimiter);
+app.use('/api/auth/resend-verification', signupLimiter);
+app.use('/api/auth/forgot-password', signupLimiter);
+// Consuming a reset token is a one-shot action against a 32-byte random string,
+// not a guessable credential, so it sits with confirmation rather than with login.
+app.use('/api/auth/reset-password', verifyLimiter);
 app.use('/api/auth', authLimiter, authRoutes);
 
 // ── AI (Gemini proxy) - авторизованные пользователи ──────────────────────────
@@ -143,6 +182,7 @@ const startServer = async () => {
         await connectDB();
         await connectRedis();
         await ensureAdminExists();
+        await checkMailer();
 
         app.listen(config.port, '0.0.0.0', () => {
             console.log('');

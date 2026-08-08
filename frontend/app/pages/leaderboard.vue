@@ -1,14 +1,22 @@
 <template>
-  <div class="mx-auto max-w-4xl px-4 sm:px-6 py-6">
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
     <div v-if="loading" class="flex items-center justify-center py-24">
-      <Loader2 class="w-8 h-8 animate-spin text-blue-600" />
+      <Loader2 class="h-7 w-7 animate-spin text-prussian-500" />
     </div>
 
-    <p v-else-if="!entries.length" class="text-center text-sm text-slate-400 py-24">Нет данных</p>
+    <p v-else-if="!entries.length" class="py-24 text-center text-body text-ink-muted dark:text-ink-faint">
+      Нет данных
+    </p>
 
     <template v-else>
-      <!-- Podium (top 3): rank 2 left, rank 1 center elevated, rank 3 right -->
-      <div class="grid grid-cols-3 gap-3 sm:gap-4 items-end mb-8">
+      <SectionHead
+        title="Рейтинг участников"
+        eyebrow="Вклад"
+        note="Очки начисляются за обращения и за проверки записей реестра. Порядок пересчитывается по запросу страницы."
+      />
+
+      <!-- Podium (top 3): rank 2 left, rank 1 center, rank 3 right -->
+      <div class="mt-6 grid grid-cols-3 items-start gap-3 sm:gap-4">
         <PodiumCard v-if="podium[1]" :entry="podium[1]" :is-me="isMe(podium[1])" />
         <div v-else />
         <PodiumCard v-if="podium[0]" :entry="podium[0]" :is-me="isMe(podium[0])" featured />
@@ -18,47 +26,53 @@
       </div>
 
       <!-- Rest of the ranking -->
-      <div v-if="rest.length">
-        <p class="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-3">Весь рейтинг</p>
-        <div class="space-y-3">
+      <div v-if="rest.length" class="mt-8">
+        <p class="eyebrow">Весь рейтинг</p>
+        <div class="panel mt-3 divide-y divide-rule dark:divide-night-rule">
           <div
             v-for="entry in visibleRest"
             :key="entry.id"
-            class="rounded-2xl border p-4 flex items-center gap-4 transition-colors"
-            :class="isMe(entry)
-              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'"
+            class="flex items-center gap-4 px-4 py-3 transition-colors"
+            :class="isMe(entry) ? 'bg-prussian-50 dark:bg-prussian-900/30' : ''"
           >
-            <span class="w-8 text-center text-lg font-black flex-shrink-0" :class="isMe(entry) ? 'text-blue-600' : 'text-slate-400'">
+            <span
+              class="w-8 shrink-0 text-center font-mono text-body"
+              :class="isMe(entry) ? 'text-prussian-600 dark:text-prussian-200' : 'text-ink-faint'"
+            >
               {{ entry.rank }}
             </span>
-            <span class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-500 dark:text-slate-300 flex-shrink-0">
+            <span
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-paper-sunk text-label font-semibold text-ink-muted dark:bg-night-sunk dark:text-ink-faint"
+            >
               {{ initials(entry.name) }}
             </span>
-            <div class="flex-1 min-w-0">
-              <p class="font-black text-sm truncate" :class="isMe(entry) ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-white'">
+            <div class="min-w-0 flex-1">
+              <p
+                class="truncate text-body font-medium"
+                :class="isMe(entry) ? 'text-prussian-700 dark:text-prussian-100' : 'text-ink dark:text-paper'"
+              >
                 {{ entry.name }}
-                <span v-if="isMe(entry)" class="ml-1 text-[10px] font-black text-blue-500 uppercase tracking-wider">(вы)</span>
+                <span v-if="isMe(entry)" class="ml-1 text-label text-prussian-600 dark:text-prussian-200">(вы)</span>
               </p>
-              <div class="flex items-center gap-3 mt-0.5 text-[11px] text-slate-400">
+              <div class="mt-0.5 flex items-center gap-3 font-mono text-label text-ink-faint">
                 <span class="flex items-center gap-1"><FileText :size="11" />{{ entry.issueCount }} обр.</span>
                 <span class="flex items-center gap-1"><CheckCircle2 :size="11" />{{ entry.verificationCount }} пров.</span>
               </div>
             </div>
-            <div class="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 flex-shrink-0">
-              <span class="text-sm font-black text-slate-700 dark:text-slate-200">{{ entry.points }}</span>
-              <span class="text-[10px] text-slate-400 ml-1">очков</span>
-            </div>
+            <span class="shrink-0 font-mono text-body font-semibold text-ink dark:text-paper">
+              {{ entry.points.toLocaleString('ru-RU') }}
+              <span class="text-label font-normal text-ink-faint">очков</span>
+            </span>
           </div>
         </div>
 
-        <div v-if="visibleCount < rest.length" class="flex justify-center mt-6">
+        <div v-if="visibleCount < rest.length" class="mt-5 flex justify-center">
           <button
             type="button"
-            class="px-5 py-2.5 rounded-full text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            class="rounded-control border border-rule px-5 py-2.5 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:border-night-rule dark:text-ink-faint dark:hover:bg-night-sunk"
             @click="visibleCount += 10"
           >
-            Показать еще
+            Показать ещё {{ Math.min(10, rest.length - visibleCount) }}
           </button>
         </div>
       </div>
@@ -70,6 +84,9 @@
 import { Loader2, FileText, CheckCircle2 } from 'lucide-vue-next'
 import type { LeaderboardEntry } from '~/types'
 
+// REWORKED to the register design system. Rows were rounded-2xl cards with their
+// own borders stacked in a gap; they are a table of one column now, separated by
+// hairlines, which is how the rest of the observatory sets a list.
 definePageMeta({
   layout: 'app',
   middleware: 'auth',

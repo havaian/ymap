@@ -11,13 +11,13 @@
  * Why the tax id works here: on the bogcha side `inn` is unique (395 of 395
  * populated values are distinct), and 342 of 400 records find a row with a usable
  * coordinate. It does NOT work the same way for ssv and maktab44, where `inn`
- * repeats - 392 ssv records share 166 tax ids because rural health posts sit under
+ * repeats — 392 ssv records share 166 tax ids because rural health posts sit under
  * one legal entity. Those sources are matched only when the tax id resolves to a
  * single egov row.
  *
  * Ambiguity rule: when one tax id points at several egov rows, the coordinates are
  * accepted only if all candidates fall inside AMBIGUITY_RADIUS_M of each other.
- * They usually do not - the observed spread reaches 885 km - so such records keep
+ * They usually do not — the observed spread reaches 885 km — so such records keep
  * a null coordinate and are flagged instead of being given a plausible-looking
  * wrong position.
  *
@@ -221,7 +221,7 @@ export async function importEgovCoords({ dryRun = false, file = null, onProgress
     console.log(`    защищено от перезаписи ${stats.protectedSkipped}`);
 
     if (dryRun) {
-        console.log(`\n  🔍 Dry run - ${bulkOps.length} documents would be updated`);
+        console.log(`\n  🔍 Dry run — ${bulkOps.length} documents would be updated`);
         return stats;
     }
 
@@ -247,7 +247,7 @@ async function main() {
     console.log('═══════════════════════════════════════');
     console.log('  Coordinates from data.egov.uz by tax id');
     console.log('═══════════════════════════════════════');
-    if (dryRun) console.log('  DRY RUN - no writes');
+    if (dryRun) console.log('  DRY RUN — no writes');
     if (file) console.log(`  File: ${file}`);
     console.log('');
 

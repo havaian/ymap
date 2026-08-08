@@ -1,14 +1,10 @@
 <template>
   <header
-    class="sticky top-0 z-[1000] border-b border-rule bg-paper-raised/90 backdrop-blur transition-colors duration-instant dark:border-night-rule dark:bg-night-raised/90"
+    class="sticky top-0 z-[1000] border-b border-rule bg-paper-raised transition-colors duration-instant dark:border-night-rule dark:bg-night-raised"
   >
     <div class="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center gap-3">
       <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-        <span
-          class="inline-flex h-9 w-9 items-center justify-center rounded-control bg-prussian-600 text-paper"
-        >
-          <MapIcon :size="20" />
-        </span>
+        <BrandMark :size="36" />
         <span class="hidden font-display text-lead font-semibold tracking-tight sm:inline">Y.Map</span>
       </NuxtLink>
 
@@ -57,14 +53,15 @@
           <template v-else>
             <NuxtLink
               to="/login"
-              class="hidden sm:inline-flex px-4 py-2 rounded-control text-body font-bold text-prussian-600 dark:text-prussian-200 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              class="hidden sm:inline-flex px-4 py-2 rounded-control text-body font-semibold text-prussian-600 dark:text-prussian-200 border border-rule dark:border-night-rule hover:bg-paper-sunk dark:hover:bg-night-sunk transition-colors"
             >
               {{ $t('nav.login') }}
             </NuxtLink>
             <!-- Registration flow is Telegram-based per ТЗ; no web register page yet -> /login. -->
+            <!-- Отменено: веб-регистрация с подтверждением почты живёт на /register. -->
             <NuxtLink
-              to="/login"
-              class="px-4 py-2 rounded-control text-body font-bold text-white bg-prussian-600 hover:bg-prussian-700 transition-colors"
+              to="/register"
+              class="px-4 py-2 rounded-control text-body font-semibold text-paper bg-prussian-600 hover:bg-prussian-700 transition-colors"
             >
               {{ $t('nav.register') }}
             </NuxtLink>
@@ -103,7 +100,6 @@
 
 <script setup lang="ts">
 import {
-  Map as MapIcon,
   Search as SearchIcon,
   User as UserIcon,
   Menu as MenuIcon,

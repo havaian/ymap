@@ -2,6 +2,10 @@
 // Ported verbatim from ProfileView.tsx / LeaderboardView.tsx. Single source for levels
 // and badges so profile and leaderboard stay consistent. Every criterion is computed
 // from the real /users/me/activity payload - no fabricated values.
+//
+// Level colours moved off the stock slate/blue/violet/amber/emerald ladder onto the
+// project tokens. The two top levels sit on the semantic ramp rather than on the
+// accent: they mark a quantity of contributed work, which is what the ramp is for.
 import type { ProfileActivity } from '~/types'
 
 export interface Level {
@@ -13,11 +17,11 @@ export interface Level {
 }
 
 export const LEVELS: Level[] = [
-  { min: 0, label: 'Новичок', color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800', icon: '🌱' },
-  { min: 10, label: 'Активист', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: '⚡' },
-  { min: 30, label: 'Герой района', color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/20', icon: '🏅' },
-  { min: 75, label: 'Страж города', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: '🛡️' },
-  { min: 150, label: 'Народный инспектор', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: '🏆' },
+  { min: 0, label: 'Новичок', color: 'text-ink-muted dark:text-ink-faint', bg: 'bg-paper-sunk dark:bg-night-sunk', icon: '🌱' },
+  { min: 10, label: 'Активист', color: 'text-prussian-600 dark:text-prussian-200', bg: 'bg-prussian-50 dark:bg-prussian-900/40', icon: '⚡' },
+  { min: 30, label: 'Герой района', color: 'text-prussian-700 dark:text-prussian-100', bg: 'bg-prussian-100 dark:bg-prussian-800/60', icon: '🏅' },
+  { min: 75, label: 'Страж города', color: 'text-scale-mild', bg: 'bg-scale-mild/10', icon: '🛡️' },
+  { min: 150, label: 'Народный инспектор', color: 'text-scale-ok', bg: 'bg-scale-ok/10', icon: '🏆' },
 ]
 
 export interface BadgeContext {

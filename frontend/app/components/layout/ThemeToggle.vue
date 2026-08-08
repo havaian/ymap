@@ -2,7 +2,7 @@
   <button
     type="button"
     :aria-label="isDark ? 'Светлая тема' : 'Тёмная тема'"
-    class="inline-flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
     @click="toggle"
   >
     <ClientOnly>

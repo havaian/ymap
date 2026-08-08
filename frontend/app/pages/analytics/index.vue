@@ -1,85 +1,66 @@
 <template>
-  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+  <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
     <AnalyticsTabs />
 
     <div v-if="loading" class="flex items-center justify-center py-24">
-      <Loader2 class="w-8 h-8 animate-spin text-blue-600" />
+      <Loader2 class="h-7 w-7 animate-spin text-prussian-500" />
     </div>
 
-    <p v-else-if="!ov" class="text-center text-sm text-slate-400 py-24">Не удалось загрузить аналитику</p>
+    <p v-else-if="!ov" class="py-24 text-center text-body text-ink-muted dark:text-ink-faint">
+      Не удалось загрузить аналитику
+    </p>
 
     <template v-else>
       <!-- This section is fed by what people submit, and almost nothing has been
            submitted yet. Zeros in every card look like a broken product; saying
            plainly that the section has not been populated does not. The registry
            side is a different circuit and is full. -->
-      <div
-        v-if="civicEmpty"
-        class="mb-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-5"
-      >
-        <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Раздел ещё не наполнен</p>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Здесь показываются обращения и проверки, которые оставляют пользователи. Пока их нет.
-          Данные по объектам инфраструктуры лежат в разделе «Обсерватория» и не зависят от этого счётчика.
-        </p>
+      <NoteBlock v-if="civicEmpty" class="mb-4" title="Раздел ещё не наполнен">
+        Здесь показываются обращения и проверки, которые оставляют пользователи. Пока их нет.
+        Данные по объектам инфраструктуры лежат в разделе «Обсерватория» и не зависят от этого счётчика.
         <NuxtLink
           to="/analytics/data-quality"
-          class="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline"
+          class="mt-2 block font-semibold text-prussian-600 dark:text-prussian-200"
         >
           Перейти к данным реестров
         </NuxtLink>
-      </div>
+      </NoteBlock>
 
-      <!-- Big KPI cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StatPanel
           v-for="k in bigKpis"
           :key="k.label"
-          class="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex items-start justify-between"
-        >
-          <div>
-            <p class="text-sm text-slate-400">{{ k.label }}</p>
-            <p class="mt-2 text-4xl font-black text-slate-800 dark:text-white">{{ k.value }}</p>
-          </div>
-          <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-300">
-            <component :is="k.icon" :size="20" />
-          </div>
-        </div>
+          :label="k.label"
+          :value="k.value"
+          :denominator="k.sub"
+        />
       </div>
 
-      <!-- Small KPI cards -->
-      <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div
-          v-for="k in smallKpis"
-          :key="k.label"
-          class="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 p-5 shadow-sm"
-        >
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-slate-400">{{ k.label }}</p>
-            <div class="w-8 h-8 rounded-full flex items-center justify-center" :class="k.iconBg">
-              <component :is="k.icon" :size="15" :class="k.iconColor" />
-            </div>
-          </div>
-          <p class="mt-3 text-3xl font-black text-slate-800 dark:text-white">{{ k.value }}</p>
-        </div>
+      <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatPanel v-for="k in smallKpis" :key="k.label" :label="k.label" :value="k.value" />
       </div>
 
-      <!-- Overall satisfaction (donut) -->
-      <div class="mt-4 bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <h3 class="text-xl font-black text-slate-800 dark:text-white">Общее состояние</h3>
-        <p class="text-sm text-slate-400">Удовлетворенность пользователей</p>
-
+      <section class="panel mt-4 p-6">
+        <SectionHead
+          title="Общее состояние"
+          eyebrow="Проверки"
+          note="Доля заданий, закрытых как выполненные, от всех заданий с хотя бы одним ответом."
+        />
         <div class="mt-6">
           <SatisfactionDonut :percent="satisfaction" />
         </div>
-      </div>
+      </section>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Loader2, Building2, Map as MapIcon, ClipboardCheck, Smile, CheckCircle2, AlertTriangle } from 'lucide-vue-next'
+import { Loader2 } from 'lucide-vue-next'
 
+// REWORKED to the register design system. Eight cards each carried an icon in a
+// coloured circle - blue, violet, emerald, red - and the colours meant nothing:
+// they were assigned per card, not per value. Figures go through StatPanel now,
+// which puts the denominator next to the number instead of dropping it.
 definePageMeta({
   layout: 'app',
   // Этап 10: аналитика публичная (ТЗ раздел 3.4) - гейт логина снят.
@@ -128,8 +109,8 @@ const bigKpis = computed(() => {
   const o = ov.value
   if (!o) return []
   return [
-    { label: 'Всего объектов', value: fmt(o.objects.total), icon: Building2 },
-    { label: 'Количество регионов', value: fmt(regionCount.value), icon: MapIcon },
+    { label: 'Всего объектов', value: fmt(o.objects.total), sub: 'Записей реестров загружено в базу' },
+    { label: 'Регионов в покрытии', value: fmt(regionCount.value), sub: 'С загруженной границей' },
   ]
 })
 
@@ -138,10 +119,10 @@ const smallKpis = computed(() => {
   if (!o) return []
   const problems = Math.max(o.tasks.total - o.tasks.completed, 0)
   return [
-    { label: 'Всего проверок', value: fmt(o.tasks.total), icon: ClipboardCheck, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-500' },
-    { label: 'Довольны', value: `${satisfaction.value}%`, icon: Smile, iconBg: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-500' },
-    { label: 'Выполнено', value: fmt(o.tasks.completed), icon: CheckCircle2, iconBg: 'bg-emerald-50 dark:bg-emerald-900/20', iconColor: 'text-emerald-500' },
-    { label: 'Проблемы', value: fmt(problems), icon: AlertTriangle, iconBg: 'bg-red-50 dark:bg-red-900/20', iconColor: 'text-red-500' },
+    { label: 'Всего проверок', value: fmt(o.tasks.total) },
+    { label: 'Довольны', value: `${satisfaction.value} %` },
+    { label: 'Выполнено', value: fmt(o.tasks.completed) },
+    { label: 'Проблемы', value: fmt(problems) },
   ]
 })
 </script>

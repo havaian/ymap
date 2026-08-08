@@ -3,7 +3,11 @@ import { fileURLToPath } from 'node:url'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-01',
-  devtools: { enabled: true },
+  // Off by default. The devtools client is a second Vue app mounted alongside the
+  // page with its own render loop and websocket, and on a screen that already runs
+  // a canvas and a Leaflet layer it is measurable. Turn it back on with
+  // NUXT_DEVTOOLS=true when actually inspecting something.
+  devtools: { enabled: process.env.NUXT_DEVTOOLS === 'true' },
 
   modules: [
     '@nuxtjs/tailwindcss',
@@ -32,9 +36,21 @@ export default defineNuxtConfig({
     '/stories/**': { ssr: true },
     '/search': { ssr: true },
     '/map': { ssr: false },
+    // Reached from a marker click, so it lives on the same client-only side of
+    // the app as the map that links to it.
+    '/objects/**': { ssr: false },
     '/profile': { ssr: false },
     '/leaderboard': { ssr: false },
     '/login': { ssr: false },
+    '/register': { ssr: false },
+    // The confirmation page reads a token out of the query string and calls the
+    // API with it. Rendering that on the server would put the token in the SSR
+    // request log for no benefit.
+    '/verify-email': { ssr: false },
+    '/forgot-password': { ssr: false },
+    // The reset token is a live credential, so it stays out of the SSR path for
+    // the same reason as the confirmation one.
+    '/reset-password': { ssr: false },
   },
 
   // Secrets stay server-side (runtimeConfig root). Only `public` reaches the client.

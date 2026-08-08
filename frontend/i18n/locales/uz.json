@@ -7,10 +7,40 @@
     "deprivation": "Deprivatsiya",
     "verification": "Tekshiruv",
     "dataQuality": "Ma'lumot sifati",
-    "civicOverview": "Umumiy"
+    "civicOverview": "Umumiy",
+    "registerShort": "Ro‘yxatdan o‘tish",
+    "home": "Bosh sahifa",
+    "strategy": "Strategiya 2030",
+    "analytics": "Tahlil",
+    "analyticsGeneral": "Umumiy",
+    "analyticsRegions": "Hududlar",
+    "analyticsCurrent": "Joriy holat",
+    "analyticsProblems": "Muammolar",
+    "map": "Xarita",
+    "feed": "Murojaatlar lentasi",
+    "knowledge": "Murakkab narsalar sodda tilda",
+    "stories": "Odamlar hikoyalari",
+    "about": "Biz haqimizda",
+    "search": "Qidiruv",
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "profile": "Profil",
+    "leaderboard": "Reyting",
+    "help": "Yordam",
+    "logout": "Chiqish",
+    "composite": "Kompozit"
   },
   "groups": {
     "observatory": "Observatoriya",
-    "civic": "Murojaatlar"
+    "civic": "Murojaatlar",
+    "main": "Bosh sahifa",
+    "media": "Mediamarkaz",
+    "profile": "Profil"
+  },
+  "actions": {
+    "checkObject": "Obyektni tekshirish"
+  },
+  "common": {
+    "inDevelopment": "Boʻlim ishlab chiqilmoqda"
   }
 }

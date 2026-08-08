@@ -3,10 +3,17 @@
     <!-- ── Hero ───────────────────────────────────────────────────────────────
          The plate is the thesis. Six thousand real coordinates draw the country
          on their own, because facilities follow settlement; nothing here is an
-         illustration of data, it is the data. -->
-    <section class="relative overflow-hidden bg-prussian-800 text-prussian-50">
-      <div class="pointer-events-none absolute inset-0 opacity-[0.25]" :style="gridStyle" />
+         illustration of data, it is the data.
 
+         The blueprint grid is painted onto the section itself now instead of
+         living in its own absolutely positioned layer. It was a full-viewport
+         element stacked over an animating canvas, so every frame of the sweep
+         recomposited it along with the gradient above it. Two fewer layers, same
+         picture. -->
+    <section
+      class="relative overflow-hidden bg-prussian-800 text-prussian-50"
+      :style="gridStyle"
+    >
       <div class="absolute inset-0">
         <HeroMap />
       </div>
@@ -38,11 +45,18 @@
       </div>
 
       <!-- Counters read across the bottom of the plate rather than sitting in
-           cards: they are the caption to the map above them. -->
+           cards: they are the caption to the map above them. They count up once,
+           on first sight, and land exactly on the published figure. -->
       <div class="relative border-t border-prussian-200/15">
         <dl class="mx-auto grid max-w-7xl grid-cols-2 gap-px px-4 sm:px-6 lg:grid-cols-4">
           <div v-for="s in heroStats" :key="s.label" class="py-5 pr-6">
-            <dd class="font-display text-h2 font-semibold tabular text-prussian-50">{{ s.value }}</dd>
+            <dd class="font-display text-h2 font-semibold text-prussian-50">
+              <CountUp
+                :value="s.value"
+                :decimals="s.decimals ?? 0"
+                :suffix="s.suffix ?? ''"
+              />
+            </dd>
             <dt class="mt-1 text-label text-prussian-100/60">{{ s.label }}</dt>
           </div>
         </dl>
@@ -103,6 +117,30 @@
       </div>
     </section>
 
+    <!-- ── The layer itself ──────────────────────────────────────────────────
+         A screenshot of a map on a landing page is a promise. This is the layer,
+         served by the same endpoint the product uses, and it carries the same
+         rule as everywhere else: the composite never appears without the
+         dimensions it was assembled from. -->
+    <section class="border-b border-prussian-200/15 bg-prussian-900 text-prussian-50">
+      <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+        <div class="max-w-2xl">
+          <p class="eyebrow text-prussian-200">Слой, а не картинка</p>
+          <h2 class="mt-3 font-display text-h1 font-semibold tracking-tight">
+            Индекс депривации по районам, вживую
+          </h2>
+          <p class="mt-5 text-lead text-prussian-100/70">
+            Тот же запрос, что и на карте продукта. Наведите на район: композит разложится
+            по измерениям, и рядом встанет число объектов, на которых он посчитан.
+          </p>
+        </div>
+
+        <div class="mt-10">
+          <MiniChoropleth />
+        </div>
+      </div>
+    </section>
+
     <!-- ── What is computed ──────────────────────────────────────────────── -->
     <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
       <p class="eyebrow">Что считается сегодня</p>
@@ -111,25 +149,7 @@
       </h2>
 
       <div class="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <NuxtLink
-          v-for="m in models"
-          :key="m.to"
-          :to="m.to"
-          class="panel group p-6 transition-colors hover:border-prussian-300 dark:hover:border-prussian-500"
-        >
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="eyebrow">{{ m.eyebrow }}</p>
-              <h3 class="mt-2 font-display text-h3 font-semibold text-ink dark:text-paper">{{ m.title }}</h3>
-            </div>
-            <ArrowUpRight :size="18" class="shrink-0 text-ink-faint transition-colors group-hover:text-prussian-500" />
-          </div>
-          <p class="mt-3 text-body text-ink-muted dark:text-ink-faint">{{ m.body }}</p>
-          <div class="mt-5 flex items-baseline gap-2 border-t border-rule pt-4 dark:border-night-rule">
-            <span class="font-display text-h2 font-semibold tabular text-ink dark:text-paper">{{ m.figure }}</span>
-            <span class="text-note text-ink-faint">{{ m.figureLabel }}</span>
-          </div>
-        </NuxtLink>
+        <ModelCard v-for="m in models" :key="m.to" v-bind="m" />
       </div>
     </section>
 
@@ -187,20 +207,23 @@ useSeoMeta({
 })
 
 // A blueprint grid, drawn rather than imported: this is the material world of the
-// subject, and a background image would be one more asset to keep in sync.
+// subject, and a background image would be one more asset to keep in sync. Applied
+// to the section rather than to a layer of its own, so it does not recomposite on
+// every frame of the hero sweep.
 const gridStyle = {
   backgroundImage:
-    'linear-gradient(to right, rgba(143,197,232,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(143,197,232,0.18) 1px, transparent 1px)',
+    'linear-gradient(to right, rgba(143,197,232,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(143,197,232,0.045) 1px, transparent 1px)',
   backgroundSize: '48px 48px',
 }
 
 // Every figure here is computed, not written: see the amendments document for the
-// runs behind each one. The date is what makes them quotable.
+// runs behind each one. The date is what makes them quotable. Values are numeric so
+// the counter can run to them and land on exactly the published number.
 const heroStats = [
-  { value: '27 102', label: 'объектов с проверенной координатой' },
-  { value: '2 198', label: 'записей реестров загружено' },
-  { value: '178', label: 'районов в покрытии' },
-  { value: '54,6 %', label: 'школ выше проектной мощности' },
+  { value: 27102, label: 'объектов с проверенной координатой' },
+  { value: 2198, label: 'записей реестров загружено' },
+  { value: 178, label: 'районов в покрытии' },
+  { value: 54.6, decimals: 1, suffix: ' %', label: 'школ выше проектной мощности' },
 ]
 
 const archiveSteps = [
@@ -218,38 +241,61 @@ const archiveSteps = [
   },
 ]
 
+// The methodology block under each card answers the question the figure raises:
+// on what, under what assumption, and with what left out.
 const models = [
   {
     to: '/analytics/capacity',
     eyebrow: 'М1',
     title: 'Дефицит мест',
     body: 'Три числа на три решения: сверх одной смены, сверх фактических смен и сверх двух смен. Последнее второй сменой уже не решается.',
-    figure: '7 998',
+    figureValue: 7998,
     figureLabel: 'мест сверх двух смен',
+    method: [
+      { term: 'Знаменатель', def: '1411 школ формы 44, около 17,6 % реестра. На страну не экстраполируется.' },
+      { term: 'Что считается', def: 'Разница между контингентом и проектной мощностью, умноженной на число смен.' },
+      { term: 'Чего нет', def: 'Рождаемости по районам, поэтому прогнозная половина модели не публикуется.' },
+    ],
   },
   {
     to: '/analytics/wear',
     eyebrow: 'М2',
     title: 'Износ зданий',
     body: 'Нормативный учёт под двумя прочтениями поля ремонта. Обе границы публикуются, выбор гипотезы остаётся за читателем.',
-    figure: '8,2 – 61,1 %',
+    figureRaw: '8,2 – 61,1 %',
     figureLabel: 'за пределом цикла',
+    method: [
+      { term: 'Гипотеза H1', def: 'Год в поле ремонта - капитальный. Даёт нижнюю границу.' },
+      { term: 'Гипотеза H2', def: 'Год в поле ремонта - текущий, капитального не было. Даёт верхнюю.' },
+      { term: 'Что закрывает разрыв', def: 'Одна строка «вид ремонта» в форме 44. Не модель.' },
+    ],
   },
   {
     to: '/analytics/deprivation',
     eyebrow: 'Индекс',
     title: 'Депривация',
     body: 'Метод Алкире-Фостера, тот же счётный подход, что в глобальном ИМБ. Композит никогда не показывается без разложения по измерениям.',
-    figure: '0,181 – 0,196',
+    figureRaw: '0,181 – 0,196',
     figureLabel: 'M0 по школам',
+    method: [
+      { term: 'M0', def: 'Доля депривированных, умноженная на среднюю интенсивность депривации.' },
+      { term: 'Порог района', def: 'Меньше трёх оценённых объектов - район не получает значения, а не получает ноль.' },
+      { term: 'Интервал', def: 'Обе границы от гипотез М2. В середину не сворачивается.' },
+    ],
   },
   {
     to: '/analytics/verification',
     eyebrow: 'М4',
     title: 'Очередь верификации',
     body: 'Какая запись стоит полевой проверки и почему. Часть очереди выдаётся жребием, механизм отбора записывается на диск.',
-    figure: '25 %',
+    figureValue: 25,
+    figureSuffix: ' %',
     figureLabel: 'случайная доля очереди',
+    method: [
+      { term: 'Правила', def: 'Противоречие в полях, аномальная загруженность, отсутствующая координата.' },
+      { term: 'Зачем жребий', def: 'Очередь только по правилам проверяет собственные правила и ничего больше.' },
+      { term: 'Аудит', def: 'Отбор не кэшируется: кэш выдал бы всем один и тот же «случайный» набор.' },
+    ],
   },
 ]
 

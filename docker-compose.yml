@@ -44,6 +44,17 @@ services:
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Confirmation letters. Without SMTP_HOST the link is printed to the backend
+      # log instead of being mailed, and registration still completes.
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:7797}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-Y.Map <no-reply@ymap.ytech.space>}
+      - VERIFY_TOKEN_TTL_MS=${VERIFY_TOKEN_TTL_MS:-86400000}
+      - VERIFY_RESEND_COOLDOWN_MS=${VERIFY_RESEND_COOLDOWN_MS:-60000}
+      - RESET_TOKEN_TTL_MS=${RESET_TOKEN_TTL_MS:-3600000}
     volumes:
       - ./uploads/:/app/uploads:rw,Z
     ports:

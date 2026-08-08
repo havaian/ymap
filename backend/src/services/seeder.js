@@ -220,7 +220,8 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
         email: `mock.${runId}.${i + 1}@test.ymap.uz`,
         password: hashedPassword,
         role: 'CITIZEN',
-        isSeeded: true
+        isSeeded: true,
+        emailVerified: true
     }));
 
     const insertedUsers = await User.insertMany(mockUsers);
@@ -386,6 +387,7 @@ export const generateProgramVerifications = async (maxPerTask = 6) => {
         password: hashedPassword,
         role: 'CITIZEN',
         isSeeded: true,
+        emailVerified: true,
     }));
 
     const insertedUsers = await User.insertMany(mockUsers);

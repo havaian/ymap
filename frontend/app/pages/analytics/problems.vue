@@ -1,32 +1,45 @@
 <template>
-  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+  <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
     <AnalyticsTabs />
 
     <div v-if="loading" class="flex items-center justify-center py-24">
-      <Loader2 class="w-8 h-8 animate-spin text-blue-600" />
+      <Loader2 class="h-7 w-7 animate-spin text-prussian-500" />
     </div>
 
     <template v-else>
       <!-- Most frequent problems (real - /issues byCategory) -->
-      <div class="bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <h3 class="text-xl font-black text-slate-800 dark:text-white">Самые частые проблемы</h3>
-        <p class="text-sm text-slate-400">По количеству обращений</p>
+      <section class="panel p-6">
+        <SectionHead
+          title="Самые частые проблемы"
+          eyebrow="По категориям"
+          note="Счёт обращений, а не объектов: одно здание может стоять за несколькими записями."
+        />
         <div v-if="byCategory.length" class="mt-6 space-y-3">
           <div v-for="c in byCategory" :key="c._id" class="flex items-center gap-4">
-            <span class="w-40 shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">{{ categoryLabel(c._id) }}</span>
-            <div class="flex-1 h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" :style="{ width: barWidth(c.count) + '%', backgroundColor: barColor(c.count) }" />
+            <span class="w-40 shrink-0 truncate text-body text-ink dark:text-paper">
+              {{ categoryLabel(c._id) }}
+            </span>
+            <div class="span-track flex-1">
+              <div
+                class="span-lower"
+                :style="{ width: barWidth(c.count) + '%', backgroundColor: barColor(c.count) }"
+              />
             </div>
-            <span class="w-12 shrink-0 text-right text-sm font-black text-slate-500 dark:text-slate-300">{{ c.count }} шт</span>
+            <span class="w-16 shrink-0 text-right font-mono text-body text-ink-muted dark:text-ink-faint">
+              {{ c.count }} шт
+            </span>
           </div>
         </div>
-        <p v-else class="mt-6 text-sm text-slate-400">Нет данных</p>
-      </div>
+        <p v-else class="mt-6 text-body text-ink-muted dark:text-ink-faint">Нет данных</p>
+      </section>
 
       <!-- Completed vs problems donut (real - /overview completionRate) -->
-      <div class="mt-4 bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <h3 class="text-xl font-black text-slate-800 dark:text-white">Распределение состояний</h3>
-        <p class="text-sm text-slate-400">Соотношение выполненных и проблемных</p>
+      <section class="panel mt-4 p-6">
+        <SectionHead
+          title="Распределение состояний"
+          eyebrow="Проверки"
+          note="Соотношение закрытых и оставшихся заданий верификации."
+        />
         <div class="mt-6">
           <SatisfactionDonut
             :percent="completion"
@@ -35,7 +48,7 @@
             center-label="Выполнено"
           />
         </div>
-      </div>
+      </section>
     </template>
   </div>
 </template>
@@ -43,6 +56,10 @@
 <script setup lang="ts">
 import { Loader2 } from 'lucide-vue-next'
 
+// REWORKED to the register design system. The bar was blue above half and yellow
+// below, which encoded nothing: a category is not better for being rarer. The
+// ramp runs on the share of the largest category instead, so the longest bar is
+// the most reported and reads as the most deficient.
 definePageMeta({
   layout: 'app',
   // Этап 10: аналитика публичная (ТЗ раздел 3.4) - гейт логина снят.
@@ -58,6 +75,7 @@ interface CategoryCount {
 }
 
 const { $api } = useNuxtApp()
+const scale = useScale()
 const byCategory = ref<CategoryCount[]>([])
 const completion = ref(0)
 const loading = ref(true)
@@ -90,5 +108,5 @@ const categoryLabel = (c: string) => CATEGORY_LABEL[c] ?? c
 
 const maxCount = computed(() => Math.max(1, ...byCategory.value.map((c) => c.count)))
 const barWidth = (n: number) => Math.round((n / maxCount.value) * 100)
-const barColor = (n: number) => (barWidth(n) >= 50 ? '#3b82f6' : '#eab308')
+const barColor = (n: number) => scale.deficiency(n / maxCount.value)
 </script>

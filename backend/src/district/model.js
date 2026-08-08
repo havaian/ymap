@@ -33,6 +33,26 @@ const districtSchema = new mongoose.Schema({
             required: true
         }
     },
+    // Render-only copy of `geometry` with the vertex count cut down.
+    //
+    // `geometry` stays authoritative and keeps the 2dsphere index: point-in-polygon
+    // and $geoWithin must run against the full outline. What the choropleth ships to
+    // a browser is a different problem - 163 districts at OSM resolution is hundreds
+    // of thousands of vertices in the SVG DOM, and the map stops panning.
+    //
+    // Written by scripts/simplify-boundaries.js, never by the importers, so a
+    // re-import cannot silently leave a simplified shape behind as the only copy.
+    // No index here on purpose: a simplified ring can self-intersect and 2dsphere
+    // would reject the whole document.
+    geometrySimplified: {
+        type: {
+            type: String,
+            enum: ['MultiPolygon', 'Polygon']
+        },
+        coordinates: {
+            type: mongoose.Schema.Types.Mixed
+        }
+    },
     centroid: {
         type: {
             type: String,

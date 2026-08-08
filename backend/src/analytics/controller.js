@@ -564,8 +564,12 @@ export const getChoropleth = async (req, res) => {
         const { metric = 'composite', regionCode } = req.query;
         const regionFilter = regionCode ? { regionCode: parseInt(regionCode) } : {};
 
+        // geometrySimplified is the render copy written by simplify-boundaries.js.
+        // Both are selected because the fallback matters: a district imported after
+        // the last simplification run has no copy yet, and drawing it at full
+        // resolution is better than dropping it off the map.
         const districts = await District.find(regionFilter)
-            .select('name regionCode areaKm2 geometry centroid')
+            .select('name regionCode areaKm2 geometry geometrySimplified centroid')
             .lean();
 
         if (!districts.length) {
@@ -651,7 +655,7 @@ export const getChoropleth = async (req, res) => {
                     value,
                     scores
                 },
-                geometry: dist.geometry
+                geometry: dist.geometrySimplified?.coordinates ? dist.geometrySimplified : dist.geometry
             };
         }).filter(f => f.geometry);
 

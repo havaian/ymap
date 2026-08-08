@@ -1,27 +1,23 @@
 <template>
-  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+  <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
     <AnalyticsTabs />
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-black text-slate-800 dark:text-white">Топ 5 - Лучшие</h3>
-          <span class="text-xs text-slate-400">по результатам проверок</span>
-        </div>
-        <div class="mt-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center text-sm text-slate-400">
-          Появится после ввода скоринга объектов
-        </div>
-      </div>
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section class="panel p-6">
+        <SectionHead title="Топ 5, лучшие" eyebrow="По результатам проверок" />
+        <NoteBlock class="mt-6" tone="caution" title="Скоринг объектов не введён">
+          Ни один эндпоинт не возвращает оценку по отдельному объекту. Подставлять
+          сюда районные значения нельзя: они считаются на другом знаменателе.
+        </NoteBlock>
+      </section>
 
-      <div class="bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-black text-slate-800 dark:text-white">Требующие внимания</h3>
-          <span class="text-xs text-slate-400">ниже среднего</span>
-        </div>
-        <div class="mt-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center text-sm text-slate-400">
-          Появится после ввода скоринга объектов
-        </div>
-      </div>
+      <section class="panel p-6">
+        <SectionHead title="Требующие внимания" eyebrow="Ниже среднего" />
+        <NoteBlock class="mt-6" tone="caution" title="Скоринг объектов не введён">
+          Появится вместе с оценкой объекта. До тех пор список объектов, требующих
+          проверки, ведёт очередь верификации.
+        </NoteBlock>
+      </section>
     </div>
   </div>
 </template>

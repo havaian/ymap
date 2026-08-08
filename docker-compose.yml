@@ -57,7 +57,24 @@ services:
       - RESET_TOKEN_TTL_MS=${RESET_TOKEN_TTL_MS:-3600000}
     volumes:
       - ./uploads/:/app/uploads:rw,Z
-      - ./backend/src/data/:/app/src/data:rw,Z
+      # Boundary and registry files. Without this mount /app/src/data is image
+      # content and therefore ephemeral: fetch-osm-boundaries.js writes
+      # osm-regions.geojson inside the running container, the next rebuild
+      # recreates the container, and the file the importer needs is gone. That is
+      # exactly what happened between the first successful fetch and the import
+      # that followed it.
+      #
+      # The mount also matches what the fetch script was designed for: it runs
+      # rarely and writes files that get committed, so the database never depends
+      # on Overpass being up at import time.
+      #
+      # Флаг :z, не :Z. Заглавный переметит каталог в приватную для контейнера
+      # SELinux-метку, и тогда доступ к нему потеряет тот, кто делает git checkout.
+      # Каталог общий с хостом, ему нужна разделяемая метка.
+      #
+      # Контейнер работает под USER nodeapp, поэтому каталог на хосте должен
+      # принадлежать ему: docker compose exec backend id покажет UID и GID.
+      - ./backend/src/data/:/app/src/data:rw,z
     ports:
       - "${BACKEND_EXPOSE:-127.0.0.1:4000}:${BACKEND_PORT:-4000}"
     depends_on:

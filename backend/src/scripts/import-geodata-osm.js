@@ -278,9 +278,36 @@ function matchFeature(feature, entries) {
     return null;
 }
 
+/**
+ * The missing-file message is long on purpose. A boundary file that was fetched
+ * successfully and then vanished has exactly one common cause, and it is not one
+ * anybody guesses: /app/src/data is image content unless it is mounted, so
+ * anything written there by fetch-osm-boundaries.js lives only as long as that
+ * container does. Rebuild the stack and the download is gone, while the sibling
+ * files that shipped inside the image are still sitting right next to where it
+ * used to be - which makes it look like the fetch never worked.
+ */
 function readJson(file) {
     const p = path.join(DATA_DIR, file);
-    if (!fs.existsSync(p)) throw new Error(`${file} не найден в ${DATA_DIR}`);
+    if (!fs.existsSync(p)) {
+        const siblings = fs.existsSync(DATA_DIR)
+            ? fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.geojson'))
+            : [];
+        const lines = [
+            `${file} не найден в ${DATA_DIR}`,
+            siblings.length
+                ? `  рядом лежат: ${siblings.join(', ')}`
+                : '  ни одного .geojson в каталоге',
+            '',
+            '  Если файл скачивали и он пропал - каталог не смонтирован, и всё,',
+            '  что записал fetch-osm-boundaries.js, ушло вместе с пересозданным',
+            '  контейнером. В docker-compose.yml у backend должно быть:',
+            '    - ./backend/src/data/:/app/src/data:rw,Z',
+            '',
+            '  Затем: node src/scripts/fetch-osm-boundaries.js --debug'
+        ];
+        throw new Error(lines.join('\n'));
+    }
     return JSON.parse(fs.readFileSync(p, 'utf-8'));
 }
 

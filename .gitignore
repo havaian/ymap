@@ -95,3 +95,11 @@ config.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Границы OSM: НЕ игнорировать.
+# backend/src/data/ смонтирован в контейнер, и fetch-osm-boundaries.js пишет сюда
+# osm-regions.geojson и osm-districts.geojson. GitLab Runner по умолчанию делает
+# `git clean -ffdx` перед сборкой, поэтому неотслеживаемый файл здесь удаляется на
+# каждом пайплайне. Файлы должны быть закоммичены - ровно то, ради чего скачивание
+# отделено от импорта: база не зависит от доступности Overpass.
+!backend/src/data/*.geojson

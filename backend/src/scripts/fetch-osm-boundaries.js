@@ -30,6 +30,7 @@
  *   node backend/src/scripts/fetch-osm-boundaries.js --level=6
  *   node backend/src/scripts/fetch-osm-boundaries.js --endpoint=https://overpass.kumi.systems/api/interpreter
  *   node backend/src/scripts/fetch-osm-boundaries.js --debug --dump-raw
+ *   node backend/src/scripts/fetch-osm-boundaries.js --out=/app/uploads
  *
  * Writes:
  *   data/osm-regions.geojson     admin_level=4
@@ -254,6 +255,45 @@ function toGeoJSON(payload, debug = false) {
     return { type: 'FeatureCollection', features };
 }
 
+/**
+ * Checks that the output directory is writable before anything is downloaded.
+ *
+ * Without this the script spends two minutes on Overpass, assembles a thousand
+ * way segments, reports a clean result, and only then discovers it cannot open
+ * the file. Everything it did is thrown away and the operator is left with a
+ * permission error where a success message was one line earlier.
+ *
+ * The check writes and removes a probe file rather than reading the mode bits,
+ * because the mode alone does not answer the question: the container runs as an
+ * unprivileged user, the directory belongs to whoever checked the repository out,
+ * and on a relabelled bind mount SELinux can refuse a write that the bits allow.
+ */
+function assertWritable(dir) {
+    fs.mkdirSync(dir, { recursive: true });
+    const probe = path.join(dir, `.write-probe-${process.pid}`);
+    try {
+        fs.writeFileSync(probe, '');
+        fs.unlinkSync(probe);
+        return;
+    } catch (err) {
+        console.error(`❌ Каталог не доступен на запись: ${dir}`);
+        console.error(`   ${err.code || err.message}`);
+        console.error('');
+        console.error('   Контейнер работает под пользователем без прав на этот каталог.');
+        console.error('   Узнать, под кем он работает:');
+        console.error('     docker compose exec backend id');
+        console.error('   Выдать права на хосте, подставив UID и GID из вывода выше:');
+        console.error('     chown -R <UID>:<GID> backend/src/data');
+        console.error('');
+        console.error('   Либо разово записать от root и вернуть владельца:');
+        console.error('     docker compose exec -u root backend node src/scripts/fetch-osm-boundaries.js');
+        console.error('     chown -R $(stat -c "%u:%g" backend/src) backend/src/data');
+        console.error('');
+        console.error('   Либо положить файлы в другое место: --out=/app/uploads');
+        process.exit(1);
+    }
+}
+
 function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
@@ -373,6 +413,10 @@ async function main() {
     // Dumps the raw Overpass answer next to the output so the shape can be checked
     // without another round trip.
     const dumpRaw = args.includes('--dump-raw');
+    // Escape hatch for the case where the data directory cannot be made writable:
+    // write somewhere that is, then move the files in from the host.
+    const outArg = args.find(a => a.startsWith('--out='))?.split('=')[1];
+    const outDir = outArg ? path.resolve(outArg) : DATA_DIR;
     const endpoints = customEndpoint ? [customEndpoint] : ENDPOINTS;
 
     if (typeof fetch !== 'function') {
@@ -384,7 +428,10 @@ async function main() {
     console.log('  Границы из OpenStreetMap (Overpass)');
     console.log('═══════════════════════════════════════');
 
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    // Before Overpass, not after. A permission error is cheap to hit now and
+    // expensive to hit once the data is already downloaded and parsed.
+    assertWritable(outDir);
+    if (outDir !== DATA_DIR) console.log(`  каталог вывода: ${outDir}`);
 
     const levels = onlyLevel ? [Number(onlyLevel)] : Object.keys(LEVELS).map(Number);
 
@@ -399,7 +446,7 @@ async function main() {
         for (const el of payload.elements) kinds[el.type] = (kinds[el.type] || 0) + 1;
         console.log(`    по типам: ${JSON.stringify(kinds)}`);
         if (dumpRaw) {
-            const raw = path.join(DATA_DIR, `osm-raw-${cfg.levels.join('-')}.json`);
+            const raw = path.join(outDir, `osm-raw-${cfg.levels.join('-')}.json`);
             fs.writeFileSync(raw, JSON.stringify(payload));
             console.log(`    сырой ответ: ${raw}`);
         }
@@ -423,7 +470,7 @@ async function main() {
             continue;
         }
 
-        const out = path.join(DATA_DIR, cfg.file);
+        const out = path.join(outDir, cfg.file);
         fs.writeFileSync(out, JSON.stringify(geojson), 'utf8');
         const mb = (fs.statSync(out).size / 1024 / 1024).toFixed(1);
         console.log(`  ✅ записано: ${out} (${mb} МБ)`);

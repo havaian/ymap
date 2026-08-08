@@ -65,6 +65,26 @@ const RETRY_BACKOFF = 5000;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+/**
+ * Same preflight as fetch-osm-boundaries.js, and for the same reason: the write
+ * is the last step, so an unwritable directory otherwise surfaces only after the
+ * download is finished and discarded.
+ */
+function assertWritable(dir) {
+    fs.mkdirSync(dir, { recursive: true });
+    const probe = path.join(dir, `.write-probe-${process.pid}`);
+    try {
+        fs.writeFileSync(probe, '');
+        fs.unlinkSync(probe);
+    } catch (err) {
+        console.error(`❌ Каталог не доступен на запись: ${dir}`);
+        console.error(`   ${err.code || err.message}`);
+        console.error('   docker compose exec backend id   покажет UID и GID контейнера');
+        console.error('   chown -R <UID>:<GID> backend/src/data');
+        process.exit(1);
+    }
+}
+
 async function download(url) {
     let lastErr = null;
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -181,7 +201,7 @@ async function main() {
     console.log('  Границы из geoBoundaries (CC-BY 4.0)');
     console.log('═══════════════════════════════════════');
 
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    assertWritable(DATA_DIR);
 
     const levels = onlyLevel ? [Number(onlyLevel)] : Object.keys(LEVELS).map(Number);
 

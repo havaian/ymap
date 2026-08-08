@@ -15,8 +15,11 @@
  * and every parent_code in the duasr.uz registries. One numbering across the
  * whole project.
  *
- * Nothing is matched by loose name comparison at import time. Names are used once,
- * against the crosswalk, and every boundary that fails to match is listed.
+ * Name matching lives in uz-name-match.js. It keeps the unit type as part of the
+ * key, so "Toshkent viloyati" and "Toshkent shahar" never collapse into one, and
+ * it folds the spelling differences between the registries and OSM (x/h, oʻ/u/o,
+ * v/w, apostrophes, Cyrillic, inserted spaces, abbreviated initials). Matches are
+ * reported by tier and every boundary that fails is listed.
  *
  * Usage:
  *   docker compose exec backend node src/scripts/import-geodata-osm.js --dry-run
@@ -34,7 +37,7 @@ import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import Region from '../region/model.js';
 import District from '../district/model.js';
-import { normalizeUzName } from './geo-translations.js';
+import { compareNames, TIER_ORDER } from './uz-name-match.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -133,7 +136,7 @@ function areaKm2(geometry) {
  */
 function osmNames(props) {
     const keys = ['name', 'name:uz', 'name:oz', 'name:uz-Cyrl', 'name:uz-Latn',
-        'name:ru', 'name:en', 'official_name', 'alt_name', 'int_name'];
+        'name:ru', 'name:en', 'name:kaa', 'official_name', 'alt_name', 'int_name'];
     const out = [];
     for (const k of keys) {
         const v = props[k];
@@ -142,30 +145,41 @@ function osmNames(props) {
     return out;
 }
 
-function normSet(names) {
-    return new Set(names.map(n => normalizeUzName(n)).filter(Boolean));
-}
-
 /**
- * Exact normalised match first, then a prefix relation. No fuzzy scoring: a wrong
- * boundary attached to a district is worse than a missing one, because it is
- * invisible in the output and wrong on the map.
+ * Best match across all name variants on both sides, strongest tier wins.
+ * An 'edit' or 'token' match is accepted only when it is unambiguous: if two
+ * different crosswalk entries reach the same tier, neither is taken. A wrong
+ * boundary silently attached to a district is worse than a missing one.
  */
 function matchFeature(feature, entries) {
-    const fNames = normSet(osmNames(feature.properties || {}));
-    if (fNames.size === 0) return null;
+    const fNames = osmNames(feature.properties || {});
+    if (fNames.length === 0) return null;
 
+    const hits = new Map();  // tier -> [entry]
     for (const e of entries) {
-        for (const key of e.normKeys) {
-            if (fNames.has(key)) return { entry: e, how: 'exact' };
+        let best = null;
+        for (const a of fNames) {
+            for (const b of e.names) {
+                const tier = compareNames(a, b);
+                if (!tier) continue;
+                if (best === null || TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(best)) best = tier;
+                if (best === 'exact') break;
+            }
+            if (best === 'exact') break;
+        }
+        if (best) {
+            if (!hits.has(best)) hits.set(best, []);
+            hits.get(best).push(e);
         }
     }
-    for (const e of entries) {
-        for (const key of e.normKeys) {
-            for (const f of fNames) {
-                if (f.startsWith(key) || key.startsWith(f)) return { entry: e, how: 'prefix' };
-            }
+
+    for (const tier of TIER_ORDER) {
+        const list = hits.get(tier);
+        if (!list || list.length === 0) continue;
+        if (list.length > 1 && tier !== 'exact') {
+            return { ambiguous: list.map(e => e.districtCode || e.regionCode), how: tier };
         }
+        return { entry: list[0], how: tier };
     }
     return null;
 }
@@ -184,7 +198,7 @@ async function importRegions({ dryRun }) {
 
     const entries = cw.map(e => ({
         ...e,
-        normKeys: [...normSet([e.nameCanonical, ...(e.variants || [])])]
+        names: [e.nameCanonical, ...(e.variants || [])].filter(Boolean)
     }));
 
     const feats = (geo.features || []).filter(f =>
@@ -195,12 +209,16 @@ async function importRegions({ dryRun }) {
     const ops = [];
     const matched = new Set();
     const unmatchedFeatures = [];
+    const ambiguous = [];
+    const tiers = new Map();
 
     for (const f of feats) {
         const m = matchFeature(f, entries);
         if (!m) { unmatchedFeatures.push(osmNames(f.properties)[0] || '(без имени)'); continue; }
+        if (m.ambiguous) { ambiguous.push(`${osmNames(f.properties)[0]} -> ${m.ambiguous.join(', ')}`); continue; }
         if (matched.has(m.entry.regionCode)) continue;  // first match wins
         matched.add(m.entry.regionCode);
+        tiers.set(m.how, (tiers.get(m.how) || 0) + 1);
 
         const centroid = centroidOf(f.geometry);
         if (!centroid) { console.warn(`  ⚠️  ${m.entry.nameCanonical}: не удалось вычислить центроид`); continue; }
@@ -227,7 +245,11 @@ async function importRegions({ dryRun }) {
     }
 
     const missing = entries.filter(e => !matched.has(e.regionCode));
-    console.log(`  сопоставлено: ${matched.size}/${entries.length}`);
+    console.log(`  сопоставлено: ${matched.size}/${entries.length}  (${[...tiers].map(([k, v]) => `${k}: ${v}`).join(', ') || 'нет'})`);
+    if (ambiguous.length) {
+        console.warn(`  ⚠️  неоднозначных, пропущено: ${ambiguous.length}`);
+        for (const a of ambiguous.slice(0, PRINT_LIMIT)) console.warn(`     ${a}`);
+    }
     if (missing.length) {
         console.warn(`  ⚠️  без границы: ${missing.map(e => `${e.regionCode} ${e.nameCanonical}`).join(', ')}`);
     }
@@ -249,7 +271,7 @@ async function importDistricts({ dryRun }) {
 
     const entries = cw.map(e => ({
         ...e,
-        normKeys: [...normSet([...(e.nameLatin || []), ...(e.nameCyrillic || [])])]
+        names: [...(e.nameLatin || []), ...(e.nameCyrillic || [])].filter(Boolean)
     }));
 
     const feats = (geo.features || []).filter(f =>
@@ -260,14 +282,16 @@ async function importDistricts({ dryRun }) {
     const ops = [];
     const matched = new Map();
     const unmatchedFeatures = [];
-    let byPrefix = 0;
+    const ambiguous = [];
+    const tiers = new Map();
 
     for (const f of feats) {
         const m = matchFeature(f, entries);
         if (!m) { unmatchedFeatures.push(osmNames(f.properties)[0] || '(без имени)'); continue; }
+        if (m.ambiguous) { ambiguous.push(`${osmNames(f.properties)[0]} -> ${m.ambiguous.join(', ')}`); continue; }
         if (matched.has(m.entry.districtCode)) continue;
-        if (m.how === 'prefix') byPrefix++;
         matched.set(m.entry.districtCode, f);
+        tiers.set(m.how, (tiers.get(m.how) || 0) + 1);
 
         const centroid = centroidOf(f.geometry);
         if (!centroid) { console.warn(`  ⚠️  ${m.entry.districtCode}: не удалось вычислить центроид`); continue; }
@@ -301,7 +325,11 @@ async function importDistricts({ dryRun }) {
     }
 
     const missing = entries.filter(e => !matched.has(e.districtCode));
-    console.log(`  сопоставлено: ${matched.size}/${entries.length} (по префиксу: ${byPrefix})`);
+    console.log(`  сопоставлено: ${matched.size}/${entries.length}  (${[...tiers].map(([k, v]) => `${k}: ${v}`).join(', ') || 'нет'})`);
+    if (ambiguous.length) {
+        console.warn(`  ⚠️  неоднозначных, пропущено: ${ambiguous.length}`);
+        for (const a of ambiguous.slice(0, PRINT_LIMIT)) console.warn(`     ${a}`);
+    }
     if (missing.length) {
         console.warn(`  ⚠️  без границы: ${missing.length}`);
         for (const e of missing.slice(0, PRINT_LIMIT)) {

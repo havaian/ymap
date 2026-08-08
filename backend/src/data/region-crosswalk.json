@@ -95,7 +95,8 @@
     "nameRu": "город Ташкент",
     "variants": [
       "Toshkent sh",
-      "Toshkent shahar"
+      "Toshkent shahar",
+      "Toshkent shahri"
     ],
     "objectCount": 99
   },
@@ -134,9 +135,14 @@
     "nameCanonical": "Qoraqolpog'iston Respublikasi",
     "nameRu": "Республика Каракалпакстан",
     "variants": [
+      "Karakalpakstan",
       "QR",
-      "Qoraqolpog'iston Respublikasi"
+      "Qaraqalpaqstan Respublikasi",
+      "Qaraqalpaqstan Respublikası",
+      "Qoraqolpog'iston Respublikasi",
+      "Қарақалпақстан Республикасы"
     ],
-    "objectCount": 157
+    "objectCount": 157,
+    "note": "Каракалпакское написание отличается от узбекского не орфографией, а самим словом, поэтому варианты заданы явно."
   }
 ]

@@ -20,7 +20,10 @@
  * and SOATO codes do not touch it. Attribution is required wherever the
  * boundaries are displayed.
  *
- * Requires: npm i osmtogeojson
+ * No external dependencies. Overpass `out geom` returns the coordinates of every
+ * member way inline, so relations are assembled here. osmtogeojson was dropped on
+ * purpose: it pulls in 378 packages and a version of @xmldom/xmldom with critical
+ * advisories, all of it for parsing OSM XML that this script never asks for.
  *
  * Usage:
  *   node backend/src/scripts/fetch-osm-boundaries.js
@@ -35,7 +38,6 @@
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import osmtogeojson from 'osmtogeojson';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -48,28 +50,165 @@ const ENDPOINTS = [
 ];
 
 const LEVELS = {
-    4: { file: 'osm-regions.geojson', label: 'регионы' },
-    6: { file: 'osm-districts.geojson', label: 'районы' }
+    // Karakalpakstan is an autonomous republic and sits at admin_level 3, the
+    // other thirteen first-order units at 4. Both are needed for a complete set.
+    4: { file: 'osm-regions.geojson', label: 'регионы', levels: ['3', '4'] },
+    6: { file: 'osm-districts.geojson', label: 'районы', levels: ['6'] }
 };
 
 const TIMEOUT_S = 600;
 const MAX_RETRIES = 3;
 const RETRY_BACKOFF = 15000;
 
-function query(level) {
-    // ISO3166-1=UZ pins the country area. `out geom` gives member way geometry so
-    // osmtogeojson can assemble the multipolygons without extra node lookups.
+function query(levels) {
+    // ISO3166-1=UZ pins the country area. `out geom` returns the coordinates of
+    // each member way inline, which is what makes local assembly possible.
+    const filter = levels.length === 1
+        ? `["admin_level"="${levels[0]}"]`
+        : `["admin_level"~"^(${levels.join('|')})$"]`;
     return `[out:json][timeout:${TIMEOUT_S}];
 area["ISO3166-1"="UZ"][admin_level=2]->.uz;
-relation(area.uz)["boundary"="administrative"]["admin_level"="${level}"];
+relation(area.uz)["boundary"="administrative"]${filter};
 out geom tags;`;
+}
+
+// ── Assembling relations into polygons ───────────────────────────────────────
+
+function ptKey(p) {
+    return p[0].toFixed(7) + ',' + p[1].toFixed(7);
+}
+
+/**
+ * Member ways arrive in arbitrary order and arbitrary direction. Segments are
+ * chained end to end, reversing where needed, until each ring closes. Segments
+ * that never close are dropped and counted.
+ */
+function stitchRings(segments) {
+    const rings = [];
+    const pool = segments.filter(s => Array.isArray(s) && s.length >= 2);
+    let dropped = 0;
+
+    while (pool.length) {
+        let cur = pool.shift().slice();
+        let closed = ptKey(cur[0]) === ptKey(cur[cur.length - 1]);
+        let guard = 0;
+
+        while (!closed && guard++ < 100000) {
+            const end = ptKey(cur[cur.length - 1]);
+            let hit = -1;
+            let reverse = false;
+
+            for (let i = 0; i < pool.length; i++) {
+                if (ptKey(pool[i][0]) === end) { hit = i; reverse = false; break; }
+                if (ptKey(pool[i][pool[i].length - 1]) === end) { hit = i; reverse = true; break; }
+            }
+            if (hit < 0) break;
+
+            const seg = reverse ? pool[hit].slice().reverse() : pool[hit];
+            pool.splice(hit, 1);
+            cur = cur.concat(seg.slice(1));
+            closed = ptKey(cur[0]) === ptKey(cur[cur.length - 1]);
+        }
+
+        if (closed && cur.length >= 4) rings.push(cur);
+        else dropped++;
+    }
+
+    return { rings, dropped };
+}
+
+function ringArea(ring) {
+    let a = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        a += ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1];
+    }
+    return Math.abs(a / 2);
+}
+
+function pointInRing(pt, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i];
+        const [xj, yj] = ring[j];
+        if ((yi > pt[1]) !== (yj > pt[1]) &&
+            pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+}
+
+/**
+ * Turns one Overpass relation into a GeoJSON Feature. Inner rings are attached to
+ * whichever outer ring contains them; an inner ring with no container is kept as
+ * its own polygon rather than discarded, since that usually means the relation is
+ * tagged inconsistently upstream and losing the area would be worse.
+ */
+function relationToFeature(rel) {
+    const toCoords = m => (m.geometry || [])
+        .filter(p => p && typeof p.lon === 'number' && typeof p.lat === 'number')
+        .map(p => [p.lon, p.lat]);
+
+    const outerSegs = [];
+    const innerSegs = [];
+    for (const m of rel.members || []) {
+        if (m.type !== 'way') continue;
+        const c = toCoords(m);
+        if (c.length < 2) continue;
+        if (m.role === 'inner') innerSegs.push(c);
+        else outerSegs.push(c);
+    }
+
+    const outer = stitchRings(outerSegs);
+    const inner = stitchRings(innerSegs);
+    if (outer.rings.length === 0) return { feature: null, dropped: outer.dropped + inner.dropped };
+
+    const sorted = outer.rings.slice().sort((a, b) => ringArea(b) - ringArea(a));
+    const polygons = sorted.map(r => [r]);
+
+    for (const hole of inner.rings) {
+        const idx = polygons.findIndex(poly => pointInRing(hole[0], poly[0]));
+        if (idx >= 0) polygons[idx].push(hole);
+        else polygons.push([hole]);
+    }
+
+    const geometry = polygons.length === 1
+        ? { type: 'Polygon', coordinates: polygons[0] }
+        : { type: 'MultiPolygon', coordinates: polygons };
+
+    return {
+        feature: {
+            type: 'Feature',
+            id: `relation/${rel.id}`,
+            properties: { ...(rel.tags || {}), id: `relation/${rel.id}`, osmId: rel.id },
+            geometry
+        },
+        dropped: outer.dropped + inner.dropped
+    };
+}
+
+function toGeoJSON(payload) {
+    const features = [];
+    let droppedRings = 0;
+    let noGeometry = 0;
+
+    for (const el of payload.elements) {
+        if (el.type !== 'relation') continue;
+        const { feature, dropped } = relationToFeature(el);
+        droppedRings += dropped;
+        if (feature) features.push(feature);
+        else noGeometry++;
+    }
+
+    if (droppedRings > 0) console.log(`    незамкнутых цепочек отброшено: ${droppedRings}`);
+    if (noGeometry > 0) console.log(`    отношений без пригодной геометрии: ${noGeometry}`);
+
+    return { type: 'FeatureCollection', features };
 }
 
 function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-async function runQuery(level, endpoints) {
+async function runQuery(levels, endpoints) {
     let lastErr = null;
 
     for (const endpoint of endpoints) {
@@ -82,7 +221,7 @@ async function runQuery(level, endpoints) {
                         'content-type': 'application/x-www-form-urlencoded',
                         'user-agent': 'YMap-boundaries/1.0 (infrastructure analytics, Uzbekistan)'
                     },
-                    body: 'data=' + encodeURIComponent(query(level))
+                    body: 'data=' + encodeURIComponent(query(levels))
                 });
 
                 const text = await res.text();
@@ -165,11 +304,11 @@ async function main() {
         const cfg = LEVELS[level];
         if (!cfg) { console.warn(`  admin_level=${level} не поддерживается`); continue; }
 
-        console.log(`\nadmin_level=${level} (${cfg.label})`);
-        const payload = await runQuery(level, endpoints);
+        console.log(`\nadmin_level=${cfg.levels.join(', ')} (${cfg.label})`);
+        const payload = await runQuery(cfg.levels, endpoints);
         console.log(`  получено элементов OSM: ${payload.elements.length}`);
 
-        const geojson = osmtogeojson(payload);
+        const geojson = toGeoJSON(payload);
         const stats = describe(geojson, cfg.label);
 
         if (stats.polygonal === 0) {

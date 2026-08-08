@@ -1,0 +1,4306 @@
+[
+  {
+    "districtCode": "1703202",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Oltinko'l tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "maktab44": 22
+    }
+  },
+  {
+    "districtCode": "1703203",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Andijon tumani"
+    ],
+    "nameCyrillic": [
+      "Андижон т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 7,
+      "maktab44": 17
+    }
+  },
+  {
+    "districtCode": "1703206",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Baliqchi tumani"
+    ],
+    "nameCyrillic": [
+      "Балиқчи т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 33
+    }
+  },
+  {
+    "districtCode": "1703209",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Bo'ston tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1703210",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Buloqboshi tumani"
+    ],
+    "nameCyrillic": [
+      "Булоқбоши т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2,
+      "maktab44": 12
+    }
+  },
+  {
+    "districtCode": "1703211",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Jalaquduq tumani"
+    ],
+    "nameCyrillic": [
+      "Жалақудуқ т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 2,
+      "maktab44": 11
+    }
+  },
+  {
+    "districtCode": "1703214",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Izboskan tumani"
+    ],
+    "nameCyrillic": [
+      "Избоскан т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 7,
+      "bogcha": 6,
+      "maktab44": 28
+    }
+  },
+  {
+    "districtCode": "1703217",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Ulug'nor tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1
+    }
+  },
+  {
+    "districtCode": "1703220",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Qo'rg'ontepa tumani"
+    ],
+    "nameCyrillic": [
+      "Қўрғонтепа т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 27
+    }
+  },
+  {
+    "districtCode": "1703224",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Asaka tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1703227",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Marhamat tumani"
+    ],
+    "nameCyrillic": [
+      "Марҳамат т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 1,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1703230",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Shahrixon tumani"
+    ],
+    "nameCyrillic": [
+      "Шаҳрихон т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 38
+    }
+  },
+  {
+    "districtCode": "1703232",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Paxtaobod tumani"
+    ],
+    "nameCyrillic": [
+      "Пахтаобод т."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 8,
+      "bogcha": 1,
+      "maktab44": 26
+    }
+  },
+  {
+    "districtCode": "1703236",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Xo'jaobod tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "maktab44": 17
+    }
+  },
+  {
+    "districtCode": "1703401",
+    "regionCode": "1703",
+    "nameLatin": [
+      "Andijon shahar"
+    ],
+    "nameCyrillic": [
+      "Андижон ш."
+    ],
+    "regionNames": [
+      "Andijon",
+      "Andijon viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 3,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1706204",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Olot tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 23
+    }
+  },
+  {
+    "districtCode": "1706207",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Buxoro tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1706212",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Vobkent tumani"
+    ],
+    "nameCyrillic": [
+      "Вобкент т."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1706215",
+    "regionCode": "1706",
+    "nameLatin": [
+      "G'ijduvon tumani"
+    ],
+    "nameCyrillic": [
+      "Ғиждувон т."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 5,
+      "maktab44": 11
+    }
+  },
+  {
+    "districtCode": "1706219",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Kogon tumani"
+    ],
+    "nameCyrillic": [
+      "Когон т."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 17
+    }
+  },
+  {
+    "districtCode": "1706230",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Qorako'l tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1706232",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Qorovulbozor tuman"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1706240",
+    "regionCode": "1706",
+    "nameLatin": [],
+    "nameCyrillic": [
+      "Пешку т."
+    ],
+    "regionNames": [
+      "Buxoro"
+    ],
+    "sources": [
+      "bogcha"
+    ],
+    "objectCount": {
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1706242",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Romitan tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1706246",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Jondor tumani"
+    ],
+    "nameCyrillic": [
+      "Жондор т."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1706258",
+    "regionCode": "1706",
+    "nameLatin": [],
+    "nameCyrillic": [
+      "Шофиркон т."
+    ],
+    "regionNames": [
+      "Buxoro"
+    ],
+    "sources": [
+      "bogcha"
+    ],
+    "objectCount": {
+      "bogcha": 2
+    }
+  },
+  {
+    "districtCode": "1706401",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Buxoro shahar"
+    ],
+    "nameCyrillic": [
+      "Бухоро ш."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 4,
+      "maktab44": 15
+    }
+  },
+  {
+    "districtCode": "1706403",
+    "regionCode": "1706",
+    "nameLatin": [
+      "Kogon shahar"
+    ],
+    "nameCyrillic": [
+      "Когон ш."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Buxoro viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1708204",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Baxmal tumani"
+    ],
+    "nameCyrillic": [
+      "Бахмал т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1708209",
+    "regionCode": "1708",
+    "nameLatin": [
+      "G'allaorol tumani"
+    ],
+    "nameCyrillic": [
+      "Ғаллаорол т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1708212",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Sh.Rashidov tumani"
+    ],
+    "nameCyrillic": [
+      "Ш.Рашидов т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 7,
+      "bogcha": 1,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1708215",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Do'stlik tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2
+    }
+  },
+  {
+    "districtCode": "1708218",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Zomin tumani"
+    ],
+    "nameCyrillic": [
+      "Зомин т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1708220",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Zarbdor tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1708223",
+    "regionCode": "1708",
+    "nameLatin": [],
+    "nameCyrillic": [
+      "Мирзачўл т."
+    ],
+    "regionNames": [
+      "Jizzax"
+    ],
+    "sources": [
+      "bogcha"
+    ],
+    "objectCount": {
+      "bogcha": 2
+    }
+  },
+  {
+    "districtCode": "1708225",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Zafarobod tumani"
+    ],
+    "nameCyrillic": [
+      "Зафаробод т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1708228",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Paxtakor tumani"
+    ],
+    "nameCyrillic": [
+      "Пахтакор т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1708235",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Forish tumani"
+    ],
+    "nameCyrillic": [
+      "Фориш т."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2,
+      "maktab44": 9
+    }
+  },
+  {
+    "districtCode": "1708237",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Yangiobod tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1708401",
+    "regionCode": "1708",
+    "nameLatin": [
+      "Jizzax shahar"
+    ],
+    "nameCyrillic": [
+      "Жиззах ш."
+    ],
+    "regionNames": [
+      "Jizzax",
+      "Jizzax viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1710207",
+    "regionCode": "1710",
+    "nameLatin": [
+      "G'uzor tumani"
+    ],
+    "nameCyrillic": [
+      "Ғузор т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 5,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1710212",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Dexqonobod tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "maktab44": 33
+    }
+  },
+  {
+    "districtCode": "1710220",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Qamashi tumani"
+    ],
+    "nameCyrillic": [
+      "Қамаши т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 18
+    }
+  },
+  {
+    "districtCode": "1710224",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Qarshi tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 8,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1710229",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Koson tuman"
+    ],
+    "nameCyrillic": [
+      "Косон т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "bogcha": 4,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1710232",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Kitob tuman"
+    ],
+    "nameCyrillic": [
+      "Китоб т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 3,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1710233",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Mirishkor tuman"
+    ],
+    "nameCyrillic": [
+      "Миришкор т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1710234",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Muborak tuman"
+    ],
+    "nameCyrillic": [
+      "Муборак т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1710235",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Nishon tuman"
+    ],
+    "nameCyrillic": [
+      "Нишон т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1710237",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Kasbi tumani"
+    ],
+    "nameCyrillic": [
+      "Касби т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 4
+    }
+  },
+  {
+    "districtCode": "1710240",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Koʻkdala tuman"
+    ],
+    "nameCyrillic": [
+      "Кўк дала т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1710242",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Chiroqchi tuman"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1710245",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Shaxrisabz tumani"
+    ],
+    "nameCyrillic": [
+      "Шахрисабз т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 3,
+      "maktab44": 12
+    }
+  },
+  {
+    "districtCode": "1710250",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Yakkabog tumani"
+    ],
+    "nameCyrillic": [
+      "Яккабоғ т."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 9,
+      "maktab44": 42
+    }
+  },
+  {
+    "districtCode": "1710401",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Qarshi shahar"
+    ],
+    "nameCyrillic": [
+      "Қарши ш."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati",
+      "Toshkent sh"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 10,
+      "bogcha": 9
+    }
+  },
+  {
+    "districtCode": "1710405",
+    "regionCode": "1710",
+    "nameLatin": [
+      "Shahrisabz shahar"
+    ],
+    "nameCyrillic": [
+      "Шахрисабз ш."
+    ],
+    "regionNames": [
+      "Qashqadaryo",
+      "Qashqadaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 5,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1712211",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Konimex tumani"
+    ],
+    "nameCyrillic": [
+      "Конимех т."
+    ],
+    "regionNames": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1712216",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Qiziltepa tumani"
+    ],
+    "nameCyrillic": [
+      "Қизилтепа т."
+    ],
+    "regionNames": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1712230",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Navbaxor tumani"
+    ],
+    "nameCyrillic": [
+      "Навбахор т."
+    ],
+    "regionNames": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1712234",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Karmana tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1712238",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Nurota tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1712244",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Tomdi tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1712251",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Xatirchi tumani"
+    ],
+    "nameCyrillic": [
+      "Хатирчи т."
+    ],
+    "regionNames": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 16
+    }
+  },
+  {
+    "districtCode": "1712401",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Navoiy shahar"
+    ],
+    "nameCyrillic": [
+      "Навоий ш."
+    ],
+    "regionNames": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1712408",
+    "regionCode": "1712",
+    "nameLatin": [
+      "Zarafshon shahar"
+    ],
+    "nameCyrillic": [
+      "Зарафшон ш."
+    ],
+    "regionNames": [
+      "Navoiy",
+      "Navoiy viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2
+    }
+  },
+  {
+    "districtCode": "1714204",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Mingbuloq tumani"
+    ],
+    "nameCyrillic": [
+      "Мингбулоқ т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1714207",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Kosonsoy tumani"
+    ],
+    "nameCyrillic": [
+      "Косонсой т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 7,
+      "bogcha": 1,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1714212",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Namangan tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1714216",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Norin tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1714219",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Pop tumani"
+    ],
+    "nameCyrillic": [
+      "Поп т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 5,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1714224",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Turaqurgon tumani"
+    ],
+    "nameCyrillic": [
+      "Тўрақўрғон т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "bogcha": 6,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1714234",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Uchqurgon tumani"
+    ],
+    "nameCyrillic": [
+      "Учқўрғон т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 5,
+      "maktab44": 10
+    }
+  },
+  {
+    "districtCode": "1714236",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Chortoq tumani"
+    ],
+    "nameCyrillic": [
+      "Чортоқ т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1714237",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Chust tumani"
+    ],
+    "nameCyrillic": [
+      "Чуст т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 3,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1714242",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Yangiqo'rg'on tumani"
+    ],
+    "nameCyrillic": [
+      "Янгиқўрғон т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 4,
+      "maktab44": 26
+    }
+  },
+  {
+    "districtCode": "1714401",
+    "regionCode": "1714",
+    "nameLatin": [
+      "Namangan shahar"
+    ],
+    "nameCyrillic": [
+      "Давлатобод т."
+    ],
+    "regionNames": [
+      "Namangan",
+      "Namangan viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 3,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1718203",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Oqdaryo tumani"
+    ],
+    "nameCyrillic": [
+      "Оқдарё т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 4,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1718206",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Bulung‘ur tumani"
+    ],
+    "nameCyrillic": [
+      "Булунғур т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1718209",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Jomboy tuman"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1718212",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Ishtixon tumani"
+    ],
+    "nameCyrillic": [
+      "Иштиҳон т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1718215",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Kattaqoʼrgʼon tumani"
+    ],
+    "nameCyrillic": [
+      "Каттақўрғон т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 4,
+      "maktab44": 15
+    }
+  },
+  {
+    "districtCode": "1718216",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Qo`shrabot tumani"
+    ],
+    "nameCyrillic": [
+      "Қўшрабод т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 1,
+      "maktab44": 20
+    }
+  },
+  {
+    "districtCode": "1718218",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Narpay tuman"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1718224",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Payariq tumani"
+    ],
+    "nameCyrillic": [
+      "Пайариқ т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2,
+      "maktab44": 11
+    }
+  },
+  {
+    "districtCode": "1718227",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Pastdarg'om tumani"
+    ],
+    "nameCyrillic": [
+      "Пастдарғом т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 2,
+      "maktab44": 10
+    }
+  },
+  {
+    "districtCode": "1718230",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Paxtachi tumani"
+    ],
+    "nameCyrillic": [
+      "Пахтачи т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1718233",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Samarqand tuman"
+    ],
+    "nameCyrillic": [
+      "Самарқанд т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 4,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1718235",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Nurobod tumani"
+    ],
+    "nameCyrillic": [
+      "Нуробод т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 22
+    }
+  },
+  {
+    "districtCode": "1718236",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Urgut tumani"
+    ],
+    "nameCyrillic": [
+      "Ургут т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1718238",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Toyloq tuman"
+    ],
+    "nameCyrillic": [
+      "Тойлоқ т."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1718401",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Samarqand shahar"
+    ],
+    "nameCyrillic": [
+      "Самарқанд ш."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 8,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1718406",
+    "regionCode": "1718",
+    "nameLatin": [
+      "Kattaqo‘rg‘on shahar"
+    ],
+    "nameCyrillic": [
+      "Каттақўрғон ш."
+    ],
+    "regionNames": [
+      "Samarqand",
+      "Samarqand viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 9
+    }
+  },
+  {
+    "districtCode": "1722201",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Oltinsoy tumani"
+    ],
+    "nameCyrillic": [
+      "Олтинсой т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1722202",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Angor tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1722203",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Bandixon tumani"
+    ],
+    "nameCyrillic": [
+      "Бандихон т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1722204",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Boysun tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1722207",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Muzrabot tumani"
+    ],
+    "nameCyrillic": [
+      "Музрабод т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1722210",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Denov tumani"
+    ],
+    "nameCyrillic": [
+      "Денов т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 12,
+      "bogcha": 6,
+      "maktab44": 27
+    }
+  },
+  {
+    "districtCode": "1722212",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Jarqo`rg`on tumani"
+    ],
+    "nameCyrillic": [
+      "Жарқўрғон т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 2,
+      "maktab44": 10
+    }
+  },
+  {
+    "districtCode": "1722214",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Qumqo`rg`on tumani"
+    ],
+    "nameCyrillic": [
+      "Қумқўрғон т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1722215",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Qiziriq tumani"
+    ],
+    "nameCyrillic": [
+      "Қизириқ т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 2,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1722217",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Sariosiyo tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 12
+    }
+  },
+  {
+    "districtCode": "1722220",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Termiz tumani"
+    ],
+    "nameCyrillic": [
+      "Термиз т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 2,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1722221",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Uzun tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 9
+    }
+  },
+  {
+    "districtCode": "1722223",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Sherobod tumani"
+    ],
+    "nameCyrillic": [
+      "Шеробод т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 2,
+      "maktab44": 10
+    }
+  },
+  {
+    "districtCode": "1722226",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Sho`rchi tumani"
+    ],
+    "nameCyrillic": [
+      "Шўрчи т."
+    ],
+    "regionNames": [
+      "Surhondaryo",
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 1,
+      "maktab44": 23
+    }
+  },
+  {
+    "districtCode": "1722401",
+    "regionCode": "1722",
+    "nameLatin": [
+      "Termiz shahar"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Surxondaryo viloyati"
+    ],
+    "sources": [
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3
+    }
+  },
+  {
+    "districtCode": "1724206",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Oqoltin tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1724212",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Boyovut tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 12
+    }
+  },
+  {
+    "districtCode": "1724216",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Sayxunobod tumani"
+    ],
+    "nameCyrillic": [
+      "Сайхунобод т."
+    ],
+    "regionNames": [
+      "Sirdaryo",
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1724220",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Guliston tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1724226",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Sardoba tumani"
+    ],
+    "nameCyrillic": [
+      "Сардоба т."
+    ],
+    "regionNames": [
+      "Sirdaryo",
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1724228",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Mirzaobod tumani"
+    ],
+    "nameCyrillic": [
+      "Мирзаобод т."
+    ],
+    "regionNames": [
+      "Sirdaryo",
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1724231",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Sirdaryo tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1724235",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Xovos tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1724401",
+    "regionCode": "1724",
+    "nameLatin": [
+      "Guliston shahar"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Sirdaryo viloyati"
+    ],
+    "sources": [
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4
+    }
+  },
+  {
+    "districtCode": "1726262",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Uchtepa tumani"
+    ],
+    "nameCyrillic": [
+      "Учтепа т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1726264",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Bektemir tumani"
+    ],
+    "nameCyrillic": [
+      "Бектемир т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1726266",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Yunusobod tumani"
+    ],
+    "nameCyrillic": [
+      "Юнусобод т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 7,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1726269",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Mirzo Ulugʻbek tumani"
+    ],
+    "nameCyrillic": [
+      "М.Улугбек т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 6,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1726273",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Mirobod tumani"
+    ],
+    "nameCyrillic": [
+      "Миробод т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1726277",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Shayxontoxur tumani"
+    ],
+    "nameCyrillic": [
+      "Шайхонтохур т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1726280",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Olmazor tumani"
+    ],
+    "nameCyrillic": [
+      "Олмазор т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 4,
+      "maktab44": 13
+    }
+  },
+  {
+    "districtCode": "1726283",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Sergeli tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1726287",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Yakkasaroy tumani"
+    ],
+    "nameCyrillic": [
+      "Яккасарой т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1726290",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Yashnobod tumani"
+    ],
+    "nameCyrillic": [
+      "Яшнобод т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1726292",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Yangihayot tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1726294",
+    "regionCode": "1726",
+    "nameLatin": [
+      "Chilonzor tumani"
+    ],
+    "nameCyrillic": [
+      "Чилонзор т."
+    ],
+    "regionNames": [
+      "Toshkent sh",
+      "Toshkent shahar"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 6,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1727206",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Oqqo`rg`on tumani"
+    ],
+    "nameCyrillic": [
+      "Оққўрғон т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 14
+    }
+  },
+  {
+    "districtCode": "1727212",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Ohangaron tumani"
+    ],
+    "nameCyrillic": [
+      "Оҳангарон т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 4,
+      "maktab44": 11
+    }
+  },
+  {
+    "districtCode": "1727220",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Bekobod tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1727224",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Boʻstonliq tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 29
+    }
+  },
+  {
+    "districtCode": "1727228",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Boʻka tumani"
+    ],
+    "nameCyrillic": [
+      "Бўка т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 25
+    }
+  },
+  {
+    "districtCode": "1727233",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Quyichirchiq tumani"
+    ],
+    "nameCyrillic": [
+      "Қуйи-чирчиқ т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1727237",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Zangiota tumani"
+    ],
+    "nameCyrillic": [
+      "Зангиота т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1727239",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Yuqorichirchiq tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2
+    }
+  },
+  {
+    "districtCode": "1727248",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Qibray tumani"
+    ],
+    "nameCyrillic": [
+      "Қибрай т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 3,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1727249",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Parkent tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 7,
+      "maktab44": 22
+    }
+  },
+  {
+    "districtCode": "1727250",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Piskent tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 24
+    }
+  },
+  {
+    "districtCode": "1727253",
+    "regionCode": "1727",
+    "nameLatin": [
+      "O'rtachirchiq tumani"
+    ],
+    "nameCyrillic": [
+      "Ўрта-чирчиқ т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "bogcha": 6,
+      "maktab44": 16
+    }
+  },
+  {
+    "districtCode": "1727256",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Chinoz tuman"
+    ],
+    "nameCyrillic": [
+      "Чиноз т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "bogcha": 4,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1727259",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Yangiyo'l tumani"
+    ],
+    "nameCyrillic": [
+      "Янгийўл т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 34
+    }
+  },
+  {
+    "districtCode": "1727265",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Toshkent tumani"
+    ],
+    "nameCyrillic": [
+      "Тошкент т."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 3,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1727401",
+    "regionCode": "1727",
+    "nameLatin": [],
+    "nameCyrillic": [
+      "Нурафшон ш."
+    ],
+    "regionNames": [
+      "Toshkent"
+    ],
+    "sources": [
+      "bogcha"
+    ],
+    "objectCount": {
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1727404",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Olmaliq Shahar"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 20
+    }
+  },
+  {
+    "districtCode": "1727407",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Angren shahar"
+    ],
+    "nameCyrillic": [
+      "Ангрен ш."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 5,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1727413",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Bekobod shahar"
+    ],
+    "nameCyrillic": [
+      "Бекобод ш."
+    ],
+    "regionNames": [
+      "Toshkent",
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 4,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1727419",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Chirchiq shahar"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "maktab44": 10
+    }
+  },
+  {
+    "districtCode": "1727424",
+    "regionCode": "1727",
+    "nameLatin": [
+      "Yangiyo'l shahar"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Toshkent viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1730203",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Oltiariq tumani"
+    ],
+    "nameCyrillic": [
+      "Олтиариқ т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1730206",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Qo'shtepa tumani"
+    ],
+    "nameCyrillic": [
+      "Қўштепа т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 6,
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1730209",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Bag'dod tumani"
+    ],
+    "nameCyrillic": [
+      "Боғдод т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1730212",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Buvayda tumani"
+    ],
+    "nameCyrillic": [
+      "Бувайда т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 3,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1730215",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Beshariq tumani"
+    ],
+    "nameCyrillic": [
+      "Бешариқ т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 4,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1730218",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Quva tumani"
+    ],
+    "nameCyrillic": [
+      "Қува т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 5,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1730221",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Uchko'prik tumani"
+    ],
+    "nameCyrillic": [
+      "Учкўприк т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 2,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1730224",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Rishton tumani"
+    ],
+    "nameCyrillic": [
+      "Риштон т."
+    ],
+    "regionNames": [
+      "Buxoro",
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 5
+    },
+    "note": "Одна запись bogcha (Ромитан т., Бухарская область) ошибочно несёт этот код. Ромитан относится к региону 1706. Название убрано из справочника, чтобы импорт помечал такие записи флагом district_name_mismatch, а не поглощал ошибку."
+  },
+  {
+    "districtCode": "1730226",
+    "regionCode": "1730",
+    "nameLatin": [
+      "So`x tumani"
+    ],
+    "nameCyrillic": [
+      "Сўх т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1730227",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Toshloq tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Farg'ona viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1730230",
+    "regionCode": "1730",
+    "nameLatin": [
+      "O'zbekiston tumani"
+    ],
+    "nameCyrillic": [
+      "Ўзбекистон т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 2,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1730233",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Farg'ona tumani"
+    ],
+    "nameCyrillic": [
+      "Фарғона т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 2,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1730236",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Dang'ara tumani"
+    ],
+    "nameCyrillic": [
+      "Данғара т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1730238",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Furqat tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Farg'ona viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1730242",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Yozyovon tumani"
+    ],
+    "nameCyrillic": [
+      "Ёзёвон т."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 3,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1730401",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Farg'ona shahar"
+    ],
+    "nameCyrillic": [
+      "Фарғона ш."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 9,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1730405",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Qo'qon shahar"
+    ],
+    "nameCyrillic": [
+      "Қуқон ш."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 7,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1730408",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Quvasoy shahar"
+    ],
+    "nameCyrillic": [
+      "Қувасой ш."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1730412",
+    "regionCode": "1730",
+    "nameLatin": [
+      "Marg'ilon shahar"
+    ],
+    "nameCyrillic": [
+      "Марғилон ш."
+    ],
+    "regionNames": [
+      "Farg'ona viloyati",
+      "Fargona"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 3,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1733204",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Bog‘ot tumani"
+    ],
+    "nameCyrillic": [
+      "Боғот т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 2,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1733208",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Gurlan tumani"
+    ],
+    "nameCyrillic": [
+      "Гурлан т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 5,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1733212",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Qo‘shko‘pir tumani"
+    ],
+    "nameCyrillic": [
+      "Қўшкўпир т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 1,
+      "maktab44": 10
+    }
+  },
+  {
+    "districtCode": "1733217",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Urganch tumani"
+    ],
+    "nameCyrillic": [
+      "Урганч т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 4,
+      "bogcha": 1,
+      "maktab44": 9
+    }
+  },
+  {
+    "districtCode": "1733220",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Hazorasp tumani"
+    ],
+    "nameCyrillic": [
+      "Ҳазорасп т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1733221",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Tuproqqa’la tumani"
+    ],
+    "nameCyrillic": [
+      "Тупроққалъа т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 2,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1733223",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Xonqa tumani"
+    ],
+    "nameCyrillic": [
+      "Хонқа т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 2
+    }
+  },
+  {
+    "districtCode": "1733226",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Xiva tumani"
+    ],
+    "nameCyrillic": [
+      "Хива т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 3
+    }
+  },
+  {
+    "districtCode": "1733230",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Shovot tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1733233",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Yangiariq tumani"
+    ],
+    "nameCyrillic": [
+      "Янгиариқ т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 2,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1733236",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Yangibozor tumani"
+    ],
+    "nameCyrillic": [
+      "Янгибозор т."
+    ],
+    "regionNames": [
+      "Xorazm",
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1733401",
+    "regionCode": "1733",
+    "nameLatin": [],
+    "nameCyrillic": [
+      "Урганч ш."
+    ],
+    "regionNames": [
+      "Xorazm"
+    ],
+    "sources": [
+      "bogcha"
+    ],
+    "objectCount": {
+      "bogcha": 4
+    }
+  },
+  {
+    "districtCode": "1733406",
+    "regionCode": "1733",
+    "nameLatin": [
+      "Xiva shahri"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Xorazm viloyati"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1735204",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Amudaryo tumani"
+    ],
+    "nameCyrillic": [
+      "Амударё т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 2,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1735207",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Beruniy tumani"
+    ],
+    "nameCyrillic": [
+      "Беруний т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 6,
+      "maktab44": 31
+    }
+  },
+  {
+    "districtCode": "1735209",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Bo'zatov tumani"
+    ],
+    "nameCyrillic": [
+      "Бозатау т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 1
+    }
+  },
+  {
+    "districtCode": "1735211",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Qorao‘zak tumani"
+    ],
+    "nameCyrillic": [
+      "Қораўзак т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 6
+    }
+  },
+  {
+    "districtCode": "1735212",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Kegeyli tumani"
+    ],
+    "nameCyrillic": [
+      "Кегейли т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1735215",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Qo'ng'irot tumani"
+    ],
+    "nameCyrillic": [
+      "Қўнғирот т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 5,
+      "bogcha": 2,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1735218",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Qonliko‘l tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1735222",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Mo‘ynoq tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "maktab44": 4
+    }
+  },
+  {
+    "districtCode": "1735225",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Nukus tumani"
+    ],
+    "nameCyrillic": [
+      "Нукус т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 4,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1735228",
+    "regionCode": "1735",
+    "nameLatin": [],
+    "nameCyrillic": [
+      "Тахиатош т."
+    ],
+    "regionNames": [
+      "QR"
+    ],
+    "sources": [
+      "bogcha"
+    ],
+    "objectCount": {
+      "bogcha": 1
+    }
+  },
+  {
+    "districtCode": "1735230",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Taxtako‘pir tumani"
+    ],
+    "nameCyrillic": [],
+    "regionNames": [
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "maktab44"
+    ],
+    "objectCount": {
+      "maktab44": 2
+    }
+  },
+  {
+    "districtCode": "1735233",
+    "regionCode": "1735",
+    "nameLatin": [
+      "To‘rtko‘l tumani"
+    ],
+    "nameCyrillic": [
+      "Тўрткўл т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 3,
+      "bogcha": 1,
+      "maktab44": 5
+    }
+  },
+  {
+    "districtCode": "1735236",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Xo‘jayli tumani"
+    ],
+    "nameCyrillic": [
+      "Хўжайли т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 8
+    }
+  },
+  {
+    "districtCode": "1735240",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Chimboy tumani"
+    ],
+    "nameCyrillic": [
+      "Чимбой т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 2,
+      "bogcha": 6,
+      "maktab44": 11
+    }
+  },
+  {
+    "districtCode": "1735243",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Shumanay tumani"
+    ],
+    "nameCyrillic": [
+      "Шуманай т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 7
+    }
+  },
+  {
+    "districtCode": "1735250",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Ellikqal'a tumani"
+    ],
+    "nameCyrillic": [
+      "Элликқала т."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44"
+    ],
+    "objectCount": {
+      "bogcha": 1,
+      "maktab44": 3
+    }
+  },
+  {
+    "districtCode": "1735401",
+    "regionCode": "1735",
+    "nameLatin": [
+      "Nukus shahar"
+    ],
+    "nameCyrillic": [
+      "Нукус ш."
+    ],
+    "regionNames": [
+      "QR",
+      "Qoraqolpog'iston Respublikasi"
+    ],
+    "sources": [
+      "bogcha",
+      "maktab44",
+      "ssv"
+    ],
+    "objectCount": {
+      "ssv": 1,
+      "bogcha": 6,
+      "maktab44": 1
+    }
+  }
+]

@@ -65,7 +65,7 @@ const CROSSWALK_FILE = path.join(DATA_DIR, 'district-crosswalk.json');
 // regionsByNorm:  Map<normalizedViloyat, regionCode>
 // districtsByRegion: Map<regionCode, Array<{ normName, lat, lng, _id }>>
 //
-// Scoping district lookup by regionCode is critical — there are districts
+// Scoping district lookup by regionCode is critical - there are districts
 // with identical names in different regions (e.g. "Shahrisabz" exists in
 // multiple oblasts).
 
@@ -120,7 +120,7 @@ async function buildCaches() {
 // The crosswalk file lists every district code observed in the source data with
 // both its Latin and Cyrillic spellings. Matching a code to the District
 // collection still needs names, because District rows come from crop.agro.uz and
-// carry no SOATO code — but it happens 198 times at startup instead of once per
+// carry no SOATO code - but it happens 198 times at startup instead of once per
 // record, and it has both spellings to try instead of one.
 
 function loadCrosswalk() {
@@ -205,7 +205,7 @@ function resolveByCode(row, crosswalk, codeToDistrict) {
         return { error: 'code_unknown', code, flags };
     }
 
-    // Consistency check only — never overrides the code.
+    // Consistency check only - never overrides the code.
     const tumanKey = normalizeUzName(row.tuman);
     if (tumanKey && !bound.nameKeys.includes(tumanKey)) {
         const near = bound.nameKeys.some(n => n.startsWith(tumanKey) || tumanKey.startsWith(n));
@@ -494,7 +494,7 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
         }
 
         if (dryRun) {
-            console.log(`  🔍 Dry run — would upsert ${bulkOps.length} records`);
+            console.log(`  🔍 Dry run - would upsert ${bulkOps.length} records`);
             totals.upserted += bulkOps.length;
             continue;
         }
@@ -511,7 +511,7 @@ export async function importObjects({ source = null, dryRun = false, strict = fa
         console.log(`  ✅ ${key}: ${done} upserted`);
     }
 
-    console.log(`\n✅ Import complete — ${totals.upserted} upserted, ${totals.skipped} rejected (${totals.noDistrict} unresolved district)`);
+    console.log(`\n✅ Import complete - ${totals.upserted} upserted, ${totals.skipped} rejected (${totals.noDistrict} unresolved district)`);
 
     if (strict && totals.skipped > 0) {
         throw new Error(`strict mode: ${totals.skipped} records rejected`);
@@ -529,10 +529,10 @@ async function main() {
     const srcArg = args.find(a => a.startsWith('--source='))?.split('=')[1] || null;
 
     console.log('═══════════════════════════════════════');
-    console.log('  Object Import — local JSON files');
+    console.log('  Object Import - local JSON files');
     console.log('═══════════════════════════════════════');
-    if (dryRun) console.log('  DRY RUN — no writes');
-    if (strict) console.log('  STRICT — non-zero exit if anything is rejected');
+    if (dryRun) console.log('  DRY RUN - no writes');
+    if (strict) console.log('  STRICT - non-zero exit if anything is rejected');
     if (srcArg) console.log(`  Source filter: ${srcArg}`);
 
     const mongoUri = process.env.MONGODB_URI;

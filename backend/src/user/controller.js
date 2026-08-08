@@ -138,7 +138,7 @@ export const getUserActivity = async (req, res) => {
 };
 
 // ── GET /api/users/me/activity ────────────────────────────────────────────────
-// Own profile — uses JWT userId, no adminOnly required
+// Own profile - uses JWT userId, no adminOnly required
 export const getMyActivity = async (req, res) => {
     const userId = new mongoose.Types.ObjectId(req.user._id);
 
@@ -206,7 +206,7 @@ export const getMyActivity = async (req, res) => {
 };
 
 // ── GET /api/users/leaderboard ────────────────────────────────────────────────
-// Top 50 citizens by points — public within authenticated users
+// Top 50 citizens by points - public within authenticated users
 export const getLeaderboard = async (req, res) => {
     const users = await User.find({ role: 'CITIZEN', blocked: false })
         .select('-password')

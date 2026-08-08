@@ -15,9 +15,9 @@ export const validateEnv = () => {
         missing.forEach(varName => console.error(`   - ${varName}`));
         process.exit(1);
     }
-    // Опциональные — предупреждение, но не падаем
+    // Опциональные - предупреждение, но не падаем
     if (!process.env.GEMINI_API_KEY) {
-        console.warn('⚠️  GEMINI_API_KEY not set — AI analysis endpoint will return 503');
+        console.warn('⚠️  GEMINI_API_KEY not set - AI analysis endpoint will return 503');
     }
     console.log('✅ Environment variables validated');
 };

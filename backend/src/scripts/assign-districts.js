@@ -179,7 +179,7 @@ async function main() {
         for (const [name, r] of Object.entries(results)) {
             console.log(`  ${name}: ${r.assigned}/${r.total} assigned (${r.failed} failed)`);
         }
-        if (options.dryRun) console.log('\n  ⚠ DRY RUN — no changes were written');
+        if (options.dryRun) console.log('\n  ⚠ DRY RUN - no changes were written');
         console.log('═══════════════════════════════════════\n');
 
     } catch (err) {

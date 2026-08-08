@@ -1,5 +1,5 @@
 // bot/bot.js
-// Y.Map Telegram Bot — создание обращений через Grammy
+// Y.Map Telegram Bot - создание обращений через Grammy
 // npm install grammy @google/genai axios dotenv
 
 import 'dotenv/config';
@@ -31,7 +31,7 @@ async function ensureToken() {
     return authToken;
 }
 
-// ── Gemini — точно такой же промпт и схема как в geminiService.ts ──────────────
+// ── Gemini - точно такой же промпт и схема как в geminiService.ts ──────────────
 
 async function analyzeWithGemini(description, token) {
     const { data } = await axios.post(
@@ -111,7 +111,7 @@ bot.on('message', async (ctx) => {
     if (ctx.message.text === '🔄 Новое обращение') {
         ctx.session = { step: 'waiting_desc', description: null, lat: null, lng: null, analysis: null };
         return ctx.reply(
-            `📝 *Опишите проблему*\n\nРасскажите подробно что произошло — Gemini AI автоматически определит категорию и серьёзность\\.`,
+            `📝 *Опишите проблему*\n\nРасскажите подробно что произошло - Gemini AI автоматически определит категорию и серьёзность\\.`,
             { parse_mode: 'MarkdownV2', reply_markup: { remove_keyboard: true } }
         );
     }

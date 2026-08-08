@@ -12,7 +12,7 @@ router.use(adminOnly);
 router.get('/users', adminGetUsers);
 router.patch('/users/:id/block', adminBlockUser);
 
-// Object sync — triggers background fetch from all duasr.uz endpoints
+// Object sync - triggers background fetch from all duasr.uz endpoints
 router.post('/sync-objects', syncObjects);
 router.get('/jobs/:jobId', getJobStatus);
 

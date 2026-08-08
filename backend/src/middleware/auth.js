@@ -40,7 +40,7 @@ export const authMiddleware = async (req, res, next) => {
             }
         }
 
-        // Attach minimal user object from JWT claims — no DB needed
+        // Attach minimal user object from JWT claims - no DB needed
         req.user = {
             id: decoded.userId,
             _id: decoded.userId,

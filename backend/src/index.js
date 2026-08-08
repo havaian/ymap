@@ -70,7 +70,7 @@ const adminLimiter = rateLimit({
     legacyHeaders: false
 });
 
-// Gzip — cuts response size by 70-80%
+// Gzip - cuts response size by 70-80%
 app.use(compression());
 
 // ── Body parsing ──────────────────────────────────────────────────────────────
@@ -91,10 +91,10 @@ app.get('/health', (req, res) => {
 // ── Public routes ─────────────────────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
 
-// ── AI (Gemini proxy) — авторизованные пользователи ──────────────────────────
+// ── AI (Gemini proxy) - авторизованные пользователи ──────────────────────────
 app.use('/api/ai', apiLimiter, aiRoutes);
 
-// Map data — read is public, writes are protected inside each route file
+// Map data - read is public, writes are protected inside each route file
 app.use('/api/issues', apiLimiter, issueRoutes);
 app.use('/api/objects', apiLimiter, objectRoutes);
 
@@ -102,11 +102,11 @@ app.use('/api/objects', apiLimiter, objectRoutes);
 app.use('/api/users', apiLimiter, authMiddleware, userRoutes);
 app.use('/api/votes', apiLimiter, authMiddleware, voteRoutes);
 
-// Tasks & budget allocations — read: authenticated, write: admin only
+// Tasks & budget allocations - read: authenticated, write: admin only
 app.use('/api/tasks', apiLimiter, taskRoutes);
 app.use('/api/allocations', apiLimiter, allocationRoutes);
 
-// Programs — read: authenticated, write: admin only
+// Programs - read: authenticated, write: admin only
 app.use('/api/programs', apiLimiter, programRoutes);
 
 // ── Admin routes ──────────────────────────────────────────────────────────────
@@ -116,11 +116,11 @@ app.use('/api/programs', apiLimiter, programRoutes);
 // ── Analytics (Этап 10: админ-гейт снят → публичная аналитика; старая защита в комментарии) ──
 app.use('/api/analytics', apiLimiter, /* strictAuthMiddleware, adminOnly, */ analyticsRoutes);
 
-// ── Region & District (public — map GeoJSON + dropdowns) ─────────────────────
+// ── Region & District (public - map GeoJSON + dropdowns) ─────────────────────
 app.use('/api/regions', apiLimiter, /* authMiddleware, */ regionRoutes);
 app.use('/api/districts', apiLimiter, /* authMiddleware, */ districtRoutes);
 
-// ── Markers (public — map pins) ───────────────────────────────────────────────
+// ── Markers (public - map pins) ───────────────────────────────────────────────
 app.use('/api/markers', apiLimiter, /* authMiddleware, */ markerRoutes);
 
 // ── Open Budget (public) ──────────────────────────────────────────────────────

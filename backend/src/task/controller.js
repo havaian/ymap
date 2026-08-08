@@ -265,7 +265,7 @@ export const uploadPhoto = async (req, res) => {
 
 // ── POST /api/tasks/:id/verify ────────────────────────────────────────────────
 // Citizen submits done ✓ or problem ✗ with optional photo + comment.
-// Only userId is stored — no userName needed (authMiddleware doesn't provide name).
+// Only userId is stored - no userName needed (authMiddleware doesn't provide name).
 export const verify = async (req, res) => {
     try {
         const { id } = req.params;

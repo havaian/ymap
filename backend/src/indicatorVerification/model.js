@@ -50,7 +50,7 @@ const indicatorVerificationSchema = new mongoose.Schema({
 });
 
 indicatorVerificationSchema.index({ objectId: 1, field: 1 });
-// Один пользователь — одна верификация на поле объекта
+// Один пользователь - одна верификация на поле объекта
 indicatorVerificationSchema.index({ objectId: 1, field: 1, userId: 1 }, { unique: true });
 
 export default mongoose.model('IndicatorVerification', indicatorVerificationSchema);

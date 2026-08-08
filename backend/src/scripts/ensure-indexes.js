@@ -2,7 +2,7 @@
  * backend/src/scripts/ensure-indexes.js
  *
  * Creates compound indexes that the analytics aggregation pipelines need.
- * Safe to run multiple times — MongoDB skips existing indexes.
+ * Safe to run multiple times - MongoDB skips existing indexes.
  *
  * Usage:
  *   docker compose exec backend node src/scripts/ensure-indexes.js

@@ -11,7 +11,7 @@ import { adminOnly } from '../middleware/adminOnly.js';
 
 const router = express.Router();
 
-// GET is available to all authenticated users — citizens need to see allocations in sidebars
+// GET is available to all authenticated users - citizens need to see allocations in sidebars
 router.get('/', authMiddleware, getAllocations);
 
 // Write operations are admin-only

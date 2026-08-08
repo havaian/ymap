@@ -49,15 +49,15 @@ export const submit = async (req, res) => {
         if (rating !== undefined && (rating < 1 || rating > 5))
             return res.status(400).json({ success: false, message: 'rating must be 1-5' });
 
-        // upsert — пользователь может изменить своё мнение
+        // upsert - пользователь может изменить своё мнение
         await IndicatorVerification.findOneAndUpdate(
             { objectId: id, field, userId: req.user._id },
             { status, rating: rating || null, comment: comment || null },
             { upsert: true, new: true }
         );
 
-        // +1 балл пользователю (только при первом сабмите — upsert отслеживает)
-        // Используем $inc безопасно, если поле points не существует — создастся
+        // +1 балл пользователю (только при первом сабмите - upsert отслеживает)
+        // Используем $inc безопасно, если поле points не существует - создастся
         await User.findByIdAndUpdate(req.user._id, { $inc: { points: 1 } });
 
         // Возвращаем обновлённую агрегацию по этому полю

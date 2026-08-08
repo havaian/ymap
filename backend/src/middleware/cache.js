@@ -36,7 +36,7 @@ export const cacheMiddleware = (ttl = DEFAULT_TTL, prefix = 'cache') => {
                 return res.json(parsed);
             }
         } catch (err) {
-            // Redis error — continue without cache
+            // Redis error - continue without cache
             console.warn('Redis cache read error:', err.message);
         }
 

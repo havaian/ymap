@@ -94,7 +94,7 @@ export const getIssue = async (req, res) => {
 
 /**
  * POST /api/issues
- * Citizens only — admin is blocked by the citizenOnly middleware on the route.
+ * Citizens only - admin is blocked by the citizenOnly middleware on the route.
  */
 export const createIssue = async (req, res) => {
     const {
@@ -178,7 +178,7 @@ export const createIssue = async (req, res) => {
 };
 
 /**
- * PATCH /api/issues/:id — admin only (status update)
+ * PATCH /api/issues/:id - admin only (status update)
  */
 export const updateIssue = async (req, res) => {
     const { id } = req.params;
@@ -197,7 +197,7 @@ export const updateIssue = async (req, res) => {
 };
 
 /**
- * DELETE /api/issues/:id — admin only
+ * DELETE /api/issues/:id - admin only
  */
 export const deleteIssue = async (req, res) => {
     const issue = await Issue.findByIdAndDelete(req.params.id);

@@ -4,10 +4,10 @@
 // Query: ?metric=composite|issues|objects|verification&regionCode=17
 //
 // Metrics:
-//   composite    — weighted: issue pressure 40% + verification rate 35% + object density 25%
-//   issues       — open-issue pressure per district (lower open = greener)
-//   objects      — facility object count density per km²
-//   verification — % of task verifications marked "done"
+//   composite    - weighted: issue pressure 40% + verification rate 35% + object density 25%
+//   issues       - open-issue pressure per district (lower open = greener)
+//   objects      - facility object count density per km²
+//   verification - % of task verifications marked "done"
 // ─────────────────────────────────────────────
 
 export const getChoropleth = async (req, res) => {
@@ -142,7 +142,7 @@ export const getChoropleth = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // GET /api/analytics/districts/:id
-// Deep-dive for a single district — used by DistrictDrilldown panel
+// Deep-dive for a single district - used by DistrictDrilldown panel
 // ─────────────────────────────────────────────
 
 export const getDistrictDetail = async (req, res) => {

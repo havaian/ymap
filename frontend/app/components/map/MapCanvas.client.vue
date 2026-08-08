@@ -180,7 +180,7 @@ const renderChoropleth = async () => {
         fillOpacity: 0.5,
       }),
       onEachFeature: (f: any, lyr: L.Layer) => {
-        const name = f.properties?.name?.ru || f.properties?.name?.uz || f.properties?.name?.en || '—'
+        const name = f.properties?.name?.ru || f.properties?.name?.uz || f.properties?.name?.en || '-'
         const score = f.properties?.value ?? 0
         ;(lyr as L.Path).bindTooltip(
           `<div style="font-family:system-ui;font-size:12px;"><strong>${escapeHtml(name)}</strong><br/><span style="font-size:18px;font-weight:900;color:${scoreColor(score)}">${score}</span><span style="font-size:10px;color:#94a3b8;"> / 100</span></div>`,

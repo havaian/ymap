@@ -53,7 +53,7 @@ export const getRegionByCode = async (req, res) => {
     });
 };
 
-// GET /api/regions/geojson — full GeoJSON FeatureCollection for map rendering
+// GET /api/regions/geojson - full GeoJSON FeatureCollection for map rendering
 export const getRegionsGeoJSON = async (req, res) => {
     const regions = await Region.find().lean();
 

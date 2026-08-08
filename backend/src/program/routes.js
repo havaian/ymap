@@ -11,12 +11,12 @@ import { adminOnly } from '../middleware/adminOnly.js';
 
 const router = Router();
 
-// Authenticated reads — citizens can browse programs
+// Authenticated reads - citizens can browse programs
 router.get('/', authMiddleware, getPrograms);
 router.get('/:id', authMiddleware, getProgram);
 router.get('/:id/objects', authMiddleware, getProgramObjects);
 
-// Public analytics — no auth required
+// Public analytics - no auth required
 router.get('/:id/task-analytics', getProgramTaskAnalytics);
 
 // Admin writes

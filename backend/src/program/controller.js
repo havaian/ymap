@@ -83,7 +83,7 @@ export const createProgram = async (req, res) => {
         createdBy: req.user._id
     });
 
-    // Если указан бюджет — сразу создать аллокацию на программу
+    // Если указан бюджет - сразу создать аллокацию на программу
     if (totalBudget) {
         await BudgetAllocation.create({
             targetType: 'program',
@@ -141,7 +141,7 @@ export const deleteProgram = async (req, res) => {
 
 // ── POST /api/programs/:id/assign-objects ──────────────────────────────────────
 // Auto-assigns objects based on program scope, then merges with any existing
-// manually-added objectIds. Idempotent — safe to re-run.
+// manually-added objectIds. Idempotent - safe to re-run.
 
 export const assignObjects = async (req, res) => {
     const { id } = req.params;
@@ -236,7 +236,7 @@ export const removeObject = async (req, res) => {
 // POST /api/programs/:id/bulk-tasks
 // Создаёт одну задачу с одинаковыми title/description/deadline
 // для каждого objectId в программе. Уже существующие задачи с тем же
-// programId + targetId + title — не дублируются.
+// programId + targetId + title - не дублируются.
 export const bulkCreateTasks = async (req, res) => {
     const { id } = req.params;
     const { title, description, deadline } = req.body;
@@ -277,7 +277,7 @@ export const bulkCreateTasks = async (req, res) => {
     res.json({ success: true, data: { created: toCreate.length, skipped: existing.length } });
 };
 
-// GET /api/programs/:id/task-analytics — публичная аналитика задач программы
+// GET /api/programs/:id/task-analytics - публичная аналитика задач программы
 // Группирует задачи по названию, считает сколько учреждений выполнили/не выполнили
 export const getProgramTaskAnalytics = async (req, res) => {
     const { id } = req.params;
@@ -318,7 +318,7 @@ export const getProgramTaskAnalytics = async (req, res) => {
             taskId: task._id.toString(),
             taskStatus: task.status,
             objectId: task.targetId?.toString(),
-            objectName: obj?.name || '—',
+            objectName: obj?.name || '-',
             objectType: obj?.objectType || null,
             tuman: obj?.tuman || null,
             doneCount,
@@ -341,7 +341,7 @@ export const getProgramTaskAnalytics = async (req, res) => {
     res.json({ success: true, data });
 };
 
-// GET /api/programs/:id/objects — объекты программы с их задачами
+// GET /api/programs/:id/objects - объекты программы с их задачами
 export const getProgramObjects = async (req, res) => {
     const { id } = req.params;
 

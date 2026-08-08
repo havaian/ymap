@@ -4,7 +4,7 @@
  * Affected districts:
  *   - Xo'jaobod tumani (Andijan, apiId 201)
  *   - Oltinko'l tumani  (Andijan, apiId 194)
- *   - Gurlan tumani     (Khorezm, apiId unknown — looked up from API)
+ *   - Gurlan tumani     (Khorezm, apiId unknown - looked up from API)
  * 
  * Usage:
  *   node src/scripts/fetch-missing-districts.js
@@ -190,7 +190,7 @@ async function main() {
     await initSession();
 
     // Find which districts are in the API but not in our DB
-    // Check Andijan (17) and Khorezm (22) — the two regions with failures
+    // Check Andijan (17) and Khorezm (22) - the two regions with failures
     const regionsToCheck = [
         { code: 17, name: 'Andijan' },
         { code: 22, name: 'Khorezm' }

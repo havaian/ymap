@@ -2,7 +2,7 @@
  * Fix EN/RU names on existing regions and districts.
  * 
  * Re-translates all name.en and name.ru fields using the updated
- * geo-translations map. Does NOT re-fetch from API — just updates names.
+ * geo-translations map. Does NOT re-fetch from API - just updates names.
  * 
  * Usage:
  *   node src/scripts/fix-names.js [--dry-run]
@@ -22,7 +22,7 @@ async function main() {
 
     console.log('═══════════════════════════════════════');
     console.log('  Fix Region & District Names');
-    if (dryRun) console.log('  ⚠ DRY RUN — no changes will be saved');
+    if (dryRun) console.log('  ⚠ DRY RUN - no changes will be saved');
     console.log('═══════════════════════════════════════\n');
 
     await mongoose.connect(process.env.MONGODB_URI);
@@ -88,7 +88,7 @@ async function main() {
     console.log(`  Regions:   ${regionFixed} fixed / ${regions.length} total`);
     console.log(`  Districts: ${districtFixed} fixed / ${districts.length} total`);
     console.log(`  Unchanged: ${unchanged}`);
-    if (dryRun) console.log('  ⚠ DRY RUN — run without --dry-run to apply');
+    if (dryRun) console.log('  ⚠ DRY RUN - run without --dry-run to apply');
     console.log('═══════════════════════════════════════\n');
 
     await mongoose.disconnect();

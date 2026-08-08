@@ -1,6 +1,6 @@
 // backend/src/services/admin-setup.js
 // Bootstraps the admin account and 5 demo citizen accounts on every server start.
-// All accounts are idempotent — safe to run repeatedly.
+// All accounts are idempotent - safe to run repeatedly.
 
 import User from '../user/model.js';
 import { hashPassword } from '../utils/bcrypt.js';
@@ -26,7 +26,7 @@ export const ensureAdminExists = async () => {
         await bootstrapAdmin();
         await bootstrapDemoCitizens();
     } catch (error) {
-        // Don't crash the server — just warn loudly
+        // Don't crash the server - just warn loudly
         console.error('❌ Account bootstrap failed:', error.message);
     }
 };
@@ -37,7 +37,7 @@ async function bootstrapAdmin() {
     const adminName = process.env.ADMIN_NAME || 'Administrator';
 
     if (!adminEmail || !adminPassword) {
-        console.warn('⚠️  DEFAULT_ADMIN_EMAIL or DEFAULT_ADMIN_PASSWORD not set — skipping admin bootstrap');
+        console.warn('⚠️  DEFAULT_ADMIN_EMAIL or DEFAULT_ADMIN_PASSWORD not set - skipping admin bootstrap');
         return;
     }
 

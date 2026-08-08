@@ -14,7 +14,7 @@ function buildContextSection(context) {
 
     if (context.tasks?.length) {
         const taskList = context.tasks
-            .map(t => `  - [ID: ${t.id}] "${t.title}" (статус: ${t.status})${t.description ? ` — ${t.description}` : ''}`)
+            .map(t => `  - [ID: ${t.id}] "${t.title}" (статус: ${t.status})${t.description ? ` - ${t.description}` : ''}`)
             .join('\n');
 
         parts.push(`
@@ -51,7 +51,7 @@ If no meaningful connection exists, return an empty array for fieldSignals.`);
     return parts.join('\n');
 }
 
-// ── Нормализация fieldSignals — AI может вернуть лейбл вместо ключа ───────────
+// ── Нормализация fieldSignals - AI может вернуть лейбл вместо ключа ───────────
 
 function normalizeFieldSignals(fieldSignals, contextFields) {
     if (!contextFields?.length) return fieldSignals ?? [];
@@ -78,9 +78,9 @@ function normalizeFieldSignals(fieldSignals, contextFields) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 /**
- * @param {string} description — текст обращения от пользователя
- * @param {{ tasks?: Array, fields?: Array }} [context] — опциональный контекст объекта
- * @returns {Promise<object>} — { title, category, subCategory, severity, summary, taskSignals?, fieldSignals? }
+ * @param {string} description - текст обращения от пользователя
+ * @param {{ tasks?: Array, fields?: Array }} [context] - опциональный контекст объекта
+ * @returns {Promise<object>} - { title, category, subCategory, severity, summary, taskSignals?, fieldSignals? }
  */
 export async function analyzeReport(description, context = {}) {
     const hasContext = (context.tasks?.length ?? 0) > 0 || (context.fields?.length ?? 0) > 0;

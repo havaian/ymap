@@ -2,7 +2,7 @@
 
 import mongoose from 'mongoose';
 
-// userName intentionally excluded — authMiddleware (fast JWT path) only provides
+// userName intentionally excluded - authMiddleware (fast JWT path) only provides
 // userId. If you need to display a name, populate userId via User ref at read time.
 const verificationSchema = new mongoose.Schema({
     userId: {

@@ -3,8 +3,8 @@
 import mongoose from 'mongoose';
 
 const budgetAllocationSchema = new mongoose.Schema({
-    // 'object'  — funds allocated to a specific facility
-    // 'program' — funds allocated to a whole governmental program
+    // 'object'  - funds allocated to a specific facility
+    // 'program' - funds allocated to a whole governmental program
     targetType: {
         type: String,
         required: true,
@@ -24,7 +24,7 @@ const budgetAllocationSchema = new mongoose.Schema({
         enum: ['UZS', 'USD'],
         default: 'UZS'
     },
-    // Loose period label — e.g. "Q1 2025", "2024", "Jan–Mar 2025"
+    // Loose period label - e.g. "Q1 2025", "2024", "Jan–Mar 2025"
     period: {
         type: String
     },

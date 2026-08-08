@@ -12,14 +12,14 @@ import { photoUpload } from '../utils/photoConfig.js'; // stores to uploads/phot
 
 const router = express.Router();
 
-// Public — stats banner and marker colors use these without auth
+// Public - stats banner and marker colors use these without auth
 router.get('/stats', getStats);
 router.get('/verification-summary', getVerificationSummary);
 
 // Authenticated reads
 router.get('/', authMiddleware, getTasks);
 
-// Photo upload — citizen only, stores to uploads/photos/<filename>
+// Photo upload - citizen only, stores to uploads/photos/<filename>
 // Served at GET /api/uploads/photos/<filename>
 router.post('/upload-photo', authMiddleware, photoUpload.single('photo'), uploadPhoto);
 

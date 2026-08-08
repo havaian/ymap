@@ -60,7 +60,7 @@ export const getDistrictById = async (req, res) => {
     });
 };
 
-// GET /api/districts/geojson — GeoJSON FeatureCollection, optionally filtered by regionCode
+// GET /api/districts/geojson - GeoJSON FeatureCollection, optionally filtered by regionCode
 export const getDistrictsGeoJSON = async (req, res) => {
     const { regionCode } = req.query;
 
@@ -90,7 +90,7 @@ export const getDistrictsGeoJSON = async (req, res) => {
     res.json(featureCollection);
 };
 
-// GET /api/districts/lookup?lat=...&lng=... — find district containing a point
+// GET /api/districts/lookup?lat=...&lng=... - find district containing a point
 export const lookupDistrict = async (req, res) => {
     const { lat, lng } = req.query;
 

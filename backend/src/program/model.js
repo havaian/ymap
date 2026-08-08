@@ -43,7 +43,7 @@ const programSchema = new mongoose.Schema({
         default: 'UZS'
     },
 
-    // ── Scope — determines which objects are auto-assigned ────────────────────
+    // ── Scope - determines which objects are auto-assigned ────────────────────
     // All filters are optional; empty = match everything of that dimension.
     scope: {
         // Which object types to include. Empty array = all types.

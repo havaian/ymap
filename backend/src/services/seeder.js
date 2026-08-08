@@ -159,12 +159,12 @@ const MOCK_USER_NAMES = [
 
 const VERIFICATION_COMMENTS = {
     done: [
-        'Проверил лично — всё сделано',
+        'Проверил лично - всё сделано',
         'Работы завершены, результат хороший',
         'Задача выполнена в полном объёме',
         'Всё починено, жильцы довольны',
         'Ремонт завершён, качество нормальное',
-        'Наблюдал выполнение работ — всё в порядке',
+        'Наблюдал выполнение работ - всё в порядке',
         'Подтверждаю выполнение',
     ],
     problem: [
@@ -210,7 +210,7 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
         ]);
     }
 
-    // Step 1: Create mock users — rounds=4 for speed (seed data only)
+    // Step 1: Create mock users - rounds=4 for speed (seed data only)
     const usersNeeded = Math.ceil(count / 10);
     const hashedPassword = await bcrypt.hash('MockUser123!', 4);
     const runId = Date.now();
@@ -233,7 +233,7 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
         throw new Error('No objects found. Please sync objects first via POST /api/admin/sync-objects.');
     }
 
-    // Step 3: Generate issues — count standalone during generation, not after
+    // Step 3: Generate issues - count standalone during generation, not after
     const issues = [];
     const now = Date.now();
     const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
@@ -304,7 +304,7 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
     const boundCount = issues.length - standaloneCount;
     console.log(`✅ Created ${insertedIssues.length} mock issues (${boundCount} object-bound, ${standaloneCount} standalone)`);
 
-    // Step 4: Generate comments — batched to avoid large in-memory arrays
+    // Step 4: Generate comments - batched to avoid large in-memory arrays
     let commentsGenerated = 0;
     if (includeComments) {
         const COMMENT_BATCH = 500;
@@ -344,7 +344,7 @@ export const generateMockData = async (count = 1000, includeComments = true) => 
 // ── clearSeededData ───────────────────────────────────────────────────────────
 
 export const clearSeededData = async () => {
-    // Use seeded user IDs to delete comments — avoids loading all issue IDs into memory
+    // Use seeded user IDs to delete comments - avoids loading all issue IDs into memory
     const seededUserIds = await User.find({ isSeeded: true }).distinct('_id');
 
     const [commentsResult, issuesResult, usersResult] = await Promise.all([
@@ -375,7 +375,7 @@ export const generateProgramVerifications = async (maxPerTask = 6) => {
     }
     console.log(`📋 Found ${tasks.length} program tasks`);
 
-    // rounds=4 — seed data only, speed matters
+    // rounds=4 - seed data only, speed matters
     const hashedPassword = await bcrypt.hash('MockUser123!', 4);
     const POOL_SIZE = 40;
     const runId = Date.now();
@@ -400,7 +400,7 @@ export const generateProgramVerifications = async (maxPerTask = 6) => {
         const count = randomBetween(1, maxPerTask);
         const doneChance = VERIF_STATUS_CHANCE[task.status] ?? 0.5;
 
-        // Shuffle pool and take first N — guaranteed unique, no retry loop
+        // Shuffle pool and take first N - guaranteed unique, no retry loop
         const shuffled = [...insertedUsers]
             .sort(() => Math.random() - 0.5)
             .slice(0, count);

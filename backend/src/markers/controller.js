@@ -17,7 +17,7 @@ export const getObjectMarkers = async (req, res) => {
     if (sourceApi) filter.sourceApi = sourceApi;
     if (regionCode) filter.regionCode = parseInt(regionCode);
 
-    // Bbox filter — takes priority over regionCode when provided
+    // Bbox filter - takes priority over regionCode when provided
     if (swLat && swLng && neLat && neLng) {
         filter.lat = { $gte: parseFloat(swLat), $lte: parseFloat(neLat) };
         filter.lng = { $gte: parseFloat(swLng), $lte: parseFloat(neLng) };
@@ -55,7 +55,7 @@ export const getIssueMarkers = async (req, res) => {
     if (severity) filter.severity = severity;
     if (regionCode) filter.regionCode = parseInt(regionCode);
 
-    // Bbox filter — takes priority over regionCode when provided
+    // Bbox filter - takes priority over regionCode when provided
     if (swLat && swLng && neLat && neLng) {
         filter.lat = { $gte: parseFloat(swLat), $lte: parseFloat(neLat) };
         filter.lng = { $gte: parseFloat(swLng), $lte: parseFloat(neLng) };

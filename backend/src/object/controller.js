@@ -87,7 +87,7 @@ function transformRecord(raw, sourceKey, objectType, coords, districtMatch) {
 
 async function buildDistrictCache(parentCodes) {
     const cache = new Map();
-    // Districts store regionCode and centroid geometry — query by code field
+    // Districts store regionCode and centroid geometry - query by code field
     const districts = await District.find({
         code: { $in: [...parentCodes] }
     }).select('code regionCode centroid geometry').lean();

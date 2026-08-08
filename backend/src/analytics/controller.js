@@ -1,7 +1,7 @@
 /**
  * Analytics Controller
  *
- * All data comes from real MongoDB collections — no mock data.
+ * All data comes from real MongoDB collections - no mock data.
  * Architecture: Object_ (schools/kindergartens/health_posts) + Task + Issue
  */
 
@@ -215,7 +215,7 @@ export const getInfraAnalytics = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// GET /api/analytics/crops — kept for district crop data on drilldown
+// GET /api/analytics/crops - kept for district crop data on drilldown
 // ─────────────────────────────────────────────
 
 export const getCropAnalytics = async (req, res) => {
@@ -384,7 +384,7 @@ export const getDistrictScoring = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // GET /api/analytics/districts/:id
-// Deep-dive for a single district — used by DistrictDrilldown panel
+// Deep-dive for a single district - used by DistrictDrilldown panel
 // ─────────────────────────────────────────────
 
 export const getDistrictDetail = async (req, res) => {
@@ -543,7 +543,7 @@ export const getRegionSummary = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // GET /api/analytics/budget
-// Stub — no budget data on Objects from duasr.uz
+// Stub - no budget data on Objects from duasr.uz
 // ─────────────────────────────────────────────
 
 export const getBudgetAnalytics = async (req, res) => {
@@ -773,7 +773,7 @@ export async function getResolution(req, res) {
 }
 
 // ─────────────────────────────────────────────
-// GET /api/analytics/efficiency — stub (no budget data)
+// GET /api/analytics/efficiency - stub (no budget data)
 // ─────────────────────────────────────────────
 
 export async function getEfficiency(req, res) {
@@ -787,7 +787,7 @@ export async function getEfficiency(req, res) {
 }
 
 // ─────────────────────────────────────────────
-// GET /api/analytics/district/:name — legacy endpoint
+// GET /api/analytics/district/:name - legacy endpoint
 // Kept for backwards compat; redirects logic to getDistrictDetail via name lookup
 // ─────────────────────────────────────────────
 

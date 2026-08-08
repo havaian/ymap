@@ -44,7 +44,7 @@ export const getOrgScoring = async (req, res) => {
 
         const objectIds = objects.map(o => o._id.toString());
 
-        // Issue stats per object — single aggregation
+        // Issue stats per object - single aggregation
         const issueStats = await Issue.aggregate([
             { $match: { objectId: { $in: objectIds } } },
             {
@@ -62,7 +62,7 @@ export const getOrgScoring = async (req, res) => {
             }
         ]);
 
-        // Task stats per object — single aggregation
+        // Task stats per object - single aggregation
         const taskStats = await Task.aggregate([
             { $match: { targetId: { $in: objects.map(o => o._id) } } },
             {
@@ -286,7 +286,7 @@ export const getOrgDetail = async (req, res) => {
 
 // ── GET /api/openbudget/deficit ───────────────────────────────────────────────
 // Facility Deficit Index per district
-// (max_in_region − actual) / max × 100 — higher = more underfunded
+// (max_in_region − actual) / max × 100 - higher = more underfunded
 // Query: ?regionCode=17
 export const getDeficitIndex = async (req, res) => {
     try {

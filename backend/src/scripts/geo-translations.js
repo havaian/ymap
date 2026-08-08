@@ -123,7 +123,7 @@ const REGION_NAMES = {
 };
 
 // Special case: "Toshkent shaxri" (city) vs "Toshkent viloyati" (region)
-// Both normalize to "toshkent" — handle in the import script by checking suffix
+// Both normalize to "toshkent" - handle in the import script by checking suffix
 
 export const TASHKENT_CITY = { en: 'Tashkent city', ru: 'город Ташкент' };
 export const TASHKENT_REGION = { en: 'Tashkent region', ru: 'Ташкентская область' };

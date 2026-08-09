@@ -14,6 +14,7 @@ import { authMiddleware, strictAuthMiddleware } from './middleware/auth.js';
 import { adminOnly } from './middleware/adminOnly.js';
 import { ensureAdminExists } from './services/admin-setup.js';
 import { checkMailer } from './services/mailer.js';
+import { bootstrapData, bootstrapNeedsBlocking } from './services/data-bootstrap.js';
 
 import authRoutes from './auth/routes.js';
 import aiRoutes from './ai/routes.js';

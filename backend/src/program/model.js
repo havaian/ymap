@@ -93,7 +93,9 @@ const programSchema = new mongoose.Schema({
     }
 });
 
-programSchema.index({ status: 1 });
+// status уже объявлен с `index: true` в самом поле, поэтому строки
+// programSchema.index({ status: 1 }) здесь нет: два объявления одного индекса
+// Mongoose встречает предупреждением на каждом старте.
 programSchema.index({ 'scope.regionCode': 1 });
 
 export default mongoose.model('Program', programSchema);

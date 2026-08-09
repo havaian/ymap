@@ -30,6 +30,7 @@
  */
 
 import 'dotenv/config';
+import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import Region from '../region/model.js';
 import District from '../district/model.js';
@@ -111,7 +112,7 @@ function countVertices(geometry) {
     return 0;
 }
 
-async function run(Model, label) {
+export async function run(Model, label) {
     const docs = await Model.find({ 'geometry.coordinates': { $exists: true } })
         .select('name geometry')
         .lean();
@@ -171,7 +172,18 @@ async function main() {
     console.log('\nПоле geometry не менялось. 2dsphere и пространственные запросы работают по нему.');
 }
 
-main().catch(err => {
-    console.error('❌', err.message);
-    process.exit(1);
-});
+// Guarded so the module can be imported by services/data-bootstrap.js, which runs
+// the same passes on the connection the server already has. Without the guard,
+// importing this file would open a second mongoose connection and disconnect the
+// first one out from under the API.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch(err => {
+        console.error('❌', err.message);
+        process.exit(1);
+    });
+}
+
+export async function simplifyAll() {
+    await run(Region, 'РЕГИОНЫ');
+    await run(District, 'РАЙОНЫ');
+}

@@ -50,8 +50,9 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+import { DATA_DIR, WRITE_DIR, assertWritable } from '../utils/dataDir.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', 'data');
 
 const BASE = 'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/UZB';
 
@@ -65,57 +66,6 @@ const RETRY_BACKOFF = 5000;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/**
- * Same preflight as fetch-osm-boundaries.js, and for the same reason: the write
- * is the last step, so an unwritable directory otherwise surfaces only after the
- * download is finished and discarded.
- */
-function assertWritable(dir) {
-    fs.mkdirSync(dir, { recursive: true });
-    const probe = path.join(dir, `.write-probe-${process.pid}`);
-    try {
-        fs.writeFileSync(probe, '');
-        fs.unlinkSync(probe);
-    } catch (err) {
-        console.error(`❌ Каталог не доступен на запись: ${dir}`);
-        console.error(`   ${err.code || err.message}`);
-        console.error('   docker compose exec backend id   покажет UID и GID контейнера');
-        console.error('   chown -R <UID>:<GID> backend/src/data');
-        process.exit(1);
-    }
-}
-
-async function download(url) {
-    let lastErr = null;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-            console.log(`  → ${url} (попытка ${attempt}/${MAX_RETRIES})`);
-            const res = await fetch(url, {
-                headers: { 'user-agent': 'YMap-boundaries/1.0 (infrastructure analytics, Uzbekistan)' }
-            });
-            const text = await res.text();
-            if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 160)}`);
-            const gj = JSON.parse(text);
-            if (!Array.isArray(gj.features) || gj.features.length === 0) {
-                throw new Error('в ответе нет features');
-            }
-            return gj;
-        } catch (err) {
-            lastErr = err;
-            console.warn(`    ${err.message}`);
-            // 4xx повторять бессмысленно, файла по этому пути просто нет.
-            if (/HTTP 4\d\d/.test(err.message)) break;
-            if (attempt < MAX_RETRIES) await sleep(RETRY_BACKOFF * attempt);
-        }
-    }
-    throw lastErr || new Error('не скачалось');
-}
-
-/**
- * geoBoundaries names its fields shapeName / shapeISO. The matcher in
- * uz-name-match.js reads OSM-style keys, so the name is copied into `name` and the
- * origin is recorded, rather than the matcher being taught a second schema.
- */
 function normalise(gj, adm) {
     const features = gj.features
         .filter(f => f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'))
@@ -201,7 +151,7 @@ async function main() {
     console.log('  Границы из geoBoundaries (CC-BY 4.0)');
     console.log('═══════════════════════════════════════');
 
-    assertWritable(DATA_DIR);
+    if (!assertWritable(WRITE_DIR)) process.exit(1);
 
     const levels = onlyLevel ? [Number(onlyLevel)] : Object.keys(LEVELS).map(Number);
 
@@ -225,7 +175,7 @@ async function main() {
             console.warn('  ⚠️  в среднем меньше 20 вершин на объект. Это похоже на bbox, а не на границы.');
         }
 
-        const out = path.join(DATA_DIR, cfg.file);
+        const out = path.join(WRITE_DIR, cfg.file);
 
         const prior = existingSource(out);
         if (prior && prior !== GB_SOURCE && !overwrite) {

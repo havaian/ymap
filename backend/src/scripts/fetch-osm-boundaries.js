@@ -42,8 +42,9 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+import { DATA_DIR, WRITE_DIR, assertWritable } from '../utils/dataDir.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', 'data');
 
 // Mirrors, tried in order. The main instance rate-limits aggressively.
 const ENDPOINTS = [
@@ -256,45 +257,6 @@ function toGeoJSON(payload, debug = false) {
     return { type: 'FeatureCollection', features };
 }
 
-/**
- * Checks that the output directory is writable before anything is downloaded.
- *
- * Without this the script spends two minutes on Overpass, assembles a thousand
- * way segments, reports a clean result, and only then discovers it cannot open
- * the file. Everything it did is thrown away and the operator is left with a
- * permission error where a success message was one line earlier.
- *
- * The check writes and removes a probe file rather than reading the mode bits,
- * because the mode alone does not answer the question: the container runs as an
- * unprivileged user, the directory belongs to whoever checked the repository out,
- * and on a relabelled bind mount SELinux can refuse a write that the bits allow.
- */
-function assertWritable(dir) {
-    fs.mkdirSync(dir, { recursive: true });
-    const probe = path.join(dir, `.write-probe-${process.pid}`);
-    try {
-        fs.writeFileSync(probe, '');
-        fs.unlinkSync(probe);
-        return;
-    } catch (err) {
-        console.error(`❌ Каталог не доступен на запись: ${dir}`);
-        console.error(`   ${err.code || err.message}`);
-        console.error('');
-        console.error('   Контейнер работает под пользователем без прав на этот каталог.');
-        console.error('   Узнать, под кем он работает:');
-        console.error('     docker compose exec backend id');
-        console.error('   Выдать права на хосте, подставив UID и GID из вывода выше:');
-        console.error('     chown -R <UID>:<GID> backend/src/data');
-        console.error('');
-        console.error('   Либо разово записать от root и вернуть владельца:');
-        console.error('     docker compose exec -u root backend node src/scripts/fetch-osm-boundaries.js');
-        console.error('     chown -R $(stat -c "%u:%g" backend/src) backend/src/data');
-        console.error('');
-        console.error('   Либо положить файлы в другое место: --out=/app/uploads');
-        process.exit(1);
-    }
-}
-
 function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
@@ -417,7 +379,9 @@ async function main() {
     // Escape hatch for the case where the data directory cannot be made writable:
     // write somewhere that is, then move the files in from the host.
     const outArg = args.find(a => a.startsWith('--out='))?.split('=')[1];
-    const outDir = outArg ? path.resolve(outArg) : DATA_DIR;
+    // WRITE_DIR is the separate, writable volume when GEODATA_DIR is set, and
+    // src/data otherwise, so running this outside Docker is unchanged.
+    const outDir = outArg ? path.resolve(outArg) : WRITE_DIR;
     const endpoints = customEndpoint ? [customEndpoint] : ENDPOINTS;
 
     if (typeof fetch !== 'function') {
@@ -431,7 +395,7 @@ async function main() {
 
     // Before Overpass, not after. A permission error is cheap to hit now and
     // expensive to hit once the data is already downloaded and parsed.
-    assertWritable(outDir);
+    if (!assertWritable(outDir)) process.exit(1);
     if (outDir !== DATA_DIR) console.log(`  каталог вывода: ${outDir}`);
 
     const levels = onlyLevel ? [Number(onlyLevel)] : Object.keys(LEVELS).map(Number);

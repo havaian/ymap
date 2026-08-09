@@ -37,6 +37,12 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { splitKind, fold, compareNames } from './uz-name-match.js';
 
+// The levels fetch-osm-boundaries.js already asks for. Without this the probe
+// cannot tell "the unit is at a level we do not query" from "the unit is at a
+// level we do query and the matcher still missed it" - and it reported the first
+// when the truth was the second for all five it found.
+const FETCHED_LEVELS = new Set(['3', '4', '6']);
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
@@ -115,8 +121,9 @@ function main2(entries, elements, maxLevel) {
     for (const el of elements) byLevel[el.tags?.admin_level ?? '?'] = (byLevel[el.tags?.admin_level ?? '?'] || 0) + 1;
     console.log(`  по admin_level: ${JSON.stringify(byLevel)}`);
 
-    let exact = 0;
-    let looseOnly = 0;
+    let outsideLevel = 0;
+    let matcherIssue = 0;
+    let nameVariant = 0;
     let absent = 0;
 
     for (const e of entries) {
@@ -146,33 +153,67 @@ function main2(entries, elements, maxLevel) {
         }
 
         if (strict.length) {
-            exact++;
+            const levels = [...new Set(strict.map(el => String(el.tags.admin_level)))];
+            const outsideQuery = levels.every(l => !FETCHED_LEVELS.has(l));
             console.log('   СОПОСТАВИЛОСЬ БЫ:');
             for (const el of strict.slice(0, 5)) {
                 console.log(`     level=${el.tags.admin_level}  relation/${el.id}  ${namesOf(el.tags).slice(0, 3).join(' | ')}`);
             }
-            console.log('     → эта единица есть, но вне admin_level запроса в fetch-osm-boundaries.js.');
-            console.log('       Расширьте уровни в LEVELS и перекачайте.');
-        } else if (loose.length) {
-            looseOnly++;
-            console.log('   ПОХОЖЕЕ ПО ОСНОВЕ, но матчер это не примет:');
-            for (const el of loose.slice(0, 5)) {
-                console.log(`     level=${el.tags.admin_level}  relation/${el.id}  ${namesOf(el.tags).slice(0, 3).join(' | ')}`);
+            if (outsideQuery) {
+                outsideLevel++;
+                console.log(`     → уровень ${levels.join(', ')} не запрашивается в fetch-osm-boundaries.js.`);
+                console.log('       Чинится флагом --extra-district-levels=' + levels.join(','));
+            } else {
+                // The important case, and the one the first version of this probe
+                // got wrong. The boundary is in the file the importer already
+                // reads, so nothing about the query needs changing: something in
+                // the matching is losing it. Usually a wrong name:ru on the
+                // relation, which lets a different crosswalk entry claim it.
+                matcherIssue++;
+                console.log(`     → уровень ${levels.join(', ')} УЖЕ запрашивается, граница есть в файле.`);
+                console.log('       Значит теряется при сопоставлении. Проверьте теги имён:');
+                for (const el of strict.slice(0, 2)) {
+                    const ru = el.tags['name:ru'];
+                    const nm = el.tags.name;
+                    if (ru && nm && !compareNames(nm, ru)) {
+                        console.log(`       relation/${el.id}: name="${nm}" и name:ru="${ru}" - разные единицы.`);
+                    }
+                }
             }
-            console.log('     → скорее всего другое название или другой тип единицы.');
-            console.log('       Решение: добавить вариант имени в district-crosswalk.json.');
+        } else if (loose.length) {
+            // A stem hit whose unit type differs is not the same place: Termiz
+            // shahar and Termiz tumani are a city and the district around it.
+            // Reporting that as "found under another name" sent the reader off to
+            // add a name variant that would have attached the wrong polygon.
+            const sameKind = loose.filter(el =>
+                namesOf(el.tags).some(n => splitKind(n).kind === kind));
+            console.log('   ПОХОЖЕЕ ПО ОСНОВЕ:');
+            for (const el of loose.slice(0, 5)) {
+                const elKind = splitKind(namesOf(el.tags)[0] || '').kind;
+                const flag = elKind === kind ? '' : `  ← это ${UNIT_LABEL[elKind] || 'другой тип'}, не ${UNIT_LABEL[kind]}`;
+                console.log(`     level=${el.tags.admin_level}  relation/${el.id}  ${namesOf(el.tags).slice(0, 3).join(' | ')}${flag}`);
+            }
+            if (sameKind.length) {
+                nameVariant++;
+                console.log('     → тот же тип единицы под другим именем.');
+                console.log('       Решение: добавить вариант имени в district-crosswalk.json.');
+            } else {
+                absent++;
+                console.log('     → все найденные - единицы ДРУГОГО типа, то есть другие места.');
+                console.log(`       Самой единицы «${label}» в OSM нет. Кодом не чинится.`);
+            }
         } else {
             absent++;
             console.log('   НЕ НАЙДЕНО ни на одном уровне до ' + maxLevel + '.');
-            console.log('     → границы в OSM нет. Кодом это не чинится: либо рисовать в OSM,');
-            console.log('       либо брать границу из другого источника (geoBoundaries), либо оставить без полигона.');
+            console.log('     → границы в OSM нет. Кодом это не чинится.');
         }
     }
 
     console.log('\n═══ Итог ═══');
-    console.log(`  найдено на другом уровне, чинится расширением запроса: ${exact}`);
-    console.log(`  найдено под другим именем, чинится вариантом в кроссволке: ${looseOnly}`);
-    console.log(`  нет в OSM вовсе: ${absent}`);
+    console.log(`  на незапрашиваемом уровне, чинится --extra-district-levels: ${outsideLevel}`);
+    console.log(`  граница есть в файле, теряется при сопоставлении: ${matcherIssue}`);
+    console.log(`  тот же тип под другим именем, чинится вариантом в кроссволке: ${nameVariant}`);
+    console.log(`  единицы в OSM нет: ${absent}`);
 }
 
 async function main() {

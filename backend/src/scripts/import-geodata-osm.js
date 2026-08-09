@@ -42,8 +42,9 @@ import District from '../district/model.js';
 import Object_ from '../object/model.js';
 import { compareNames, TIER_ORDER } from './uz-name-match.js';
 
+import { DATA_DIR, WRITE_DIR, SEPARATE_WRITE_DIR, resolveRead } from '../utils/dataDir.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', 'data');
 
 const FILES = {
     regions: 'osm-regions.geojson',
@@ -224,59 +225,99 @@ function areaKm2(geometry) {
 
 // ── Matching ─────────────────────────────────────────────────────────────────
 
-/**
- * Every name variant OSM offers for one boundary. `name` is normally Uzbek Latin,
- * `name:oz` and `name:uz-Cyrl` carry Cyrillic where mappers bothered.
- */
+// Name tags in order of authority, and the order is the point.
+//
+// `name` is what the unit is called; `name:ru` and the alt/int variants are
+// translations somebody added, and they can be plain wrong. Two relations in the
+// current Uzbek extract prove it: relation/11158813 is `Xatirchi tumani` with
+// `name:ru` reading "Конимех тумани", and relation/15601869 is `Nurobod tumani`
+// with `name:ru` reading "Пахтачи тумани". Both name a different district
+// entirely.
+//
+// Treating every tag as equally good let those two relations be claimed by
+// Konimex and Pakhtachi, which is how Xatirchi and Nurobod ended up with no
+// boundary at all while their old bounding boxes survived as the only geometry
+// they had.
+const NAME_KEYS = ['name', 'name:uz', 'name:uz-Latn', 'name:oz', 'name:uz-Cyrl',
+    'name:kaa', 'official_name', 'name:en', 'name:ru', 'alt_name', 'int_name'];
+
 function osmNames(props) {
-    const keys = ['name', 'name:uz', 'name:oz', 'name:uz-Cyrl', 'name:uz-Latn',
-        'name:ru', 'name:en', 'name:kaa', 'official_name', 'alt_name', 'int_name'];
     const out = [];
-    for (const k of keys) {
-        const v = props[k];
-        if (typeof v === 'string' && v.trim()) out.push(v.trim());
+    for (let rank = 0; rank < NAME_KEYS.length; rank++) {
+        const v = props[NAME_KEYS[rank]];
+        if (typeof v === 'string' && v.trim()) out.push({ value: v.trim(), rank, key: NAME_KEYS[rank] });
     }
     return out;
 }
 
+/** Just the strings, for log lines that only want something to print. */
+function osmNameStrings(props) {
+    return osmNames(props).map(n => n.value);
+}
+
 /**
- * Best match across all name variants on both sides, strongest tier wins.
- * An 'edit' or 'token' match is accepted only when it is unambiguous: if two
- * different crosswalk entries reach the same tier, neither is taken. A wrong
- * boundary silently attached to a district is worse than a missing one.
+ * Which crosswalk entry this boundary belongs to.
+ *
+ * An entry is scored by the best (tier, name-key rank) pair any of its names
+ * achieves against any of the feature's names. Tier decides first - an exact hit
+ * beats a token hit beats an edit hit - and the authority of the tag that
+ * produced it breaks the tie. So a feature whose `name` matches one district
+ * exactly and whose `name:ru` matches a different district exactly resolves to
+ * the first, instead of to whichever happened to sit earlier in the crosswalk.
+ *
+ * Only a genuine draw - two entries reached by equally authoritative tags at the
+ * same tier - is ambiguous, and that is refused rather than guessed. Previously
+ * the ambiguity check was skipped entirely for exact matches, on the assumption
+ * that exactness implies certainty. It does not: exactness of one tag says
+ * nothing about what the other tags of the same feature say.
  */
 function matchFeature(feature, entries) {
     const fNames = osmNames(feature.properties || {});
     if (fNames.length === 0) return null;
 
-    const hits = new Map();  // tier -> [entry]
+    const scored = [];
     for (const e of entries) {
-        let best = null;
+        let bestTier = null;
+        let bestRank = Infinity;
+        let bestKey = null;
+
         for (const a of fNames) {
             for (const b of e.names) {
-                const tier = compareNames(a, b);
+                const tier = compareNames(a.value, b);
                 if (!tier) continue;
-                if (best === null || TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(best)) best = tier;
-                if (best === 'exact') break;
+                const ti = TIER_ORDER.indexOf(tier);
+                const bi = bestTier === null ? Infinity : TIER_ORDER.indexOf(bestTier);
+                if (ti < bi || (ti === bi && a.rank < bestRank)) {
+                    bestTier = tier;
+                    bestRank = a.rank;
+                    bestKey = a.key;
+                }
             }
-            if (best === 'exact') break;
         }
-        if (best) {
-            if (!hits.has(best)) hits.set(best, []);
-            hits.get(best).push(e);
-        }
+        if (bestTier) scored.push({ entry: e, tier: bestTier, rank: bestRank, key: bestKey });
     }
 
-    for (const tier of TIER_ORDER) {
-        const list = hits.get(tier);
-        if (!list || list.length === 0) continue;
-        if (list.length > 1 && tier !== 'exact') {
-            return { ambiguous: list.map(e => e.districtCode || e.regionCode), how: tier };
-        }
-        return { entry: list[0], how: tier };
+    if (scored.length === 0) return null;
+
+    scored.sort((x, y) => {
+        const d = TIER_ORDER.indexOf(x.tier) - TIER_ORDER.indexOf(y.tier);
+        return d !== 0 ? d : x.rank - y.rank;
+    });
+
+    const top = scored[0];
+    const rival = scored[1];
+    if (rival && rival.tier === top.tier && rival.rank === top.rank) {
+        return {
+            ambiguous: scored
+                .filter(s => s.tier === top.tier && s.rank === top.rank)
+                .map(s => s.entry.districtCode || s.entry.regionCode),
+            how: top.tier
+        };
     }
-    return null;
+
+    return { entry: top.entry, how: top.tier, viaKey: top.key, viaRank: top.rank };
 }
+
 
 /**
  * The missing-file message is long on purpose. A boundary file that was fetched
@@ -288,23 +329,30 @@ function matchFeature(feature, entries) {
  * used to be - which makes it look like the fetch never worked.
  */
 function readJson(file) {
-    const p = path.join(DATA_DIR, file);
+    // Downloaded copy first, committed copy second. A boundary set that was just
+    // fetched has to win over one committed months ago, or a re-fetch would look
+    // like it did nothing.
+    const p = resolveRead(file);
     if (!fs.existsSync(p)) {
-        const siblings = fs.existsSync(DATA_DIR)
-            ? fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.geojson'))
-            : [];
+        const dirs = SEPARATE_WRITE_DIR ? [WRITE_DIR, DATA_DIR] : [DATA_DIR];
+        const siblings = [];
+        for (const d of dirs) {
+            if (!fs.existsSync(d)) continue;
+            for (const f of fs.readdirSync(d)) {
+                if (f.endsWith('.geojson')) siblings.push(path.join(d, f));
+            }
+        }
         const lines = [
-            `${file} не найден в ${DATA_DIR}`,
+            `${file} не найден. Искал в: ${dirs.join(', ')}`,
             siblings.length
                 ? `  рядом лежат: ${siblings.join(', ')}`
-                : '  ни одного .geojson в каталоге',
+                : '  ни одного .geojson ни в одном из каталогов',
             '',
-            '  Если файл скачивали и он пропал - каталог не смонтирован, и всё,',
-            '  что записал fetch-osm-boundaries.js, ушло вместе с пересозданным',
-            '  контейнером. В docker-compose.yml у backend должно быть:',
-            '    - ./backend/src/data/:/app/src/data:rw,Z',
+            '  Границы скачивает fetch-osm-boundaries.js. Он пишет в GEODATA_DIR,',
+            '  а не в src/data: тот каталог принадлежит git, права на него нужны',
+            '  раннеру для `git reset --hard`, и отдавать его контейнеру нельзя.',
             '',
-            '  Затем: node src/scripts/fetch-osm-boundaries.js --debug'
+            '  node src/scripts/fetch-osm-boundaries.js --debug'
         ];
         throw new Error(lines.join('\n'));
     }
@@ -313,7 +361,7 @@ function readJson(file) {
 
 // ── Import ───────────────────────────────────────────────────────────────────
 
-async function importRegions({ dryRun, allowDegenerate, pruneStale }) {
+export async function importRegions({ dryRun, allowDegenerate, pruneStale } = {}) {
     const geo = readJson(FILES.regions);
     const cw = readJson(FILES.regionCrosswalk);
 
@@ -332,13 +380,17 @@ async function importRegions({ dryRun, allowDegenerate, pruneStale }) {
     const matched = new Set();
     const unmatchedFeatures = [];
     const ambiguous = [];
+    const contested = [];
     const tiers = new Map();
 
     for (const f of feats) {
         const m = matchFeature(f, entries);
-        if (!m) { unmatchedFeatures.push(osmNames(f.properties)[0] || '(без имени)'); continue; }
-        if (m.ambiguous) { ambiguous.push(`${osmNames(f.properties)[0]} -> ${m.ambiguous.join(', ')}`); continue; }
-        if (matched.has(m.entry.regionCode)) continue;  // first match wins
+        if (!m) { unmatchedFeatures.push(osmNameStrings(f.properties)[0] || '(без имени)'); continue; }
+        if (m.ambiguous) { ambiguous.push(`${osmNameStrings(f.properties)[0]} -> ${m.ambiguous.join(', ')}`); continue; }
+        if (matched.has(m.entry.regionCode)) {
+            contested.push(`${m.entry.regionCode} <- ${osmNameStrings(f.properties)[0]} (уже занят)`);
+            continue;
+        }
         matched.add(m.entry.regionCode);
         tiers.set(m.how, (tiers.get(m.how) || 0) + 1);
 
@@ -375,9 +427,17 @@ async function importRegions({ dryRun, allowDegenerate, pruneStale }) {
     if (missing.length) {
         console.warn(`  ⚠️  без границы: ${missing.map(e => `${e.regionCode} ${e.nameCanonical}`).join(', ')}`);
     }
+    if (contested.length) {
+        console.warn(`  ⚠️  на один код претендует больше одной границы: ${contested.length}`);
+        for (const c of contested.slice(0, PRINT_LIMIT)) console.warn(`     ${c}`);
+    }
     if (unmatchedFeatures.length) {
         console.log(`  границ OSM без пары в справочнике: ${unmatchedFeatures.length}`);
         console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
+    }
+    const accounted = matched.size + ambiguous.length + contested.length + unmatchedFeatures.length;
+    if (accounted !== feats.length) {
+        console.warn(`  ⚠️  не сходится: ${feats.length} границ на входе, учтено ${accounted}`);
     }
 
     const keptCodes = ops.map(o => o.updateOne.filter.code);
@@ -394,7 +454,7 @@ async function importRegions({ dryRun, allowDegenerate, pruneStale }) {
     return { written: ops.length, missing: missing.length };
 }
 
-async function importDistricts({ dryRun, allowDegenerate, pruneStale }) {
+export async function importDistricts({ dryRun, allowDegenerate, pruneStale } = {}) {
     const geo = readJson(FILES.districts);
     const cw = readJson(FILES.districtCrosswalk);
 
@@ -413,13 +473,21 @@ async function importDistricts({ dryRun, allowDegenerate, pruneStale }) {
     const matched = new Map();
     const unmatchedFeatures = [];
     const ambiguous = [];
+    const contested = [];
     const tiers = new Map();
 
     for (const f of feats) {
         const m = matchFeature(f, entries);
-        if (!m) { unmatchedFeatures.push(osmNames(f.properties)[0] || '(без имени)'); continue; }
-        if (m.ambiguous) { ambiguous.push(`${osmNames(f.properties)[0]} -> ${m.ambiguous.join(', ')}`); continue; }
-        if (matched.has(m.entry.districtCode)) continue;
+        if (!m) { unmatchedFeatures.push(osmNameStrings(f.properties)[0] || '(без имени)'); continue; }
+        if (m.ambiguous) { ambiguous.push(`${osmNameStrings(f.properties)[0]} -> ${m.ambiguous.join(', ')}`); continue; }
+        if (matched.has(m.entry.districtCode)) {
+            // Two boundaries claiming one code. Previously this was a bare
+            // `continue`, so the second one vanished with no trace: 204 features
+            // in, 189 matched, 9 reported unmatched, and six unaccounted for.
+            // Whichever of the two is wrong, silence is the wrong answer.
+            contested.push(`${m.entry.districtCode} <- ${osmNameStrings(f.properties)[0]} (уже занят)`);
+            continue;
+        }
         matched.set(m.entry.districtCode, f);
         tiers.set(m.how, (tiers.get(m.how) || 0) + 1);
 
@@ -467,9 +535,19 @@ async function importDistricts({ dryRun, allowDegenerate, pruneStale }) {
         }
         if (missing.length > PRINT_LIMIT) console.warn(`     ... и ещё ${missing.length - PRINT_LIMIT}`);
     }
+    if (contested.length) {
+        console.warn(`  ⚠️  на один код претендует больше одной границы: ${contested.length}`);
+        for (const c of contested.slice(0, PRINT_LIMIT)) console.warn(`     ${c}`);
+    }
     if (unmatchedFeatures.length) {
         console.log(`  границ OSM без пары в справочнике: ${unmatchedFeatures.length}`);
         console.log(`    ${unmatchedFeatures.slice(0, PRINT_LIMIT).join(', ')}`);
+    }
+    // Everything that came in has to come out somewhere in this arithmetic, or a
+    // feature was dropped by a branch nobody is watching.
+    const accounted = matched.size + ambiguous.length + contested.length + unmatchedFeatures.length;
+    if (accounted !== feats.length) {
+        console.warn(`  ⚠️  не сходится: ${feats.length} границ на входе, учтено ${accounted}`);
     }
 
     const keptIds = ops.map(o => o.updateOne.filter.apiId);

@@ -184,6 +184,16 @@ const startServer = async () => {
         await ensureAdminExists();
         await checkMailer();
 
+        // An empty database is not usefully up, so the first population blocks the
+        // listen. Once there is data to serve, a refresh runs behind it: the old
+        // data answers correctly enough while the new data lands, and a deploy is
+        // not held open for the length of an import.
+        if (await bootstrapNeedsBlocking()) {
+            await bootstrapData();
+        } else {
+            bootstrapData().catch(err => console.error('❌ Наполнение базы:', err.message));
+        }
+
         app.listen(config.port, '0.0.0.0', () => {
             console.log('');
             console.log('🚀 ========================================');

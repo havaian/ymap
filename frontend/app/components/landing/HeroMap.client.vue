@@ -2,42 +2,14 @@
   <div ref="wrap" class="relative h-full w-full">
     <canvas ref="cv" class="block h-full w-full" />
 
-    <!-- Anchors sit at real coordinates and carry counts computed from the same
-         cloud, so a figure on the hero cannot drift away from the data under it.
+    <!-- УДАЛЕНО: слой якорей - точки городов с названиями и числами объектов.
+         Подписи спорили с самим облаком: они лежали на его самом плотном месте,
+         а без них светлые точки городов ничего не сообщали.
 
-         ПЕРЕДЕЛАНО. Подпись лежала прямо под точкой, поверх самого плотного
-         участка облака, и читалась тем хуже, чем крупнее город: в Ташкенте и
-         Намангане буквы шли по россыпи таких же светлых точек. Теперь она
-         вынесена вверх и вправо от точки, набрана мельче и несёт тёмный ореол,
-         поэтому не зависит от того, что под ней. Кнопка держит точку по центру
-         своей коробки, так что сама точка стоит ровно на координате. -->
-    <button
-      v-for="(a, i) in anchors"
-      :key="a.name"
-      type="button"
-      class="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-colors"
-      :class="active === i ? 'bg-prussian-200/20' : 'hover:bg-prussian-200/10'"
-      :style="anchorPositions[i]"
-      @mouseenter="active = i"
-      @mouseleave="active = null"
-      @focus="active = i"
-      @blur="active = null"
-    >
-      <!-- Тёмное кольцо вокруг светлой точки: без него метка теряется в облаке,
-           которое написано тем же цветом. -->
-      <span class="h-1.5 w-1.5 rounded-full bg-prussian-50 ring-2 ring-prussian-900/70" />
-      <!-- Тринадцать подписей с числами перекрывают друг друга в Ферганской
-           долине. Постоянную подпись получают самые крупные центры, остальные
-           показывают её при наведении. Точка стоит у всех. -->
-      <span
-        v-if="labelled[i] || active === i"
-        class="pointer-events-none absolute bottom-full left-1/2 mb-0.5 ml-1.5 whitespace-nowrap text-left"
-        :style="labelShadow"
-      >
-        <span class="block text-[10px] leading-tight tracking-wide text-prussian-100">{{ a.name }}</span>
-        <span class="block font-mono text-[11px] leading-tight text-prussian-50">{{ a.count.toLocaleString('ru-RU') }}</span>
-      </span>
-    </button>
+         Данные никуда не делись: anchors по-прежнему считаются в
+         backend/src/scripts/build-landing-data.js и лежат в
+         public/data/facility-points.json, так что вернуть слой - это разметка
+         и чтение data.anchors, без пересчёта. -->
 
     <p class="absolute bottom-2 right-3 text-label text-prussian-200/40">
       {{ meta.sampled?.toLocaleString('ru-RU') }} из {{ meta.totalWithCoords?.toLocaleString('ru-RU') }} точек · data.egov.uz
@@ -65,9 +37,11 @@
  * Осталось одно появление: прозрачность всего облака поднимается до рабочей за
  * 700 мс, все точки одного цвета. Ни ведра тусклых точек, ни полосы, ни повтора.
  *
+ * Слой городов снят: подписи с числами закрывали самое плотное место облака, а
+ * точки без подписей ничего не говорили. На плите остались только объекты.
+ *
  * Проекция считается один раз на изменение размера, а не на каждую точку каждого
- * кадра. Позиции подписей тоже: чтение clientWidth из шаблона заставляло
- * синхронный пересчёт разметки на каждый рендер.
+ * кадра.
  */
 const props = withDefaults(
   defineProps<{
@@ -86,23 +60,8 @@ const props = withDefaults(
 
 const wrap = ref<HTMLElement | null>(null)
 const cv = ref<HTMLCanvasElement | null>(null)
-const active = ref<number | null>(null)
 
 const meta = ref<{ sampled?: number; totalWithCoords?: number }>({})
-const anchors = ref<{ name: string; lat: number; lon: number; count: number }[]>([])
-const anchorPositions = ref<{ left: string; top: string }[]>([])
-// Постоянную подпись получают LABEL_ALWAYS самых крупных центров, остальные - по
-// наведению. Считается от данных, а не задаётся списком имён.
-const labelled = ref<boolean[]>([])
-
-const LABEL_ALWAYS = 5
-
-// Ореол под подписью. Тень, а не подложка: прямоугольник под каждой подписью
-// закрыл бы кусок того самого облака, ради которого плита здесь стоит.
-// Цвет - prussian-900, тот же, что у самой тёмной поверхности проекта.
-const labelShadow = {
-  textShadow: '0 1px 2px rgba(7,26,37,0.95), 0 0 6px rgba(7,26,37,0.85), 0 0 12px rgba(7,26,37,0.6)',
-}
 
 let pts: number[] = []
 // Screen-space copy of the cloud, rebuilt only when the box changes size. Two
@@ -162,10 +121,6 @@ const reproject = () => {
     projected[j] = p.x
     projected[j + 1] = p.y
   }
-  anchorPositions.value = anchors.value.map((a) => {
-    const p = project(a.lat, a.lon, w, h)
-    return { left: `${p.x}px`, top: `${p.y}px` }
-  })
 }
 
 const draw = () => {
@@ -222,20 +177,12 @@ onMounted(async () => {
     const data = await $fetch<any>('/data/facility-points.json')
     pts = data.points ?? []
     bounds = data.bounds ?? bounds
-    anchors.value = data.anchors ?? []
     meta.value = { sampled: data.sampled, totalWithCoords: data.totalWithCoords }
   } catch {
     // No cloud is better than a fake one: the section keeps its copy and loses
     // only the plate.
     pts = []
   }
-
-  const ranked = [...anchors.value]
-    .map((a, i) => ({ i, count: a.count }))
-    .sort((x, y) => y.count - x.count)
-    .slice(0, LABEL_ALWAYS)
-    .map((x) => x.i)
-  labelled.value = anchors.value.map((_, i) => ranked.includes(i))
 
   reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   reproject()

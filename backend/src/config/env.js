@@ -19,6 +19,19 @@ export const validateEnv = () => {
     if (!process.env.GEMINI_API_KEY) {
         console.warn('⚠️  GEMINI_API_KEY not set - AI analysis endpoint will return 503');
     }
+    // Ссылки в письмах строятся от PUBLIC_BASE_URL. Значение по умолчанию -
+    // localhost, и в проде оно даёт письма с мёртвыми ссылками вида
+    // http://localhost:7797/verify-email?token=... Молча это пропускать нельзя:
+    // человек уже зарегистрировался и ждёт письма, которое никуда не ведёт.
+    const base = process.env.PUBLIC_BASE_URL || '';
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    if (nodeEnv === 'production' && (!base || /localhost|127\.0\.0\.1/.test(base))) {
+        console.error('❌ PUBLIC_BASE_URL не задан или указывает на localhost при NODE_ENV=production');
+        console.error(`   текущее значение: ${base || '(пусто, будет http://localhost:7797)'}`);
+        console.error('   письма подтверждения и сброса пароля уйдут с нерабочими ссылками');
+        console.error('   поправьте .env на сервере: PUBLIC_BASE_URL=https://ymap.ytech.space');
+    }
+
     console.log('✅ Environment variables validated');
 };
 

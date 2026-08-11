@@ -42,12 +42,22 @@ const LON = [55.9, 73.4];
 
 // Real coordinates. Counts next to them are computed from the cloud, not written
 // by hand, so a landing figure cannot drift from the data behind it.
+// Названия по-русски: интерфейс русскоязычный, и подпись на карте - часть
+// интерфейса, а не цитата из реестра.
 const ANCHORS = [
-    { name: 'Тошкент', lat: 41.311, lon: 69.279, radiusKm: 35 },
-    { name: 'Самарқанд', lat: 39.654, lon: 66.959, radiusKm: 35 },
-    { name: 'Наманган', lat: 40.998, lon: 71.671, radiusKm: 35 },
+    { name: 'Ташкент', lat: 41.311, lon: 69.279, radiusKm: 35 },
+    { name: 'Самарканд', lat: 39.654, lon: 66.959, radiusKm: 35 },
+    { name: 'Наманган', lat: 40.998, lon: 71.671, radiusKm: 30 },
+    { name: 'Андижан', lat: 40.783, lon: 72.344, radiusKm: 30 },
+    { name: 'Фергана', lat: 40.389, lon: 71.783, radiusKm: 30 },
+    { name: 'Бухара', lat: 39.767, lon: 64.423, radiusKm: 35 },
     { name: 'Нукус', lat: 42.461, lon: 59.617, radiusKm: 45 },
-    { name: 'Термиз', lat: 37.224, lon: 67.278, radiusKm: 45 }
+    { name: 'Термез', lat: 37.224, lon: 67.278, radiusKm: 45 },
+    { name: 'Карши', lat: 38.860, lon: 65.789, radiusKm: 35 },
+    { name: 'Ургенч', lat: 41.550, lon: 60.631, radiusKm: 35 },
+    { name: 'Джизак', lat: 40.116, lon: 67.842, radiusKm: 35 },
+    { name: 'Навои', lat: 40.084, lon: 65.379, radiusKm: 35 },
+    { name: 'Гулистан', lat: 40.489, lon: 68.791, radiusKm: 30 }
 ];
 
 // Deterministic. A landing that reshuffles its own map on every build is a landing

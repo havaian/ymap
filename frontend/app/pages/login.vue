@@ -62,7 +62,7 @@
             :disabled="resending"
             @click="resend"
           >
-            {{ resending ? 'Отправляю…' : 'Отправить письмо подтверждения заново' }}
+            {{ resending ? 'Письмо отправляется…' : 'Отправить письмо подтверждения заново' }}
           </button>
         </NoteBlock>
 
@@ -75,7 +75,7 @@
           :disabled="isLoading"
           class="w-full rounded-control bg-prussian-600 px-5 py-3 text-body font-semibold text-paper transition-colors hover:bg-prussian-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {{ isLoading ? 'Проверяю…' : 'Войти' }}
+          {{ isLoading ? 'Данные проверяются…' : 'Войти' }}
         </button>
       </form>
 

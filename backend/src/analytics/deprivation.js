@@ -431,6 +431,22 @@ export const getDeprivation = async (req, res) => {
  *   ?regionCode=1703
  *   ?bound=lower|upper        which end of the interval colours the map
  *   ?minAssessed=3            districts below this are returned greyed, not scored
+ *
+ * ПЕРЕДЕЛАНО. Слой строился из районов, по которым нашлись объекты этого типа:
+ * выборка -> список кодов -> District.find по этим кодам. Район, в котором ни
+ * одного объекта данного типа не загружено, в выдачу не попадал вообще, и на
+ * карте на его месте была дыра. Читатель видел не «данных нет», а отсутствие
+ * района как такового.
+ *
+ * Теперь слой строится от коллекции границ, а оценка присоединяется к ней. В
+ * выдаче все районы с геометрией, и у каждого стоит status:
+ *
+ *   scored           - объектов хватило, value = M0 на выбранной границе
+ *   below_threshold  - объекты есть, но меньше minAssessed, value = null
+ *   no_objects       - объектов этого типа в районе нет вовсе, value = null
+ *
+ * Два последних состояния разные по смыслу: первое говорит о пороге публикации,
+ * второе о покрытии загрузки. Одним серым цветом их путать нельзя.
  */
 export const getDeprivationChoropleth = async (req, res) => {
     try {
@@ -441,7 +457,13 @@ export const getDeprivationChoropleth = async (req, res) => {
         const minAssessed = req.query.minAssessed ? parseInt(req.query.minAssessed, 10) : 3;
 
         const byCode = new Map(result.districts.filter(d => d.districtCode).map(d => [d.districtCode, d]));
-        const districtDocs = await District.find({ cadNum: { $in: [...byCode.keys()] } })
+
+        // Фильтр по региону, если он задан в запросе, применяется и к слою границ:
+        // иначе запрос по одному региону вернул бы страну целиком.
+        const geoFilter = {};
+        if (req.query.regionCode) geoFilter.regionCode = parseInt(req.query.regionCode, 10);
+
+        const districtDocs = await District.find(geoFilter)
             // geometrySimplified is the render copy from simplify-boundaries.js.
             // Full geometry stays selected as the fallback: a district imported
             // after the last simplification run has no copy yet, and drawing it
@@ -452,11 +474,14 @@ export const getDeprivationChoropleth = async (req, res) => {
         const features = districtDocs
             .filter(doc => doc.geometry)
             .map(doc => {
-                const d = byCode.get(doc.cadNum);
+                const d = byCode.get(doc.cadNum) || null;
                 // A district with two loaded schools cannot carry a rate. It is
                 // returned with a null value so the map can draw it as no-data
                 // rather than as a low score.
-                const enough = d.assessed >= minAssessed;
+                const enough = Boolean(d) && d.assessed >= minAssessed;
+                const status = !d || (d.assessed === 0 && d.notAssessable === 0)
+                    ? 'no_objects'
+                    : enough ? 'scored' : 'below_threshold';
                 return {
                     type: 'Feature',
                     properties: {
@@ -465,21 +490,30 @@ export const getDeprivationChoropleth = async (req, res) => {
                         name: doc.name,
                         regionCode: doc.regionCode,
                         areaKm2: doc.areaKm2,
+                        status,
                         value: enough ? d.M0[bound] : null,
-                        M0: d.M0,
-                        H: d.H,
-                        A: d.A,
-                        assessed: d.assessed,
-                        notAssessable: d.notAssessable,
-                        dimensions: d.dimensions
+                        M0: d ? d.M0 : null,
+                        H: d ? d.H : null,
+                        A: d ? d.A : null,
+                        assessed: d ? d.assessed : 0,
+                        notAssessable: d ? d.notAssessable : 0,
+                        dimensions: d ? d.dimensions : null
                     },
                     geometry: doc.geometrySimplified?.coordinates ? doc.geometrySimplified : doc.geometry
                 };
             });
 
+        // Районы, по которым оценка есть, а границы в базе нет. Это дыра в слое
+        // границ, и молчать о ней нельзя: на карте такой район не появится ни в
+        // одном из трёх состояний.
         const withoutGeometry = [...byCode.keys()].filter(
             c => !districtDocs.some(doc => doc.cadNum === c)
         );
+
+        const counted = features.reduce((acc, f) => {
+            acc[f.properties.status] = (acc[f.properties.status] || 0) + 1;
+            return acc;
+        }, { scored: 0, below_threshold: 0, no_objects: 0 });
 
         res.json({
             type: 'FeatureCollection',
@@ -489,6 +523,10 @@ export const getDeprivationChoropleth = async (req, res) => {
             meta: {
                 ...result.meta,
                 minAssessed,
+                districtsTotal: features.length,
+                districtsScored: counted.scored,
+                districtsBelowThreshold: counted.below_threshold,
+                districtsWithoutObjects: counted.no_objects,
                 districtsWithoutGeometry: withoutGeometry.length,
                 scale: 'выше = хуже; M0 в диапазоне 0..1'
             }

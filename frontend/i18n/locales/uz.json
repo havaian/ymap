@@ -18,8 +18,6 @@
     "analyticsProblems": "Muammolar",
     "map": "Xarita",
     "feed": "Murojaatlar lentasi",
-    "knowledge": "Murakkab narsalar sodda tilda",
-    "stories": "Odamlar hikoyalari",
     "about": "Biz haqimizda",
     "search": "Qidiruv",
     "login": "Kirish",
@@ -34,7 +32,6 @@
     "observatory": "Observatoriya",
     "civic": "Murojaatlar",
     "main": "Bosh sahifa",
-    "media": "Mediamarkaz",
     "profile": "Profil"
   },
   "actions": {

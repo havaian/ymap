@@ -11,9 +11,9 @@
 
       <template v-if="state === 'pending'">
         <h1 class="mt-8 font-display text-h1 font-semibold tracking-tight text-ink dark:text-paper">
-          Подтверждаю адрес
+          Адрес подтверждается
         </h1>
-        <p class="mt-2 text-body text-ink-muted dark:text-ink-faint">Секунду.</p>
+        <p class="mt-2 text-body text-ink-muted dark:text-ink-faint">Ссылка проверяется, это занимает пару секунд.</p>
       </template>
 
       <template v-else-if="state === 'done'">
@@ -64,7 +64,7 @@
             :disabled="resending"
             @click="resend"
           >
-            {{ resending ? 'Отправляю…' : 'Прислать новую ссылку' }}
+            {{ resending ? 'Письмо отправляется…' : 'Прислать новую ссылку' }}
           </button>
           <p v-if="resendNote" class="mt-3 text-note text-ink-muted dark:text-ink-faint">{{ resendNote }}</p>
         </div>

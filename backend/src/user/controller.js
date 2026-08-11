@@ -112,7 +112,11 @@ export const getUserActivity = async (req, res) => {
         data: {
             user: {
                 id: user._id.toString(),
-                name: user.name,
+                // Имя необязательно: форма регистрации его не спрашивает. Пустое
+                // значение отдаётся как null, подстановка адреса вместо имени
+                // здесь не делается - именно она давала "m.usman.work" вместо
+                // человека.
+                name: user.name || null,
                 email: user.email,
                 role: user.role,
                 points: user.points || 0,
@@ -181,7 +185,11 @@ export const getMyActivity = async (req, res) => {
         data: {
             user: {
                 id: user._id.toString(),
-                name: user.name,
+                // Имя необязательно: форма регистрации его не спрашивает. Пустое
+                // значение отдаётся как null, подстановка адреса вместо имени
+                // здесь не делается - именно она давала "m.usman.work" вместо
+                // человека.
+                name: user.name || null,
                 email: user.email,
                 role: user.role,
                 points: user.points || 0,
@@ -241,7 +249,9 @@ export const getLeaderboard = async (req, res) => {
         return {
             rank: idx + 1,
             id,
-            name: u.name,
+            // Адрес почты в публичный рейтинг не попадает: пустое имя остаётся
+            // пустым, подпись рисует интерфейс.
+            name: u.name || null,
             points: u.points || 0,
             issueCount: ic.total,
             resolvedCount: ic.resolved,

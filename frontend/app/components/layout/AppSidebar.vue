@@ -102,10 +102,10 @@ import {
   BarChart3,
   MapPin,
   Newspaper,
-  BookOpen,
-  Users,
   User as UserIcon,
-  Trophy,
+  // Trophy - иконка рейтинга, снятого с меню. Импорт закомментирован вместе
+  // с пунктом, чтобы не висел неиспользованным.
+  // Trophy,
   HelpCircle,
   LogOut,
   ChevronsLeft,
@@ -178,19 +178,14 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    key: 'media',
-    label: 'groups.media',
-    items: [
-      { to: '/knowledge', label: 'nav.knowledge', icon: BookOpen },
-      { to: '/stories', label: 'nav.stories', icon: Users },
-    ],
-  },
-  {
     key: 'profile',
     label: 'groups.profile',
     items: [
       { to: '/profile', label: 'nav.profile', icon: UserIcon },
-      { to: '/leaderboard', label: 'nav.leaderboard', icon: Trophy },
+      // СНЯТО С МЕНЮ: рейтинг участников. Страница и маршрут остаются на месте,
+      // файлы не удалены - геймификация просто не выносится вперёд, она ничего
+      // не говорит о том, стала ли запись реестра точнее.
+      // { to: '/leaderboard', label: 'nav.leaderboard', icon: Trophy },
     ],
   },
 ]

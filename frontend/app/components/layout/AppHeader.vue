@@ -115,7 +115,6 @@ const links = [
   { to: '/', label: 'nav.home' },
   { to: '/#strategy', label: 'nav.strategy' },
   { to: '/analytics', label: 'nav.analytics' },
-  { to: '/stories', label: 'nav.stories' },
   { to: '/about', label: 'nav.about' },
 ]
 

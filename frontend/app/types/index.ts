@@ -255,7 +255,9 @@ export interface ProfileActivity {
 export interface ProfileData {
   user: {
     id: string
-    name: string
+    // Имя необязательно: форма регистрации его не спрашивает, и бэкенд отдаёт
+    // null вместо выдуманного значения.
+    name: string | null
     email: string
     role: string
     points: number
@@ -267,7 +269,7 @@ export interface ProfileData {
 export interface LeaderboardEntry {
   rank: number
   id: string
-  name: string
+  name: string | null
   points: number
   issueCount: number
   resolvedCount: number

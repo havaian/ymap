@@ -51,7 +51,7 @@
                 class="truncate text-body font-medium"
                 :class="isMe(entry) ? 'text-prussian-700 dark:text-prussian-100' : 'text-ink dark:text-paper'"
               >
-                {{ entry.name }}
+                {{ displayName(entry.name) }}
                 <span v-if="isMe(entry)" class="ml-1 text-label text-prussian-600 dark:text-prussian-200">(вы)</span>
               </p>
               <div class="mt-0.5 flex items-center gap-3 font-mono text-label text-ink-faint">
@@ -118,6 +118,8 @@ const rest = computed(() => entries.value.slice(3))
 const visibleRest = computed(() => rest.value.slice(0, visibleCount.value))
 
 const isMe = (e: LeaderboardEntry) => !!user.value && e.id === user.value.id
-const initials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+// Имя необязательно, адрес почты в публичный рейтинг не выносится.
+const displayName = (name: string | null) => name || 'Без имени'
+const initials = (name: string | null) =>
+  (name || '?').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 </script>

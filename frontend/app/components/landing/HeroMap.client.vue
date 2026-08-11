@@ -17,8 +17,13 @@
       @blur="active = null"
     >
       <span class="block h-1.5 w-1.5 rounded-full bg-prussian-100 ring-4 ring-prussian-100/20" />
-      <span class="mt-1.5 block whitespace-nowrap text-label text-prussian-100/70">{{ a.name }}</span>
-      <span class="block whitespace-nowrap font-mono text-body text-prussian-50">{{ a.count.toLocaleString('ru-RU') }}</span>
+      <!-- Тринадцать подписей с числами перекрывают друг друга в Ферганской
+           долине. Постоянную подпись получают самые крупные центры, остальные
+           показывают её при наведении. Точка стоит у всех. -->
+      <template v-if="labelled[i] || active === i">
+        <span class="mt-1.5 block whitespace-nowrap text-label text-prussian-100/70">{{ a.name }}</span>
+        <span class="block whitespace-nowrap font-mono text-body text-prussian-50">{{ a.count.toLocaleString('ru-RU') }}</span>
+      </template>
     </button>
 
     <p class="absolute bottom-2 right-3 text-label text-prussian-200/40">
@@ -36,32 +41,23 @@
  * appears on its own because facilities follow settlement, which says the thing the
  * page is about before any copy does.
  *
- * Drawn on canvas rather than as six thousand SVG nodes, and the reveal is a sweep
- * from west to east because that is how the country is surveyed on paper, left to
- * right. Reduced motion skips straight to the finished plate.
+ * Drawn on canvas rather than as six thousand SVG nodes.
  *
- * REWORKED on three counts.
+ * ПЕРЕДЕЛАНО. Убран проход развёртки с запада на восток. Он рисовал точки двумя
+ * вёдрами - тусклым и ярким - и яркое ведро было полосой шириной 1,6 градуса
+ * перед границей прохода. На последнем кадре полоса застывала над востоком
+ * страны: Наманган светился, остальное оставалось тусклым. Цикличность убрана
+ * вместе с ней, плита рисуется один раз.
  *
- * The sweep now loops. It reached the eastern edge, stopped, and anyone arriving a
- * few seconds late never saw the thing the section is built around. After the plate
- * completes it holds, then the pass runs again.
+ * Осталось одно появление: прозрачность всего облака поднимается до рабочей за
+ * 700 мс, все точки одного цвета. Ни ведра тусклых точек, ни полосы, ни повтора.
  *
- * The draw loop was setting ctx.fillStyle once per point: six thousand context
- * state changes per frame, and a context state change is not free. Points are
- * bucketed into the two colours the plate uses and each bucket is filled in one
- * pass, which is two state changes per frame instead of six thousand. Projection
- * is precomputed on resize rather than recomputed per point per frame.
- *
- * Anchor positions were read out of the template through clientWidth. Every render
- * forced a synchronous layout, and hovering one anchor re-rendered all five. They
- * are computed on resize into a plain array now.
- *
- * The loop also stops when the hero is off screen. A canvas animating behind three
- * screens of scrolled content is pure cost.
+ * Проекция считается один раз на изменение размера, а не на каждую точку каждого
+ * кадра. Позиции подписей тоже: чтение clientWidth из шаблона заставляло
+ * синхронный пересчёт разметки на каждый рендер.
  */
-const props = withDefaults(defineProps<{ accent?: string; dim?: string }>(), {
+const props = withDefaults(defineProps<{ accent?: string }>(), {
   accent: '#8FC5E8',
-  dim: '#2A6082',
 })
 
 const wrap = ref<HTMLElement | null>(null)
@@ -71,28 +67,32 @@ const active = ref<number | null>(null)
 const meta = ref<{ sampled?: number; totalWithCoords?: number }>({})
 const anchors = ref<{ name: string; lat: number; lon: number; count: number }[]>([])
 const anchorPositions = ref<{ left: string; top: string }[]>([])
+// Постоянную подпись получают LABEL_ALWAYS самых крупных центров, остальные - по
+// наведению. Считается от данных, а не задаётся списком имён.
+const labelled = ref<boolean[]>([])
+
+const LABEL_ALWAYS = 5
 
 let pts: number[] = []
-// Screen-space copy of the cloud, rebuilt only when the box changes size. x, y and
-// the longitude the sweep tests against, flat, three numbers per point.
+// Screen-space copy of the cloud, rebuilt only when the box changes size. Two
+// numbers per point.
 let projected: Float32Array = new Float32Array(0)
 let bounds = { latMin: 37.1, latMax: 45.7, lonMin: 55.9, lonMax: 73.4 }
 let raf = 0
-let progress = 0
-let holdUntil = 0
+let fadeStart = 0
+let alpha = 0
 let ro: ResizeObserver | null = null
 let io: IntersectionObserver | null = null
-let visible = true
+let done = false
 let reduced = false
 
-// How long the finished plate is held before the pass runs again, and how fast the
-// pass moves. A pass of about six seconds and a hold of four reads as a survey
-// repeating, not as a loading bar stuck in a loop.
-const SWEEP_PER_FRAME = 0.0055
-const HOLD_MS = 4000
+// Рабочая прозрачность плиты и длительность единственного появления.
+const FINAL_ALPHA = 0.9
+const FADE_MS = 700
 
-// Equirectangular with a cos(lat) correction: at 41°N an unadjusted plot stretches
-// the country sideways by a third and the shape stops being recognisable.
+// Equirectangular with a cos(lat) correction: at 41 degrees N an unadjusted plot
+// stretches the country sideways by a third and the shape stops being
+// recognisable.
 const project = (lat: number, lon: number, w: number, h: number) => {
   const midLat = ((bounds.latMin + bounds.latMax) / 2) * (Math.PI / 180)
   const spanX = (bounds.lonMax - bounds.lonMin) * Math.cos(midLat)
@@ -118,14 +118,11 @@ const reproject = () => {
   const { w, h } = size()
   if (!w || !h) return
   const n = pts.length / 2
-  if (projected.length !== n * 3) projected = new Float32Array(n * 3)
-  for (let i = 0, j = 0; i < pts.length; i += 2, j += 3) {
-    const lat = pts[i]
-    const lon = pts[i + 1]
-    const p = project(lat, lon, w, h)
+  if (projected.length !== n * 2) projected = new Float32Array(n * 2)
+  for (let i = 0, j = 0; i < pts.length; i += 2, j += 2) {
+    const p = project(pts[i]!, pts[i + 1]!, w, h)
     projected[j] = p.x
     projected[j + 1] = p.y
-    projected[j + 2] = lon
   }
   anchorPositions.value = anchors.value.map((a) => {
     const p = project(a.lat, a.lon, w, h)
@@ -149,57 +146,31 @@ const draw = () => {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, w, h)
 
-  // The sweep runs on longitude, so points appear in the order a survey would
-  // cover them rather than in the order they happen to sit in the file.
-  const cutoff = bounds.lonMin + (bounds.lonMax - bounds.lonMin) * progress
-
-  // Two passes, two fillStyle assignments. Points just behind the sweep line stay
-  // bright for a moment, so the edge of the pass is visible without drawing a
-  // literal scanning beam; that band is the second bucket.
-  ctx.globalAlpha = 0.55
-  ctx.fillStyle = props.dim
-  for (let j = 0; j < projected.length; j += 3) {
-    const lon = projected[j + 2]
-    if (lon > cutoff) continue
-    if (cutoff - lon < 1.6) continue
-    ctx.fillRect(projected[j], projected[j + 1], 1.6, 1.6)
-  }
-
-  ctx.globalAlpha = 0.9
+  // Одно ведро, одно присвоение fillStyle на кадр. Все точки одного цвета: карта
+  // показывает покрытие, а не порядок обхода.
+  ctx.globalAlpha = alpha
   ctx.fillStyle = props.accent
-  for (let j = 0; j < projected.length; j += 3) {
-    const lon = projected[j + 2]
-    if (lon > cutoff) continue
-    if (cutoff - lon >= 1.6) continue
-    ctx.fillRect(projected[j], projected[j + 1], 1.6, 1.6)
+  for (let j = 0; j < projected.length; j += 2) {
+    ctx.fillRect(projected[j]!, projected[j + 1]!, 1.6, 1.6)
   }
-
   ctx.globalAlpha = 1
 }
 
 const animate = (now: number) => {
-  if (!visible || reduced) {
+  if (!fadeStart) fadeStart = now
+  alpha = Math.min(FINAL_ALPHA, (FINAL_ALPHA * (now - fadeStart)) / FADE_MS)
+  draw()
+  if (alpha >= FINAL_ALPHA) {
+    // Появление одно и без повтора: дальше кадры не нужны вообще.
+    done = true
     raf = 0
     return
   }
-  if (holdUntil) {
-    // Plate is complete and holding. Nothing is redrawn during the hold; the
-    // canvas already carries the finished image.
-    if (now >= holdUntil) {
-      holdUntil = 0
-      progress = 0
-    }
-    raf = requestAnimationFrame(animate)
-    return
-  }
-  progress = Math.min(1, progress + SWEEP_PER_FRAME)
-  draw()
-  if (progress >= 1) holdUntil = now + HOLD_MS
   raf = requestAnimationFrame(animate)
 }
 
 const start = () => {
-  if (raf || reduced || !visible) return
+  if (raf || done || reduced) return
   raf = requestAnimationFrame(animate)
 }
 
@@ -221,11 +192,20 @@ onMounted(async () => {
     pts = []
   }
 
+  const ranked = [...anchors.value]
+    .map((a, i) => ({ i, count: a.count }))
+    .sort((x, y) => y.count - x.count)
+    .slice(0, LABEL_ALWAYS)
+    .map((x) => x.i)
+  labelled.value = anchors.value.map((_, i) => ranked.includes(i))
+
   reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   reproject()
-  progress = reduced ? 1 : 0
+  if (reduced) {
+    alpha = FINAL_ALPHA
+    done = true
+  }
   draw()
-  if (!reduced) start()
 
   ro = new ResizeObserver(() => {
     reproject()
@@ -233,12 +213,13 @@ onMounted(async () => {
   })
   if (wrap.value) ro.observe(wrap.value)
 
-  // A canvas looping behind three screens of scrolled content is pure cost.
+  // Появление начинается, когда плиту видно, и больше не запускается.
   io = new IntersectionObserver(
     (entries) => {
-      visible = entries.some((e) => e.isIntersecting)
-      if (visible) start()
-      else stop()
+      if (entries.some((e) => e.isIntersecting)) {
+        start()
+        if (done) io?.disconnect()
+      }
     },
     { threshold: 0 },
   )

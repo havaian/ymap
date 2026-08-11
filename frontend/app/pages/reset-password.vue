@@ -92,7 +92,7 @@
             :disabled="isLoading"
             class="w-full rounded-control bg-prussian-600 px-5 py-3 text-body font-semibold text-paper transition-colors hover:bg-prussian-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ isLoading ? 'Сохраняю…' : 'Задать пароль' }}
+            {{ isLoading ? 'Пароль сохраняется…' : 'Задать пароль' }}
           </button>
         </form>
       </template>

@@ -3,9 +3,12 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+    // CORRECTION: имя больше не обязательно. Форма регистрации его не спрашивает,
+    // а прежняя подстановка левой части адреса давала не имя, а мусор, который
+    // уходил в обращение письма. Пустое поле честнее выдуманного значения;
+    // интерфейс в этом случае показывает адрес.
     name: {
         type: String,
-        required: true,
         trim: true
     },
     email: {
@@ -36,9 +39,10 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    // Email confirmation. Accounts created by bootstrap (admin, demo citizens) and
-    // by the seeder are written with emailVerified: true, so the confirmation gate
-    // only applies to self-registration through /api/auth/register.
+    // Email confirmation. CORRECTION: демо-аккаунты и сидер удалены, ссылка на
+    // них здесь больше не верна. Флаг true пишется только бутстрапом учётной
+    // записи администратора, поэтому подтверждение адреса касается ровно
+    // самостоятельной регистрации через /api/auth/register.
     emailVerified: {
         type: Boolean,
         default: false

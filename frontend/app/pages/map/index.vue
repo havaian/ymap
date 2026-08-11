@@ -71,6 +71,12 @@
         <span class="h-2.5 w-3 rounded-sm" :style="{ background: scale.SCALE_COLORS.none }" />
         объектов недостаточно для оценки
       </div>
+      <!-- Отдельная строка, а не тот же серый: район без единого загруженного
+           объекта и район ниже порога публикации говорят разное. -->
+      <div class="mt-1 flex items-center gap-1.5 text-label text-ink-faint">
+        <span class="h-2.5 w-3 rounded-sm" :style="{ background: scale.SCALE_COLORS.absent }" />
+        объектов не загружено
+      </div>
     </div>
 
     <ClientOnly>

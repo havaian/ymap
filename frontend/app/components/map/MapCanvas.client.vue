@@ -352,7 +352,13 @@ const scoreTooltip = (p: any): string => {
 const deprivationTooltip = (p: any): string => {
   const v = p?.value ?? null
   if (v === null) {
-    return `<div style="font-size:12px;"><strong>${escapeHtml(districtName(p))}</strong><br/><span style="color:#8E979F;">объектов недостаточно для оценки (${p?.assessed ?? 0})</span></div>`
+    // Два разных серых состояния. no_objects - в районе нет ни одного объекта
+    // этого типа, это про покрытие загрузки. Иначе объекты есть, но их меньше
+    // порога публикации.
+    const note = p?.status === 'no_objects'
+      ? 'объектов этого типа не загружено'
+      : `объектов недостаточно для оценки (${p?.assessed ?? 0})`
+    return `<div style="font-size:12px;"><strong>${escapeHtml(districtName(p))}</strong><br/><span style="color:#8E979F;">${note}</span></div>`
   }
   const dims = Object.values(p?.dimensions ?? {}) as { label: string; lower: number | null }[]
   const worst = [...dims].sort((a, b) => (b.lower ?? 0) - (a.lower ?? 0)).slice(0, 3)
@@ -406,7 +412,9 @@ const renderChoropleth = async () => {
       smoothFactor: 1.5,
       style: (f: any) => ({
         fillColor: isDeprivation
-          ? deprivationColor(f.properties.value ?? null)
+          ? f.properties.status === 'no_objects'
+            ? scale.SCALE_COLORS.absent
+            : deprivationColor(f.properties.value ?? null)
           : scoreColor(f.properties.value ?? 0),
         weight: 1,
         opacity: 0.8,

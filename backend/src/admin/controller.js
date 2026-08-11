@@ -2,7 +2,6 @@
 
 import { getUsers, blockUser } from '../user/controller.js';
 import { importObjects } from '../scripts/import-objects.js';
-import { generateMockData, clearSeededData, generateProgramVerifications, clearProgramVerifications } from '../services/seeder.js';
 import { createJob, updateJob, getJob } from '../services/jobStore.js';
 import { invalidateAnalyticsCache } from '../middleware/cache.js';
 
@@ -57,32 +56,6 @@ export const getJobStatus = (req, res) => {
     res.json({ success: true, data: job });
 };
 
-// ── POST /api/admin/seed/generate ────────────────────────────────────────────
-
-export const seedData = async (req, res) => {
-    const { issuesCount = 1000, includeComments = true } = req.body;
-    const result = await generateMockData(parseInt(issuesCount), includeComments);
-    res.json({ success: true, data: result });
-};
-
-// ── DELETE /api/admin/seed/clear ─────────────────────────────────────────────
-
-export const clearSeeded = async (req, res) => {
-    const result = await clearSeededData();
-    res.json({ success: true, data: result });
-};
-
-// ── POST /api/admin/seed/program-verifications ────────────────────────────────
-
-export const seedProgramVerifications = async (req, res) => {
-    const { maxPerTask = 6 } = req.body;
-    const result = await generateProgramVerifications(parseInt(maxPerTask));
-    res.json({ success: true, data: result });
-};
-
-// ── DELETE /api/admin/seed/program-verifications ──────────────────────────────
-
-export const clearProgramVerifs = async (req, res) => {
-    const result = await clearProgramVerifications();
-    res.json({ success: true, data: result });
-};
+// УДАЛЕНО: обработчики сидера (seed/generate, seed/clear,
+// seed/program-verifications). Генерация выдуманных обращений и проверок снята
+// с платформы вместе с services/seeder.js.

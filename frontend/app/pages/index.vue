@@ -18,7 +18,7 @@
         <HeroMap />
       </div>
 
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-prussian-800 via-prussian-800/85 to-transparent" />
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-prussian-800 via-prussian-800/75 to-transparent" />
 
       <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32">
         <div class="max-w-2xl">
@@ -107,7 +107,7 @@
             В реестре Минздрава виды ремонта уже разделены. Переключите и посмотрите, что стоит на кону.
           </p>
           <p class="mt-5 max-w-lg text-body text-prussian-100/60">
-            Мы не выбираем одну гипотезу за читателя. Обе публикуются, обе видны, и разрыв между ними
+            Гипотеза за читателя не выбирается. Обе публикуются, обе видны, и разрыв между ними
             закрывается одной строкой в форме, а не лучшей моделью.
           </p>
         </div>
@@ -148,7 +148,9 @@
         Четыре измерения на данных, которые уже загружены
       </h2>
 
-      <div class="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <!-- items-start: без него строка грида тянет соседнюю карточку до высоты
+           раскрытой, и «как это считается» открывает сразу две. -->
+      <div class="mt-10 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <ModelCard v-for="m in models" :key="m.to" v-bind="m" />
       </div>
     </section>
@@ -197,9 +199,9 @@
 <script setup lang="ts">
 import { MapPin, ArrowUpRight } from 'lucide-vue-next'
 
-// Public landing, server-rendered: the layout has the marketing header and footer,
-// not the application shell.
-definePageMeta({ layout: 'default' })
+// Public landing, server-rendered. Раскладка landing: подвал есть, шапки нет -
+// верхняя панель убрана с лендинга, остальной сайт её сохраняет.
+definePageMeta({ layout: 'landing' })
 useSeoMeta({
   title: 'Y.Map - обсерватория данных о социальной инфраструктуре Узбекистана',
   description:
@@ -232,7 +234,7 @@ const archiveSteps = [
     body: 'Сырые байты выгрузки складываются в архив без разбора. Позднейшая правка логики импорта применяется ко всей истории задним числом.',
   },
   {
-    title: 'Дифф',
+    title: 'Сравнение',
     body: 'Пара снимков даёт переходы полей. Изменение произошло внутри окна между ними, и архив сузить его не может.',
   },
   {
@@ -314,7 +316,7 @@ const rules = [
   },
   {
     title: 'Открытое ядро',
-    body: 'Harvester, схема данных, дифф-движок и сведённый слой координат открыты. Слой принятия решений - коммерческий.',
+    body: 'Сборщик данных, схема данных, движок сравнения снимков и сведённый слой координат открыты. Слой принятия решений - коммерческий.',
   },
 ]
 </script>

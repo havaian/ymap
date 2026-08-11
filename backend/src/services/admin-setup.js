@@ -1,30 +1,24 @@
 // backend/src/services/admin-setup.js
-// Bootstraps the admin account and 5 demo citizen accounts on every server start.
-// All accounts are idempotent - safe to run repeatedly.
+// Bootstraps the admin account on every server start. Idempotent - safe to run
+// repeatedly.
+//
+// УДАЛЕНО: шесть демонстрационных гражданских аккаунтов с общим паролем
+// Demo1234!, создававшихся при каждом старте. Посевные пользователи сняты с
+// платформы целиком. Учётная запись администратора остаётся: её адрес и пароль
+// задаёт оператор в окружении, без неё в систему некому войти.
+//
+// Уже созданные демо-аккаунты в базе этим кодом не трогаются: удаление чужих
+// строк без команды здесь не делается. Снести их можно вручную одним запросом:
+//   db.users.deleteMany({ email: /@demo\.ymap\.uz$/ })
 
 import User from '../user/model.js';
 import { hashPassword } from '../utils/bcrypt.js';
-
-// ── Demo citizen accounts ─────────────────────────────────────────────────────
-// Fixed credentials shown to judges during the hackathon demo.
-// Password is the same for all 5 to keep the demo simple.
-const DEMO_PASSWORD = 'Demo1234!';
-
-const DEMO_CITIZENS = [
-    { name: 'Зарина Юсупова', email: 'zarina@demo.ymap.uz', district: 'Юнусабад' },
-    { name: 'Бобур Рахимов', email: 'bobur@demo.ymap.uz', district: 'Чиланзар' },
-    { name: 'Нигора Каримова', email: 'nigora@demo.ymap.uz', district: 'Мирзо-Улугбек' },
-    { name: 'Фарход Ахмедов', email: 'farkhod@demo.ymap.uz', district: 'Яшнобод' },
-    { name: 'Малика Холматова', email: 'malika@demo.ymap.uz', district: 'Сергели' },
-    { name: 'Telegram Demo Bot', email: 'telegram-bot@demo.ymap.uz', district: 'Мирабад' },
-];
 
 // ── ensureAdminExists ─────────────────────────────────────────────────────────
 
 export const ensureAdminExists = async () => {
     try {
         await bootstrapAdmin();
-        await bootstrapDemoCitizens();
     } catch (error) {
         // Don't crash the server - just warn loudly
         console.error('❌ Account bootstrap failed:', error.message);
@@ -68,38 +62,4 @@ async function bootstrapAdmin() {
     });
 
     console.log('✅ Admin account created:', adminEmail);
-}
-
-async function bootstrapDemoCitizens() {
-    const hashedPassword = await hashPassword(DEMO_PASSWORD);
-
-    for (const citizen of DEMO_CITIZENS) {
-        const existing = await User.findOne({ email: citizen.email });
-
-        if (existing) {
-            // Ensure role is CITIZEN (in case of old ORG_ADMIN data)
-            if (existing.role !== 'CITIZEN') {
-                await User.updateOne({ _id: existing._id }, { role: 'CITIZEN' });
-            }
-            // Accounts created before the confirmation gate existed have no flag at
-            // all, and a missing flag must not lock out a working demo login.
-            if (existing.emailVerified !== true) {
-                await User.updateOne({ _id: existing._id }, { emailVerified: true });
-            }
-            continue;
-        }
-
-        await User.create({
-            name: citizen.name,
-            email: citizen.email,
-            password: hashedPassword,
-            role: 'CITIZEN',
-            district: citizen.district,
-            emailVerified: true
-        });
-
-        console.log('✅ Demo citizen created:', citizen.email);
-    }
-
-    console.log(`✅ Demo citizens verified (password: ${DEMO_PASSWORD})`);
 }

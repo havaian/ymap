@@ -5,52 +5,37 @@
     </div>
 
     <p v-else-if="!d" class="py-24 text-center text-body text-ink-muted dark:text-ink-faint">
-      Не удалось загрузить профиль
+      Профиль не загрузился
     </p>
 
     <template v-else>
-      <!-- Identity. The gradient banner and the floating avatar tile are gone: this
-           is a record about a contributor, and a header image says nothing about it. -->
+      <!-- Запись об участнике. Уровень, очки и значки сняты: вклад в обсерваторию
+           измеряется проверенными записями реестра, а не набранной суммой, и
+           игровая шкала спорит с консультативным тоном остальной платформы.
+           Файл composables/useGamification.ts не удалён - он остаётся для
+           рейтинга, который живёт своей страницей. -->
       <section class="panel p-6">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
-            <p class="eyebrow">Участник</p>
-            <h1 class="mt-1 font-display text-h2 font-semibold tracking-tight text-ink dark:text-paper">
-              {{ d.user.name }}
+            <p class="eyebrow">Аккаунт</p>
+            <h1 class="mt-1 truncate font-display text-h2 font-semibold tracking-tight text-ink dark:text-paper">
+              {{ displayName }}
             </h1>
             <p class="mt-1 text-note text-ink-muted dark:text-ink-faint">
               В проекте с {{ joinedDate }}
             </p>
           </div>
-          <span class="rounded-control px-3 py-1.5 text-label font-semibold" :class="[level.bg, level.color]">
-            {{ level.icon }} {{ level.label }}
+          <span class="rounded-control bg-paper-sunk px-3 py-1.5 text-label font-semibold text-ink-muted dark:bg-night-sunk dark:text-ink-faint">
+            {{ roleLabel }}
           </span>
         </div>
 
-        <div class="mt-6 border-t border-rule pt-5 dark:border-night-rule">
-          <div class="flex items-baseline justify-between gap-4">
-            <MeasuredValue :value="points" unit="очков" size="lg" />
-            <p v-if="nextLevel" class="text-note text-ink-muted dark:text-ink-faint">
-              До «{{ nextLevel.label }}» {{ nextLevel.min - points }}
-            </p>
-            <p v-else class="text-note" :style="{ color: SCALE_COLORS.ok }">Максимальный уровень</p>
-          </div>
-
-          <!-- The same span primitive the observatory pages use for a bound: the
-               filled part is what is earned, the light continuation is what the
-               next level needs. -->
-          <div v-if="nextLevel" class="span-track mt-3">
-            <div class="span-upper w-full" :style="{ backgroundColor: SCALE_COLORS.ok }" />
-            <div class="span-lower" :style="{ width: progress + '%', backgroundColor: SCALE_COLORS.ok }" />
-          </div>
-          <div v-if="nextLevel" class="mt-1.5 flex justify-between text-label text-ink-faint">
-            <span>{{ level.label }}</span>
-            <span class="font-mono">{{ level.min }} – {{ nextLevel.min }}</span>
-          </div>
-        </div>
+        <p v-if="!d.user.name" class="mt-5 border-t border-rule pt-4 text-note text-ink-muted dark:border-night-rule dark:text-ink-faint">
+          Имя не указано. Регистрация его не спрашивает, поэтому в подписи стоит адрес почты.
+        </p>
       </section>
 
-      <!-- Counts, each with what it is counted out of. -->
+      <!-- Счёт вклада. У каждого числа стоит то, из чего оно сложено. -->
       <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatPanel
           v-for="s in stats"
@@ -60,32 +45,6 @@
           :denominator="s.sub"
         />
       </div>
-
-      <section class="panel mt-4 p-6">
-        <SectionHead
-          title="Достижения"
-          eyebrow="Отметки"
-          :note="`Открыто ${earnedBadges.length} из ${BADGES.length}. Два критерия пока не имеют источника данных и заперты.`"
-        />
-        <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div v-for="b in allBadges" :key="b.id" class="flex flex-col items-center gap-2 text-center">
-            <span
-              class="flex h-12 w-12 items-center justify-center rounded-control"
-              :class="b.earned
-                ? 'bg-prussian-600 text-paper'
-                : 'bg-paper-sunk text-ink-faint dark:bg-night-sunk'"
-            >
-              <component :is="b.earned ? b.icon : LockIcon" :size="18" />
-            </span>
-            <span
-              class="text-label leading-tight"
-              :class="b.earned ? 'text-ink dark:text-paper' : 'text-ink-faint'"
-            >
-              {{ b.label }}
-            </span>
-          </div>
-        </div>
-      </section>
 
       <section v-if="d.activity.recentIssues.length" class="panel mt-4 p-6">
         <SectionHead title="Последние обращения" eyebrow="История" />
@@ -106,28 +65,29 @@
           </div>
         </div>
       </section>
+
+      <NoteBlock class="mt-4" title="Что здесь считается">
+        Проверки - это подтверждённые и оспоренные поля конкретных записей реестра. Обращения и
+        голоса приходят с гражданского контура и наполняются по мере его работы. Очки и уровни
+        на этой странице не показываются: они ничего не говорят о том, стала ли запись точнее.
+      </NoteBlock>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  Loader2, Star, FileText, ThumbsUp, CheckCircle2, TrendingUp,
-  Flag, ShieldCheck, Shield, Zap, Award, Crown, Lock as LockIcon,
-} from 'lucide-vue-next'
-import type { Component } from 'vue'
+import { Loader2 } from 'lucide-vue-next'
 import type { ProfileData } from '~/types'
 
-// REWORKED to the register design system. The page was built on the stock palette:
-// a blue-to-indigo banner, rounded-[2rem] cards, font-black on every figure and one
-// emerald "🏆 Максимальный уровень достигнут!" line. The numbers themselves did not
-// change - only how they are set, and the level bar now uses the same span
-// primitive as every bound in the observatory section.
+// ПЕРЕДЕЛАНО под концепцию обсерватории. Со страницы сняты уровень, шкала очков
+// до следующего уровня и сетка значков: это игровая механика, а платформа
+// измеряет соответствие реестра полю. Числа остались те же и приходят из того же
+// /users/me/activity - изменилось, что именно вынесено вперёд.
 definePageMeta({
   layout: 'app',
   middleware: 'auth',
   pageTitle: 'Профиль',
-  pageSubtitle: 'Данные о пользователе',
+  pageSubtitle: 'Запись об участнике и его вклад',
 })
 useSeoMeta({ title: 'Профиль - Y.Map' })
 
@@ -147,54 +107,30 @@ onMounted(async () => {
   }
 })
 
-const { BADGES, getLevel, getNextLevel, getProgress } = useGamification()
-
 const d = computed(() => data.value)
-const points = computed(() => d.value?.user.points ?? 0)
-const level = computed(() => getLevel(points.value))
-const nextLevel = computed(() => getNextLevel(points.value))
-const progress = computed(() => getProgress(points.value))
+
+// Имя необязательно. Пустое подменяется адресом только в подписи собственного
+// профиля - это свой адрес, и никому больше он не показывается.
+const displayName = computed(() => d.value?.user.name || d.value?.user.email || '-')
+
+const roleLabel = computed(() => (d.value?.user.role === 'ADMIN' ? 'Оператор' : 'Участник'))
 
 const joinedDate = computed(() =>
   d.value ? new Date(d.value.user.createdAt).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : '',
-)
-
-// Badge id -> icon (labels/criteria come from useGamification; icons chosen to match the mockup).
-const BADGE_ICONS: Record<string, Component> = {
-  first_issue: Flag,
-  first_verif: ShieldCheck,
-  five_issues: FileText,
-  first_resolve: Award,
-  ten_verifs: Shield,
-  activist: Zap,
-  district_leader: Crown,
-  expert: Star,
-}
-
-const badgeCtx = computed(() => (d.value ? { activity: d.value.activity, points: d.value.user.points } : null))
-const earnedBadges = computed(() => (badgeCtx.value ? BADGES.filter((b) => b.check(badgeCtx.value!)) : []))
-const allBadges = computed(() =>
-  BADGES.map((b) => ({
-    id: b.id,
-    label: b.label,
-    icon: BADGE_ICONS[b.id] ?? Award,
-    earned: badgeCtx.value ? b.check(badgeCtx.value) : false,
-  })),
 )
 
 const stats = computed(() => {
   const a = d.value?.activity
   if (!a) return []
   return [
-    { label: 'Обращения', value: a.issues.total, icon: FileText, sub: `Решено: ${a.issues.resolved}` },
-    { label: 'Голоса', value: a.votesGiven, icon: ThumbsUp, sub: 'Отдано за чужие обращения' },
     {
-      label: 'Проверки',
+      label: 'Проверки записей',
       value: a.verifications.done + a.verifications.problem,
-      icon: CheckCircle2,
-      sub: `Подтвердил: ${a.verifications.done} · Оспорил: ${a.verifications.problem}`,
+      sub: `Подтверждено ${a.verifications.done}, оспорено ${a.verifications.problem}`,
     },
-    { label: 'Признание', value: a.issues.totalVotes, icon: TrendingUp, sub: 'Голосов получено' },
+    { label: 'Обращения', value: a.issues.total, sub: `Решено ${a.issues.resolved}` },
+    { label: 'Голоса за чужие обращения', value: a.votesGiven, sub: 'Отдано' },
+    { label: 'Голоса за свои обращения', value: a.issues.totalVotes, sub: 'Получено' },
   ]
 })
 

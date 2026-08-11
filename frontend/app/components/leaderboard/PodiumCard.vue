@@ -24,7 +24,7 @@
     </div>
 
     <p class="mt-4 max-w-full truncate text-body font-medium text-ink dark:text-paper">
-      {{ entry.name }}
+      {{ entry.name || 'Без имени' }}
       <span v-if="isMe" class="text-label text-prussian-600 dark:text-prussian-200">(вы)</span>
     </p>
 
@@ -52,7 +52,7 @@ const props = defineProps<{ entry: LeaderboardEntry; isMe?: boolean; featured?: 
 const { SCALE_COLORS } = useScale()
 
 const initials = computed(() =>
-  props.entry.name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join(''),
+  (props.entry.name || '?').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join(''),
 )
 
 // Three steps down the accent, not gold/silver/bronze: the ramp is reserved for

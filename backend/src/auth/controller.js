@@ -50,7 +50,7 @@ const issueVerification = async (user) => {
             }
         }
     );
-    return sendVerificationEmail({ to: user.email, name: user.name, token: raw });
+    return sendVerificationEmail({ to: user.email, token: raw });
 };
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
@@ -116,8 +116,13 @@ export const register = async (req, res) => {
     // The name is optional in the form: an address and a password are enough to
     // open an account, and requiring a real name before the address is even
     // confirmed collects a field that may well be discarded.
+    //
+    // CORRECTION: левая часть адреса как имя больше не подставляется. Это не имя,
+    // а кусок адреса, и он уходил в обращение письма: человек получал
+    // "m.usman.work, здравствуйте", причём почтовый клиент подчёркивал это
+    // ссылкой, приняв за домен. Поле остаётся пустым, пока его не заполнят.
     const user = await User.create({
-        name:      (name && String(name).trim()) || normalizedEmail.split('@')[0],
+        name:      (name && String(name).trim()) || undefined,
         email:     normalizedEmail,
         password:  hashedPassword,
         district:  district || null,
@@ -264,7 +269,7 @@ export const forgotPassword = async (req, res) => {
             }
         }
     );
-    await sendPasswordResetEmail({ to: user.email, name: user.name, token: raw });
+    await sendPasswordResetEmail({ to: user.email, token: raw });
 
     res.json(generic);
 };

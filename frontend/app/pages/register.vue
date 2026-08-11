@@ -33,7 +33,7 @@
             @click="resend"
           >
             <span v-if="cooldown > 0">Отправить заново через {{ cooldown }} с</span>
-            <span v-else>{{ resending ? 'Отправляю…' : 'Отправить заново' }}</span>
+            <span v-else>{{ resending ? 'Письмо отправляется…' : 'Отправить заново' }}</span>
           </button>
           <NuxtLink to="/login" class="text-body font-semibold text-prussian-600 dark:text-prussian-200">
             Перейти ко входу
@@ -98,7 +98,7 @@
             :disabled="isLoading"
             class="w-full rounded-control bg-prussian-600 px-5 py-3 text-body font-semibold text-paper transition-colors hover:bg-prussian-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ isLoading ? 'Создаю аккаунт…' : 'Создать аккаунт' }}
+            {{ isLoading ? 'Аккаунт создаётся…' : 'Создать аккаунт' }}
           </button>
         </form>
 

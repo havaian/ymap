@@ -5,11 +5,7 @@
     <div class="mx-auto max-w-7xl px-4 sm:px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
       <div class="col-span-2 md:col-span-1">
         <div class="flex items-center gap-2">
-          <span
-            class="inline-flex h-9 w-9 items-center justify-center rounded-control bg-prussian-600 text-paper"
-          >
-            <MapIcon :size="20" />
-          </span>
+          <BrandMark :size="36" />
           <span class="font-display text-lead font-semibold tracking-tight">Y.Map</span>
         </div>
         <div class="flex items-center gap-2 mt-4">
@@ -18,6 +14,7 @@
             :key="s.label"
             :href="s.href"
             :aria-label="s.label"
+            :title="s.label"
             class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-paper-sunk text-ink-muted transition-colors hover:bg-rule dark:bg-night-sunk dark:text-ink-faint dark:hover:bg-night-rule"
           >
             <component :is="s.icon" :size="16" />
@@ -42,41 +39,59 @@
 </template>
 
 <script setup lang="ts">
-import { Map as MapIcon, Send, MessageCircle, Mail, Globe } from 'lucide-vue-next'
+import { Send, MessageCircle, Mail, Globe } from 'lucide-vue-next'
 
 const year = new Date().getFullYear()
 
-const socials = [
-  { label: 'Telegram', href: '#', icon: Send },
-  { label: 'Чат', href: '#', icon: MessageCircle },
-  { label: 'Email', href: '#', icon: Mail },
-  { label: 'Сайт', href: '#', icon: Globe },
-]
+// Адреса обратной связи задаются переменными окружения, а не правкой этого файла:
+// NUXT_PUBLIC_CONTACT_TELEGRAM, NUXT_PUBLIC_CONTACT_CHAT, NUXT_PUBLIC_CONTACT_EMAIL,
+// NUXT_PUBLIC_CONTACT_SITE. Пустое значение иконку не убирает - место в подвале
+// остаётся за ней, ссылка ведёт в никуда до тех пор, пока значение не задано.
+const { contacts } = useRuntimeConfig().public as {
+  contacts: { telegram: string; chat: string; email: string; site: string }
+}
 
-// Columns mirror the mockup. Routes that do not exist yet use "#" placeholders.
+// Голый адрес почты в href без схемы открывается как относительный путь, поэтому
+// mailto подставляется здесь, а не в переменной окружения.
+const href = (value: string | undefined) => {
+  const v = (value ?? '').trim()
+  if (!v) return '#'
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('//')) return v
+  if (v.includes('@')) return `mailto:${v}`
+  return v
+}
+
+const socials = computed(() => [
+  { label: 'Telegram', href: href(contacts?.telegram), icon: Send },
+  { label: 'Чат', href: href(contacts?.chat), icon: MessageCircle },
+  { label: 'Почта', href: href(contacts?.email), icon: Mail },
+  { label: 'Сайт', href: href(contacts?.site), icon: Globe },
+])
+
+// Состав колонок повторяет макет. Маршруты, которых ещё нет, стоят заглушкой "#".
 const columns = [
   {
-    title: 'Company',
+    title: 'Проект',
     items: [
-      { label: 'Home', to: '/' },
-      { label: 'About Us', to: '/about' },
-      { label: 'Careers', to: '#' },
+      { label: 'Главная', to: '/' },
+      { label: 'О проекте', to: '/about' },
+      { label: 'Вакансии', to: '#' },
     ],
   },
   {
-    title: 'Product',
+    title: 'Платформа',
     items: [
-      { label: 'Changelog', to: '#' },
-      { label: 'Integrations', to: '#' },
-      { label: 'Templates', to: '#' },
+      { label: 'Журнал изменений', to: '#' },
+      { label: 'Подключения', to: '#' },
+      { label: 'Шаблоны', to: '#' },
     ],
   },
   {
-    title: 'Resources',
+    title: 'Материалы',
     items: [
-      { label: 'Privacy Policy', to: '#' },
-      { label: 'Security', to: '#' },
-      { label: 'Contact Us', to: '#' },
+      { label: 'Политика конфиденциальности', to: '#' },
+      { label: 'Безопасность', to: '#' },
+      { label: 'Связаться', to: '#' },
     ],
   },
 ]

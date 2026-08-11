@@ -18,6 +18,12 @@ services:
       - NUXT_DASHBOARD_API_KEY=${NUXT_DASHBOARD_API_KEY:-}
       - NUXT_DOPPIX_API_URL=${NUXT_DOPPIX_API_URL:-}
       - NUXT_DOPPIX_API_KEY=${NUXT_DOPPIX_API_KEY:-}
+      # Адреса обратной связи в подвале сайта. Пустое значение допустимо:
+      # иконка остаётся на месте, ссылка ведёт в "#".
+      - NUXT_PUBLIC_CONTACT_TELEGRAM=${NUXT_PUBLIC_CONTACT_TELEGRAM:-}
+      - NUXT_PUBLIC_CONTACT_CHAT=${NUXT_PUBLIC_CONTACT_CHAT:-}
+      - NUXT_PUBLIC_CONTACT_EMAIL=${NUXT_PUBLIC_CONTACT_EMAIL:-}
+      - NUXT_PUBLIC_CONTACT_SITE=${NUXT_PUBLIC_CONTACT_SITE:-}
     ports:
       - "${FRONTEND_EXPOSE:-127.0.0.1:7797}:3000"
     depends_on:

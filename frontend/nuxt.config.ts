@@ -32,8 +32,6 @@ export default defineNuxtConfig({
     '/': { ssr: true },
     '/analytics/**': { ssr: false },
     '/about': { prerender: true },
-    '/knowledge/**': { ssr: true },
-    '/stories/**': { ssr: true },
     '/search': { ssr: true },
     '/map': { ssr: false },
     // Reached from a marker click, so it lives on the same client-only side of
@@ -63,6 +61,15 @@ export default defineNuxtConfig({
     doppixApiKey: '',      // NUXT_DOPPIX_API_KEY
     public: {
       apiBase: '/api',     // NUXT_PUBLIC_API_BASE - current Express, proxied by Nginx (client-side)
+      // Адреса обратной связи в подвале. Значения задаются окружением, а не
+      // правкой компонента: NUXT_PUBLIC_CONTACT_TELEGRAM, _CHAT, _EMAIL, _SITE.
+      // Пустая строка иконку не скрывает, ссылка ведёт в "#".
+      contacts: {
+        telegram: '',
+        chat: '',
+        email: '',
+        site: '',
+      },
     },
   },
 

@@ -3,12 +3,19 @@
     <canvas ref="cv" class="block h-full w-full" />
 
     <!-- Anchors sit at real coordinates and carry counts computed from the same
-         cloud, so a figure on the hero cannot drift away from the data under it. -->
+         cloud, so a figure on the hero cannot drift away from the data under it.
+
+         ПЕРЕДЕЛАНО. Подпись лежала прямо под точкой, поверх самого плотного
+         участка облака, и читалась тем хуже, чем крупнее город: в Ташкенте и
+         Намангане буквы шли по россыпи таких же светлых точек. Теперь она
+         вынесена вверх и вправо от точки, набрана мельче и несёт тёмный ореол,
+         поэтому не зависит от того, что под ней. Кнопка держит точку по центру
+         своей коробки, так что сама точка стоит ровно на координате. -->
     <button
       v-for="(a, i) in anchors"
       :key="a.name"
       type="button"
-      class="absolute -translate-x-1/2 -translate-y-1/2 rounded-control px-2 py-1 text-left transition-colors"
+      class="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-colors"
       :class="active === i ? 'bg-prussian-200/20' : 'hover:bg-prussian-200/10'"
       :style="anchorPositions[i]"
       @mouseenter="active = i"
@@ -16,14 +23,20 @@
       @focus="active = i"
       @blur="active = null"
     >
-      <span class="block h-1.5 w-1.5 rounded-full bg-prussian-100 ring-4 ring-prussian-100/20" />
+      <!-- Тёмное кольцо вокруг светлой точки: без него метка теряется в облаке,
+           которое написано тем же цветом. -->
+      <span class="h-1.5 w-1.5 rounded-full bg-prussian-50 ring-2 ring-prussian-900/70" />
       <!-- Тринадцать подписей с числами перекрывают друг друга в Ферганской
            долине. Постоянную подпись получают самые крупные центры, остальные
            показывают её при наведении. Точка стоит у всех. -->
-      <template v-if="labelled[i] || active === i">
-        <span class="mt-1.5 block whitespace-nowrap text-label text-prussian-100/70">{{ a.name }}</span>
-        <span class="block whitespace-nowrap font-mono text-body text-prussian-50">{{ a.count.toLocaleString('ru-RU') }}</span>
-      </template>
+      <span
+        v-if="labelled[i] || active === i"
+        class="pointer-events-none absolute bottom-full left-1/2 mb-0.5 ml-1.5 whitespace-nowrap text-left"
+        :style="labelShadow"
+      >
+        <span class="block text-[10px] leading-tight tracking-wide text-prussian-100">{{ a.name }}</span>
+        <span class="block font-mono text-[11px] leading-tight text-prussian-50">{{ a.count.toLocaleString('ru-RU') }}</span>
+      </span>
     </button>
 
     <p class="absolute bottom-2 right-3 text-label text-prussian-200/40">
@@ -72,6 +85,13 @@ const anchorPositions = ref<{ left: string; top: string }[]>([])
 const labelled = ref<boolean[]>([])
 
 const LABEL_ALWAYS = 5
+
+// Ореол под подписью. Тень, а не подложка: прямоугольник под каждой подписью
+// закрыл бы кусок того самого облака, ради которого плита здесь стоит.
+// Цвет - prussian-900, тот же, что у самой тёмной поверхности проекта.
+const labelShadow = {
+  textShadow: '0 1px 2px rgba(7,26,37,0.95), 0 0 6px rgba(7,26,37,0.85), 0 0 12px rgba(7,26,37,0.6)',
+}
 
 let pts: number[] = []
 // Screen-space copy of the cloud, rebuilt only when the box changes size. Two

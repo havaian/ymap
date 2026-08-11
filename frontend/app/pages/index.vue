@@ -199,9 +199,10 @@
 <script setup lang="ts">
 import { MapPin, ArrowUpRight } from 'lucide-vue-next'
 
-// Public landing, server-rendered. Раскладка landing: подвал есть, шапки нет -
-// верхняя панель убрана с лендинга, остальной сайт её сохраняет.
-definePageMeta({ layout: 'landing' })
+// Public landing, server-rendered: the layout has the marketing header and footer,
+// not the application shell. Шапка на лендинге остаётся, из неё убраны только
+// пункты меню разделов - см. components/layout/AppHeader.vue.
+definePageMeta({ layout: 'default' })
 useSeoMeta({
   title: 'Y.Map - обсерватория данных о социальной инфраструктуре Узбекистана',
   description:

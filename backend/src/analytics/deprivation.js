@@ -39,9 +39,32 @@
  *   ?buildingAgeCutoff=30                         years, overrides the default
  */
 
+import fs from 'fs';
 import Object_ from '../object/model.js';
 import District from '../district/model.js';
 import { scoreObject, effectiveAge, loadClass } from './scales.js';
+import { resolveRead } from '../utils/dataDir.js';
+
+// ── Справочник районов ────────────────────────────────────────────────────────
+//
+// 198 наблюдённых районов с кодами СОАТО. Нужен слою карты ровно для одного:
+// назвать районы, которых на карте нет вовсе. Район без границы в базе не
+// рисуется ни в одном из трёх состояний - на его месте дыра, и молча оставлять
+// её нельзя. Читается один раз за жизнь процесса, файл приезжает внутри образа.
+let crosswalkCache = null;
+const loadCrosswalk = () => {
+    if (crosswalkCache) return crosswalkCache;
+    try {
+        crosswalkCache = JSON.parse(fs.readFileSync(resolveRead('district-crosswalk.json'), 'utf-8'));
+    } catch (err) {
+        console.warn(`⚠️  district-crosswalk.json не прочитан (${err.message}) - пропуски границ не будут названы`);
+        crosswalkCache = [];
+    }
+    return crosswalkCache;
+};
+
+const crosswalkName = (entry) =>
+    entry?.nameCyrillic?.[0] || entry?.nameLatin?.[0] || entry?.districtCode || '-';
 
 // ── Assumptions, all overridable per request and all reported in the response ──
 
@@ -506,9 +529,21 @@ export const getDeprivationChoropleth = async (req, res) => {
         // Районы, по которым оценка есть, а границы в базе нет. Это дыра в слое
         // границ, и молчать о ней нельзя: на карте такой район не появится ни в
         // одном из трёх состояний.
-        const withoutGeometry = [...byCode.keys()].filter(
-            c => !districtDocs.some(doc => doc.cadNum === c)
+        const drawnCodes = new Set(features.map(f => f.properties.districtCode));
+        const withoutGeometry = [...byCode.keys()].filter(c => !drawnCodes.has(c));
+
+        // Шире: весь справочник против того, что реально нарисовано. Предыдущая
+        // проверка видит только районы, где нашлись объекты этого типа, а дыра на
+        // карте не спрашивает, загружены ли в район школы. Семь городов областного
+        // подчинения (Джизак, Шахрисабз, Термез, Бекабад, Янгиюль, Ургенч, Хива)
+        // в OSM лежат не на том admin_level, который запрашивает
+        // fetch-osm-boundaries.js, - это и есть чёрные пятна на слое.
+        const expected = loadCrosswalk().filter(
+            e => !geoFilter.regionCode || parseInt(e.regionCode, 10) === geoFilter.regionCode
         );
+        const missingBoundaries = expected
+            .filter(e => !drawnCodes.has(e.districtCode))
+            .map(e => ({ districtCode: e.districtCode, name: crosswalkName(e) }));
 
         const counted = features.reduce((acc, f) => {
             acc[f.properties.status] = (acc[f.properties.status] || 0) + 1;
@@ -528,6 +563,9 @@ export const getDeprivationChoropleth = async (req, res) => {
                 districtsBelowThreshold: counted.below_threshold,
                 districtsWithoutObjects: counted.no_objects,
                 districtsWithoutGeometry: withoutGeometry.length,
+                districtsExpected: expected.length,
+                // Названия, а не только счёт: без них пропуск нечем закрывать.
+                boundariesMissing: missingBoundaries,
                 scale: 'выше = хуже; M0 в диапазоне 0..1'
             }
         });

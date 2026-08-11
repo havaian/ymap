@@ -8,17 +8,11 @@
         <span class="hidden font-display text-lead font-semibold tracking-tight sm:inline">Y.Map</span>
       </NuxtLink>
 
-      <nav class="hidden lg:flex items-center gap-1 ml-2">
-        <NuxtLink
-          v-for="link in links"
-          :key="link.to"
-          :to="link.to"
-          class="rounded-control px-3 py-2 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
-          active-class="!text-prussian-600 dark:!text-prussian-200"
-        >
-          {{ $t(link.label) }}
-        </NuxtLink>
-      </nav>
+      <!-- УДАЛЕНО: пункты «Главная», «Стратегия 2030», «Аналитика», «О нас».
+           Сама шапка на месте: знак, поиск, тема, вход. Массив links и разметка
+           списка убраны целиком, вернуть пункт - две строки. Отдельно: пункт
+           «Стратегия 2030» вёл на якорь /#strategy, а секции с таким id на
+           лендинге нет - ссылка была мёртвой. -->
 
       <div class="flex-1" />
 
@@ -68,33 +62,7 @@
           </template>
         </div>
       </ClientOnly>
-
-      <button
-        type="button"
-        class="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
-        :aria-label="mobileOpen ? 'Закрыть меню' : 'Открыть меню'"
-        @click="mobileOpen = !mobileOpen"
-      >
-        <XIcon v-if="mobileOpen" :size="20" />
-        <MenuIcon v-else :size="20" />
-      </button>
     </div>
-
-    <nav
-      v-if="mobileOpen"
-      class="lg:hidden border-t border-rule dark:border-night-rule px-4 py-2 flex flex-col gap-1"
-    >
-      <NuxtLink
-        v-for="link in links"
-        :key="link.to"
-        :to="link.to"
-        class="rounded-control px-3 py-2 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk"
-        active-class="!text-prussian-600 dark:!text-prussian-200"
-        @click="mobileOpen = false"
-      >
-        {{ $t(link.label) }}
-      </NuxtLink>
-    </nav>
   </header>
 </template>
 
@@ -102,21 +70,10 @@
 import {
   Search as SearchIcon,
   User as UserIcon,
-  Menu as MenuIcon,
-  X as XIcon,
 } from 'lucide-vue-next'
 
 const { isAuthenticated, logout } = useAuth()
 const router = useRouter()
-const mobileOpen = ref(false)
-
-// "Стратегия 2030" anchors the strategy section on the landing (id="strategy").
-const links = [
-  { to: '/', label: 'nav.home' },
-  { to: '/#strategy', label: 'nav.strategy' },
-  { to: '/analytics', label: 'nav.analytics' },
-  { to: '/about', label: 'nav.about' },
-]
 
 const onLogout = () => {
   logout()

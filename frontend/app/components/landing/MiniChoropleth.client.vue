@@ -104,6 +104,14 @@
           объектов не загружено
         </span>
       </div>
+
+      <!-- Пропуск в слое границ. Район без геометрии не рисуется вообще, и на
+           карте на его месте дыра. Молчать о ней нельзя: читатель видит не
+           «границы не загружены», а отсутствие территории. -->
+      <p v-if="missing.length" class="mt-2 text-label text-prussian-200/45">
+        Границ нет у {{ missing.length }} из {{ expected }} районов, на карте они не показаны:
+        {{ missingNames }}
+      </p>
     </div>
 
     <!-- The breakdown is the whole point of putting the map here. A composite is
@@ -202,6 +210,14 @@ const objectType = ref('school')
 const hover = ref<any>(null)
 const tip = ref<{ x: number; y: number } | null>(null)
 const state = ref<'loading' | 'empty' | 'ready'>('loading')
+
+const missing = ref<{ districtCode: string; name: string }[]>([])
+const expected = ref(0)
+
+const missingNames = computed(() => {
+  const names = missing.value.map((m) => m.name)
+  return names.length > 6 ? `${names.slice(0, 6).join(', ')} и ещё ${names.length - 6}` : names.join(', ')
+})
 
 const zoom = ref(1)
 const tx = ref(0)
@@ -523,6 +539,8 @@ const load = async () => {
     if (controller.signal.aborted) return
     const gj = res?.type === 'FeatureCollection' ? res : res?.data
     features = (gj?.features ?? []).filter((f: any) => f.geometry)
+    missing.value = gj?.meta?.boundariesMissing ?? []
+    expected.value = gj?.meta?.districtsExpected ?? 0
     if (!features.length) {
       state.value = 'empty'
       return
@@ -533,6 +551,8 @@ const load = async () => {
     draw()
   } catch {
     features = []
+    missing.value = []
+    expected.value = 0
     state.value = 'empty'
   } finally {
     if (abort === controller) abort = null

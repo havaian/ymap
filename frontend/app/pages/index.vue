@@ -27,7 +27,7 @@
         <div class="max-w-2xl">
           <p class="eyebrow text-prussian-200">Независимая обсерватория данных</p>
           <h1 class="mt-4 font-display text-[2.5rem] font-semibold leading-[1.05] tracking-tight sm:text-[3.5rem]">
-            Государство публикует состояние реестра. Историю не хранит никто.
+            Государство публикует состояние реестра. Мы храним историю.
           </h1>
           <p class="mt-6 max-w-xl text-lead text-prussian-100/75">
             Y.Map ведёт архив состояний государственных реестров социальной инфраструктуры Узбекистана

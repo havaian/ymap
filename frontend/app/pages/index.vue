@@ -14,8 +14,11 @@
       class="relative overflow-hidden bg-prussian-800 text-prussian-50"
       :style="gridStyle"
     >
+      <!-- Плита сдвинута вверх и вправо: слева над ней лежит текст, а низ секции
+           занимают счётчики. Сдвиг задаётся здесь, одной парой чисел - доли
+           ширины и высоты коробки. -->
       <div class="absolute inset-0">
-        <HeroMap />
+        <HeroMap :shift-x="0.1" :shift-y="0.07" />
       </div>
 
       <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-prussian-800 via-prussian-800/75 to-transparent" />

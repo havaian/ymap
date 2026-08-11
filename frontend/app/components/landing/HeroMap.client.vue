@@ -69,9 +69,20 @@
  * кадра. Позиции подписей тоже: чтение clientWidth из шаблона заставляло
  * синхронный пересчёт разметки на каждый рендер.
  */
-const props = withDefaults(defineProps<{ accent?: string }>(), {
-  accent: '#8FC5E8',
-})
+const props = withDefaults(
+  defineProps<{
+    accent?: string
+    /** Сдвиг плиты вправо, долей ширины коробки. Отрицательное значение - влево. */
+    shiftX?: number
+    /** Сдвиг плиты вверх, долей высоты коробки. Отрицательное - вниз. */
+    shiftY?: number
+  }>(),
+  {
+    accent: '#8FC5E8',
+    shiftX: 0,
+    shiftY: 0,
+  },
+)
 
 const wrap = ref<HTMLElement | null>(null)
 const cv = ref<HTMLCanvasElement | null>(null)
@@ -110,6 +121,11 @@ let reduced = false
 const FINAL_ALPHA = 0.9
 const FADE_MS = 700
 
+// Доля коробки, которую плита занимает по стеснённой стороне. Меньше единицы,
+// потому что сдвиг вверх без запаса срезал бы верх облака: по высоте страна
+// вписана впритык, слабина есть только по ширине.
+const FIT = 0.9
+
 // Equirectangular with a cos(lat) correction: at 41 degrees N an unadjusted plot
 // stretches the country sideways by a third and the shape stops being
 // recognisable.
@@ -117,9 +133,11 @@ const project = (lat: number, lon: number, w: number, h: number) => {
   const midLat = ((bounds.latMin + bounds.latMax) / 2) * (Math.PI / 180)
   const spanX = (bounds.lonMax - bounds.lonMin) * Math.cos(midLat)
   const spanY = bounds.latMax - bounds.latMin
-  const scale = Math.min(w / spanX, h / spanY)
-  const cx = w / 2
-  const cy = h / 2
+  const scale = Math.min(w / spanX, h / spanY) * FIT
+  // Центр плиты смещается вместе с подписями: они проецируются этой же
+  // функцией, поэтому точка и её метка не могут разъехаться.
+  const cx = w / 2 + props.shiftX * w
+  const cy = h / 2 - props.shiftY * h
   const x = cx + ((lon - (bounds.lonMin + bounds.lonMax) / 2) * Math.cos(midLat)) * scale
   const y = cy - (lat - (bounds.latMin + bounds.latMax) / 2) * scale
   return { x, y, scale }

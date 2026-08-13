@@ -19,7 +19,11 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { scoreObject, isUnknownToken, FIELD_OF, effectiveAge, loadClass } from '../analytics/scales.js';
-import { DIMENSION_SETS, DIM, DEFAULT_BUILDING_AGE_CUTOFF, DEFAULT_K_SHARE, vectorOf, indexAt } from '../analytics/deprivation.js';
+// Из deprivation-core.js, а не из deprivation.js: тот подключает модели объекта и
+// района, а они тянут mongoose. Здесь база не нужна ни на шаг, и требовать
+// установленных пакетов ради чистой арифметики незачем - смысл этого скрипта в
+// том, что методику воспроизводит любой, у кого есть репозиторий и Node.
+import { DIMENSION_SETS, DIM, DEFAULT_BUILDING_AGE_CUTOFF, DEFAULT_K_SHARE, vectorOf, indexAt } from '../analytics/deprivation-core.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');

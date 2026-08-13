@@ -168,11 +168,6 @@ const STAGES = [
         key: 'verify',
         title: 'Пересчёт индекса депривации по файлам',
         script: 'verify-deprivation.js',
-        // Базы этому этапу не нужно, а вот пакеты нужны: он тянет
-        // analytics/deprivation.js, а тот - модель района, а та - mongoose.
-        // Без backend/node_modules этап падает трассировкой посреди отчёта,
-        // поэтому проверяется заранее.
-        requires: ['mongoose'],
         reads: () => [
             path.join(DATA_DIR, 'ssv.json'),
             path.join(DATA_DIR, 'bogcha.json'),
@@ -203,7 +198,10 @@ function snapshot(files) {
     return out;
 }
 
-const rel = p => path.relative(REPO_ROOT, p);
+// Пути в отчёте всегда через прямой слэш. На Windows path.relative отдаёт
+// обратные, и строка `git add backend\\src\\data\\...` копируется в Git Bash как
+// имя файла с экранированными символами, а не как путь.
+const rel = p => path.relative(REPO_ROOT, p).split(path.sep).join('/');
 const kb = n => `${(n / 1024).toFixed(0)} КБ`;
 
 // ── Прогон ───────────────────────────────────────────────────────────────────
@@ -330,7 +328,12 @@ function report(results) {
         for (const c of changed) {
             const delta = c.kind === 'new'
                 ? 'новый'
-                : `было ${kb(c.wasSize)}, стало ${kb(c.size)}`;
+                // Размер может совпасть при другом содержимом - правка в исходных
+                // данных без изменения длины записи. Молчать об этом нельзя:
+                // «было 4225 КБ, стало 4225 КБ» читается как «ничего не поменялось».
+                : c.wasSize === c.size
+                    ? `${kb(c.size)}, размер тот же, содержимое другое`
+                    : `было ${kb(c.wasSize)}, стало ${kb(c.size)}`;
             console.log(`    ${c.kind === 'new' ? '+' : 'M'} ${rel(c.file)}  (${delta})`);
         }
         console.log('');

@@ -3942,7 +3942,8 @@
     "districtCode": "1735204",
     "regionCode": "1735",
     "nameLatin": [
-      "Amudaryo tumani"
+      "Amudaryo tumani",
+      "Ámiwdárya rayonı"
     ],
     "nameCyrillic": [
       "Амударё т."
@@ -3990,7 +3991,8 @@
     "districtCode": "1735209",
     "regionCode": "1735",
     "nameLatin": [
-      "Bo'zatov tumani"
+      "Bo'zatov tumani",
+      "Bozataw rayonı"
     ],
     "nameCyrillic": [
       "Бозатау т."
@@ -4012,7 +4014,8 @@
     "districtCode": "1735211",
     "regionCode": "1735",
     "nameLatin": [
-      "Qorao‘zak tumani"
+      "Qorao‘zak tumani",
+      "Qaraózek rayonı"
     ],
     "nameCyrillic": [
       "Қораўзак т."
@@ -4058,7 +4061,8 @@
     "districtCode": "1735215",
     "regionCode": "1735",
     "nameLatin": [
-      "Qo'ng'irot tumani"
+      "Qo'ng'irot tumani",
+      "Qońırat rayonı"
     ],
     "nameCyrillic": [
       "Қўнғирот т."
@@ -4082,7 +4086,8 @@
     "districtCode": "1735218",
     "regionCode": "1735",
     "nameLatin": [
-      "Qonliko‘l tumani"
+      "Qonliko‘l tumani",
+      "Qanlıkól rayonı"
     ],
     "nameCyrillic": [],
     "regionNames": [
@@ -4101,7 +4106,8 @@
     "districtCode": "1735222",
     "regionCode": "1735",
     "nameLatin": [
-      "Mo‘ynoq tumani"
+      "Mo‘ynoq tumani",
+      "Moynaq rayonı"
     ],
     "nameCyrillic": [],
     "regionNames": [
@@ -4120,7 +4126,8 @@
     "districtCode": "1735225",
     "regionCode": "1735",
     "nameLatin": [
-      "Nukus tumani"
+      "Nukus tumani",
+      "Nókis rayonı"
     ],
     "nameCyrillic": [
       "Нукус т."
@@ -4141,7 +4148,9 @@
   {
     "districtCode": "1735228",
     "regionCode": "1735",
-    "nameLatin": [],
+    "nameLatin": [
+      "Taqıyatas rayonı"
+    ],
     "nameCyrillic": [
       "Тахиатош т."
     ],
@@ -4159,7 +4168,8 @@
     "districtCode": "1735230",
     "regionCode": "1735",
     "nameLatin": [
-      "Taxtako‘pir tumani"
+      "Taxtako‘pir tumani",
+      "Taxtakópir rayonı"
     ],
     "nameCyrillic": [],
     "regionNames": [
@@ -4176,7 +4186,8 @@
     "districtCode": "1735233",
     "regionCode": "1735",
     "nameLatin": [
-      "To‘rtko‘l tumani"
+      "To‘rtko‘l tumani",
+      "Tórtkúl rayonı"
     ],
     "nameCyrillic": [
       "Тўрткўл т."
@@ -4200,7 +4211,8 @@
     "districtCode": "1735236",
     "regionCode": "1735",
     "nameLatin": [
-      "Xo‘jayli tumani"
+      "Xo‘jayli tumani",
+      "Xojeli rayonı"
     ],
     "nameCyrillic": [
       "Хўжайли т."
@@ -4222,7 +4234,8 @@
     "districtCode": "1735240",
     "regionCode": "1735",
     "nameLatin": [
-      "Chimboy tumani"
+      "Chimboy tumani",
+      "Shımbay rayonı"
     ],
     "nameCyrillic": [
       "Чимбой т."
@@ -4246,7 +4259,8 @@
     "districtCode": "1735243",
     "regionCode": "1735",
     "nameLatin": [
-      "Shumanay tumani"
+      "Shumanay tumani",
+      "Shomanay rayonı"
     ],
     "nameCyrillic": [
       "Шуманай т."
@@ -4268,7 +4282,8 @@
     "districtCode": "1735250",
     "regionCode": "1735",
     "nameLatin": [
-      "Ellikqal'a tumani"
+      "Ellikqal'a tumani",
+      "Ellikqala rayonı"
     ],
     "nameCyrillic": [
       "Элликқала т."
@@ -4290,7 +4305,8 @@
     "districtCode": "1735401",
     "regionCode": "1735",
     "nameLatin": [
-      "Nukus shahar"
+      "Nukus shahar",
+      "Nókis qalası hákimiyatı"
     ],
     "nameCyrillic": [
       "Нукус ш."

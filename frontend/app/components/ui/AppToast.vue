@@ -1,13 +1,17 @@
 <template>
-  <div class="fixed top-20 right-6 z-[2000] flex flex-col gap-3 pointer-events-none">
+  <!-- На телефоне уведомление прижималось к правому краю и имело твёрдую
+       минимальную ширину 300 px: длинное сообщение выходило за экран, а короткое
+       всё равно занимало почти всю ширину. До sm полоса тянется от края до края
+       с полями страницы, минимальная ширина снята. -->
+  <div class="pointer-events-none fixed inset-x-4 top-20 z-[2000] flex flex-col gap-3 sm:inset-x-auto sm:right-6">
     <div
       v-for="toast in toasts"
       :key="toast.id"
-      class="panel toast-enter pointer-events-auto flex min-w-[300px] items-center gap-3 px-4 py-3 transition-colors duration-instant"
+      class="panel toast-enter pointer-events-auto flex items-start gap-3 px-4 py-3 transition-colors duration-instant sm:min-w-[300px] sm:items-center"
     >
-      <CheckCircle2 v-if="toast.type === 'success'" class="h-5 w-5" :style="{ color: SCALE_COLORS.ok }" />
-      <XCircle v-else class="h-5 w-5" :style="{ color: SCALE_COLORS.bad }" />
-      <p class="text-body font-medium text-ink dark:text-paper">
+      <CheckCircle2 v-if="toast.type === 'success'" class="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" :style="{ color: SCALE_COLORS.ok }" />
+      <XCircle v-else class="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" :style="{ color: SCALE_COLORS.bad }" />
+      <p class="min-w-0 text-body font-medium text-ink dark:text-paper">
         {{ toast.message }}
       </p>
     </div>

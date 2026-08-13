@@ -15,14 +15,20 @@
         note="Очки начисляются за обращения и за проверки записей реестра. Порядок пересчитывается по запросу страницы."
       />
 
-      <!-- Podium (top 3): rank 2 left, rank 1 center, rank 3 right -->
-      <div class="mt-6 grid grid-cols-3 items-start gap-3 sm:gap-4">
-        <PodiumCard v-if="podium[1]" :entry="podium[1]" :is-me="isMe(podium[1])" />
-        <div v-else />
-        <PodiumCard v-if="podium[0]" :entry="podium[0]" :is-me="isMe(podium[0])" featured />
-        <div v-else />
-        <PodiumCard v-if="podium[2]" :entry="podium[2]" :is-me="isMe(podium[2])" />
-        <div v-else />
+      <!-- Podium (top 3): rank 2 left, rank 1 center, rank 3 right.
+
+           На телефоне три колонки давали по 101 px на карточку, из которых 32
+           уходили на поля: знак в 64 px ещё влезал, а число очков с подписью уже
+           нет. До xs пьедестал идёт столбцом, и порядок там прямой - первый
+           сверху. Порядок задан классами order, потому что в разметке карточки
+           стоят в порядке показа на широком экране: 2, 1, 3. -->
+      <div class="mt-6 grid grid-cols-1 items-start gap-3 xs:grid-cols-3 sm:gap-4">
+        <PodiumCard v-if="podium[1]" :entry="podium[1]" :is-me="isMe(podium[1])" class="order-2 xs:order-none" />
+        <div v-else class="hidden xs:block" />
+        <PodiumCard v-if="podium[0]" :entry="podium[0]" :is-me="isMe(podium[0])" featured class="order-1 xs:order-none" />
+        <div v-else class="hidden xs:block" />
+        <PodiumCard v-if="podium[2]" :entry="podium[2]" :is-me="isMe(podium[2])" class="order-3 xs:order-none" />
+        <div v-else class="hidden xs:block" />
       </div>
 
       <!-- Rest of the ranking -->
@@ -32,7 +38,7 @@
           <div
             v-for="entry in visibleRest"
             :key="entry.id"
-            class="flex items-center gap-4 px-4 py-3 transition-colors"
+            class="flex items-center gap-3 px-3 py-3 transition-colors sm:gap-4 sm:px-4"
             :class="isMe(entry) ? 'bg-prussian-50 dark:bg-prussian-900/30' : ''"
           >
             <span
@@ -59,9 +65,11 @@
                 <span class="flex items-center gap-1"><CheckCircle2 :size="11" />{{ entry.verificationCount }} пров.</span>
               </div>
             </div>
-            <span class="shrink-0 font-mono text-body font-semibold text-ink dark:text-paper">
+            <!-- Слово «очков» скрыто на телефоне: строка и без него занимает всю
+                 ширину, а колонка здесь одна и подписана заголовком раздела. -->
+            <span class="shrink-0 whitespace-nowrap font-mono text-body font-semibold text-ink dark:text-paper">
               {{ entry.points.toLocaleString('ru-RU') }}
-              <span class="text-label font-normal text-ink-faint">очков</span>
+              <span class="hidden text-label font-normal text-ink-faint xs:inline">очков</span>
             </span>
           </div>
         </div>

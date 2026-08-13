@@ -4,7 +4,7 @@
  * Read-only. Reports what is actually in the Region and District collections and
  * why a choropleth may be drawing rectangles.
  *
- * The question it answers: import-geodata.js keyed districts by
+ * The question it answers: the removed crop.agro.uz importer keyed districts by
  * `{ apiId: cropAgroDistrictId }`, a number in the low hundreds. Its replacement
  * import-geodata-osm.js keys them by `{ apiId: osmRelationId }`, a number in the
  * millions. Different key spaces means the second import never overwrote the
@@ -144,7 +144,7 @@ async function main() {
 
     console.log('\n── Что делать ──');
     if (dupes.length > 0) {
-        console.log('  Дубли кодов: node src/scripts/prune-legacy-geodata.js (по умолчанию dry-run)');
+        console.log('  Дубли кодов разбираются вручную: путь crop.agro.uz удалён, новые дубли взяться неоткуда');
     }
     if (boxDistricts > 0 || boxRegions > 0) {
         // Two different causes, two different fixes, and telling them apart is the

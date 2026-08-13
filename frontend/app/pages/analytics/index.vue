@@ -40,7 +40,7 @@
         <StatPanel v-for="k in smallKpis" :key="k.label" :label="k.label" :value="k.value" />
       </div>
 
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           title="Общее состояние"
           eyebrow="Проверки"

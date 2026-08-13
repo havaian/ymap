@@ -38,15 +38,22 @@
     <!-- Narrow: the same rows as blocks. A six-column table on a phone is a
          horizontal scrollbar pretending to be a table, and nobody reads the
          columns that fall off the edge. The first column becomes the heading and
-         the rest become labelled pairs, so nothing is dropped. -->
+         the rest become labelled pairs, so nothing is dropped.
+
+         Заголовок строки не обрезается по ширине: имя района - это то, по чему
+         строку находят, и «Шахрисабзский р...» здесь хуже переноса на вторую
+         строку. -->
     <div class="md:hidden">
       <div v-for="row in rows" :key="String(row[rowKey])" class="rule-row py-3">
-        <p class="font-medium text-ink dark:text-paper">
+        <p class="break-words font-medium text-ink dark:text-paper">
           <slot :name="`cell-${columns[0].key}`" :row="row" :value="row[columns[0].key]">
             {{ row[columns[0].key] ?? '-' }}
           </slot>
         </p>
-        <dl class="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1">
+        <!-- Одна колонка пар до 480 px: подпись и значение стоят в строке через
+             justify-between, и на двух колонках по 130 px длинная подпись
+             наезжала на число. -->
+        <dl class="mt-1.5 grid grid-cols-1 gap-x-4 gap-y-1 xs:grid-cols-2">
           <div v-for="c in columns.slice(1)" :key="c.key" class="flex items-baseline justify-between gap-2">
             <dt class="text-label text-ink-faint">{{ c.label }}</dt>
             <dd class="tabular text-body text-ink-muted dark:text-ink-faint">

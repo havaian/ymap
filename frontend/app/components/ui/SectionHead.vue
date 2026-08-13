@@ -7,7 +7,10 @@
            say something true about the method or the denominator, it is left off. -->
       <p v-if="note" class="mt-1 text-note text-ink-muted dark:text-ink-faint">{{ note }}</p>
     </div>
-    <div v-if="$slots.actions" class="shrink-0">
+    <!-- Действия раздела уходят под заголовок на телефоне и не сжимаются: при
+         shrink-0 в одной строке с заголовком поле «минимум оценённых» и селект
+         сортировки выдавливали заголовок в узкую колонку. -->
+    <div v-if="$slots.actions" class="w-full sm:w-auto sm:shrink-0">
       <slot name="actions" />
     </div>
   </div>

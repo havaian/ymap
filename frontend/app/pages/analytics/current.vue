@@ -3,7 +3,7 @@
     <AnalyticsTabs />
 
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <SectionHead title="Топ 5, лучшие" eyebrow="По результатам проверок" />
         <NoteBlock class="mt-6" tone="caution" title="Скоринг объектов не введён">
           Ни один эндпоинт не возвращает оценку по отдельному объекту. Подставлять
@@ -11,7 +11,7 @@
         </NoteBlock>
       </section>
 
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <SectionHead title="Требующие внимания" eyebrow="Ниже среднего" />
         <NoteBlock class="mt-6" tone="caution" title="Скоринг объектов не введён">
           Появится вместе с оценкой объекта. До тех пор список объектов, требующих

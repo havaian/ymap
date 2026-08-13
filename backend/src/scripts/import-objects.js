@@ -352,9 +352,10 @@ function transformSSV(row, coords) {
         nameEn: null,
         viloyat: row.viloyat,
         tuman: row.tuman,
-        // Coordinates are not set here any more. import-egov-coords.js fills them
-        // from the data.egov.uz registry by tax id; anything unmatched stays null
-        // and is drawn through the district choropleth.
+        // Coordinates are not set here any more. build-egov-coords.js resolves
+        // them into data/object-coords.json and the coords bootstrap stage loads
+        // that file; anything unmatched stays null and is drawn through the
+        // district choropleth.
         regionCode: coords.regionCode,
         // districtCode is the canonical key. districtId is a convenience reference
         // and stays null until the District collection is populated.
@@ -392,9 +393,10 @@ function transformBogcha(row, coords) {
         nameEn: null,
         viloyat: row.viloyat,
         tuman: row.tuman,
-        // Coordinates are not set here any more. import-egov-coords.js fills them
-        // from the data.egov.uz registry by tax id; anything unmatched stays null
-        // and is drawn through the district choropleth.
+        // Coordinates are not set here any more. build-egov-coords.js resolves
+        // them into data/object-coords.json and the coords bootstrap stage loads
+        // that file; anything unmatched stays null and is drawn through the
+        // district choropleth.
         regionCode: coords.regionCode,
         // districtCode is the canonical key. districtId is a convenience reference
         // and stays null until the District collection is populated.
@@ -435,9 +437,10 @@ function transformMaktab(row, coords) {
         nameEn: str(row.obekt_nomi_en),
         viloyat: row.viloyat,
         tuman: row.tuman,
-        // Coordinates are not set here any more. import-egov-coords.js fills them
-        // from the data.egov.uz registry by tax id; anything unmatched stays null
-        // and is drawn through the district choropleth.
+        // Coordinates are not set here any more. build-egov-coords.js resolves
+        // them into data/object-coords.json and the coords bootstrap stage loads
+        // that file; anything unmatched stays null and is drawn through the
+        // district choropleth.
         regionCode: coords.regionCode,
         // districtCode is the canonical key. districtId is a convenience reference
         // and stays null until the District collection is populated.

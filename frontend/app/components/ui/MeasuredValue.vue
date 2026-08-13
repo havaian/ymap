@@ -1,5 +1,7 @@
 <template>
-  <span class="inline-flex items-baseline gap-1.5 tabular">
+  <!-- flex-wrap: интервал с единицей измерения на узкой карточке переносится
+       целиком, а не разрывается посреди числа. -->
+  <span class="inline-flex flex-wrap items-baseline gap-x-1.5 tabular">
     <span :class="valueClass" :style="color ? { color } : undefined">{{ text }}</span>
     <span v-if="unit" class="text-note text-ink-faint dark:text-ink-faint">{{ unit }}</span>
     <!-- The bracket is drawn, not described. A reader should be able to tell at a
@@ -77,10 +79,16 @@ const text = computed(() => {
 // The display face is kept for the one big reading per panel. At inline sizes a
 // geometric face fights the text around it and the figure stops standing out by
 // being a figure.
+//
+// Крупный размер уменьшается на узком экране. text-figure - это 2,5 rem, то есть
+// 40 px на знак около 22 px в наборном шрифте. В сетке из двух карточек на
+// телефоне в 360 px внутренняя ширина карточки около 116 px, и туда не влезает
+// ни шестизначное число, ни интервал вида «0,181 – 0,196»: цифры уезжали за
+// край панели. С sm возвращается прежний размер.
 const valueClass = computed(() => {
   const base = 'font-semibold text-ink dark:text-paper'
-  if (props.size === 'lg') return `font-display ${base} text-figure`
+  if (props.size === 'lg') return `font-display ${base} text-h2 sm:text-figure`
   if (props.size === 'sm') return `${base} text-lead`
-  return `${base} text-h2`
+  return `${base} text-lead sm:text-h2`
 })
 </script>

@@ -22,7 +22,7 @@
         <StatPanel v-for="k in coverageKpis" :key="k.label" :label="k.label" :value="k.value" :denominator="k.sub" />
       </div>
 
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="Архив"
           title="Снимки реестров"
@@ -43,7 +43,7 @@
         </div>
       </section>
 
-      <section v-for="s in report.data.sources" :key="s.source" class="panel mt-4 p-6">
+      <section v-for="s in report.data.sources" :key="s.source" class="panel mt-4 p-5 sm:p-6">
         <SectionHead :eyebrow="`Источник · ${s.source}`" :title="s.label" :note="`Загружено ${fmt(s.loaded)} записей.`" />
 
         <div class="mt-6">

@@ -10,7 +10,7 @@
 
     <template v-else>
       <!-- Identity -->
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <p class="eyebrow">{{ d.object.objectTypeLabel }}</p>
         <h1 class="mt-2 font-display text-h1 font-semibold tracking-tight text-ink dark:text-paper">
           {{ d.object.name }}
@@ -82,7 +82,7 @@
       </div>
 
       <!-- Deprivation, decomposed. The composite never appears alone. -->
-      <section v-if="d.deprivation" class="panel mt-4 p-6">
+      <section v-if="d.deprivation" class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           title="Разложение по измерениям"
           eyebrow="Депривация"
@@ -118,14 +118,16 @@
           <div
             v-for="dim in d.deprivation.dimensions"
             :key="dim.key"
-            class="flex items-center gap-4 py-3"
+            class="flex items-start gap-3 py-3 sm:items-center sm:gap-4"
           >
-            <span class="h-2.5 w-2.5 shrink-0 rounded-sm" :style="{ backgroundColor: dimColor(dim.status) }" />
+            <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-sm sm:mt-0" :style="{ backgroundColor: dimColor(dim.status) }" />
             <span class="min-w-0 flex-1 text-body text-ink dark:text-paper">{{ dim.label }}</span>
             <span class="hidden max-w-[14rem] truncate font-mono text-label text-ink-faint sm:inline">
               {{ dim.sourceValue ?? '' }}
             </span>
-            <span class="w-32 shrink-0 text-right text-label" :style="{ color: dimColor(dim.status) }">
+            <!-- Колонка состояния сжимается до ширины текста на телефоне: при
+                 твёрдых 8 rem на подпись измерения оставалось 110 px. -->
+            <span class="shrink-0 text-right text-label sm:w-32" :style="{ color: dimColor(dim.status) }">
               {{ DIM_STATUS[dim.status] }}
             </span>
           </div>
@@ -139,7 +141,7 @@
       </NoteBlock>
 
       <!-- Quality flags -->
-      <section v-if="d.quality.flags.length" class="panel mt-4 p-6">
+      <section v-if="d.quality.flags.length" class="panel mt-4 p-5 sm:p-6">
         <SectionHead title="Отметки качества записи" eyebrow="Импорт" />
         <ul class="mt-4 space-y-2">
           <li v-for="f in d.quality.flags" :key="f.key" class="flex items-start gap-3">
@@ -153,7 +155,7 @@
       </section>
 
       <!-- Archive history -->
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           title="История записи"
           eyebrow="Архив"

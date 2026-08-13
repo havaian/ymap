@@ -154,7 +154,7 @@ async function main() {
 
     const districtCount = await District.countDocuments();
     if (districtCount === 0) {
-        console.error('\n❌ No districts found in database. Run import-geodata.js first.');
+        console.error('\n❌ No districts found in database. Run import-geodata-osm.js first.');
         await mongoose.disconnect();
         process.exit(1);
     }

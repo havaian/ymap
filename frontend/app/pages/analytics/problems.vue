@@ -8,33 +8,38 @@
 
     <template v-else>
       <!-- Most frequent problems (real - /issues byCategory) -->
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <SectionHead
           title="Самые частые проблемы"
           eyebrow="По категориям"
           note="Счёт обращений, а не объектов: одно здание может стоять за несколькими записями."
         />
         <div v-if="byCategory.length" class="mt-6 space-y-3">
-          <div v-for="c in byCategory" :key="c._id" class="flex items-center gap-4">
-            <span class="w-40 shrink-0 truncate text-body text-ink dark:text-paper">
+          <!-- До md название категории идёт своей строкой: вместе с полосой и
+               счётчиком оно оставляло полосе около 24 px, то есть полоса
+               переставала что-либо показывать. -->
+          <div v-for="c in byCategory" :key="c._id" class="flex flex-col gap-1 md:flex-row md:items-center md:gap-4">
+            <span class="truncate text-body text-ink dark:text-paper md:w-40 md:shrink-0">
               {{ categoryLabel(c._id) }}
             </span>
-            <div class="span-track flex-1">
-              <div
-                class="span-lower"
-                :style="{ width: barWidth(c.count) + '%', backgroundColor: barColor(c.count) }"
-              />
+            <div class="flex flex-1 items-center gap-4">
+              <div class="span-track flex-1">
+                <div
+                  class="span-lower"
+                  :style="{ width: barWidth(c.count) + '%', backgroundColor: barColor(c.count) }"
+                />
+              </div>
+              <span class="w-16 shrink-0 text-right font-mono text-body text-ink-muted dark:text-ink-faint">
+                {{ c.count }} шт
+              </span>
             </div>
-            <span class="w-16 shrink-0 text-right font-mono text-body text-ink-muted dark:text-ink-faint">
-              {{ c.count }} шт
-            </span>
           </div>
         </div>
         <p v-else class="mt-6 text-body text-ink-muted dark:text-ink-faint">Нет данных</p>
       </section>
 
       <!-- Completed vs problems donut (real - /overview completionRate) -->
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           title="Распределение состояний"
           eyebrow="Проверки"

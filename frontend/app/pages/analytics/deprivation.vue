@@ -3,7 +3,7 @@
     <AnalyticsTabs />
 
     <div class="flex flex-wrap items-center gap-3">
-      <select v-model="objectType" class="control" @change="load">
+      <select v-model="objectType" class="control w-full xs:w-auto" @change="load">
         <option value="school">Школы</option>
         <option value="kindergarten">Детские сады</option>
         <option value="health_post">ФАП и СВП</option>
@@ -40,7 +40,7 @@
 
       <!-- The composite never appears without this. A single index number invites a
            ranking; the decomposition is what a district can actually act on. -->
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="Разложение"
           title="Депривация по измерениям"
@@ -61,7 +61,7 @@
         </p>
       </section>
 
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="География"
           title="Районы"

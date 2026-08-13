@@ -233,6 +233,12 @@ Docker Compose (`.env`): `PROJECT_NAME`, `FRONTEND_EXPOSE`, `BACKEND_EXPOSE`, `R
 Локально:
 
 ```
+# Весь локальный конвейер одним прогоном, с отчётом об изменённых файлах
+node backend/src/scripts/refresh-data.js            # сборка и проверки
+node backend/src/scripts/refresh-data.js --fetch    # вместе со скачиванием
+node backend/src/scripts/refresh-data.js --list     # список этапов
+
+# Те же шаги по отдельности
 node backend/src/scripts/validate-crosswalk.js
 node backend/src/scripts/probe-missing-boundaries.js
 node backend/src/scripts/fetch-osm-boundaries.js --debug
@@ -277,8 +283,6 @@ docker compose exec backend node src/scripts/audit-geodata.js
 | `node src/scripts/import-geodata-osm.js --dry-run` | нет | Сопоставление границ с СОАТО без записи |
 | `node src/scripts/import-geodata-osm.js` | `regions`, `districts` | Загрузка границ |
 | `node src/scripts/simplify-boundaries.js` | `geometrySimplified` | Копия под отрисовку. Хороплет и контур региона отдаются из неё, полная геометрия остаётся |
-| `node src/scripts/prune-legacy-geodata.js` | нет | dry-run: что удалилось бы из старого набора |
-| `node src/scripts/prune-legacy-geodata.js --apply` | **удаляет** | Сносит документы crop.agro. Откажется, если OSM-набор пуст или меньше старого. После этого нужен повторный `import-objects.js`: часть объектов ссылается на удалённые районы через `districtId` |
 
 
 Важно перед деплоем:

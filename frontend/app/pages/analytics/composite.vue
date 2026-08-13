@@ -110,10 +110,10 @@
         <div v-for="r in visible" :key="r.soato">
           <button
             type="button"
-            class="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-paper-sunk dark:hover:bg-night-sunk"
+            class="flex w-full items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-paper-sunk dark:hover:bg-night-sunk sm:gap-4 sm:px-4"
             @click="open = open === r.soato ? null : r.soato"
           >
-            <span class="w-8 shrink-0 text-center font-mono text-body text-ink-faint">{{ r.rank ?? '-' }}</span>
+            <span class="w-6 shrink-0 text-center font-mono text-body text-ink-faint sm:w-8">{{ r.rank ?? '-' }}</span>
             <span class="min-w-0 flex-1">
               <span class="block truncate text-body font-medium text-ink dark:text-paper">
                 {{ name(r) }}
@@ -123,7 +123,9 @@
                 {{ r.soato }} · {{ r.denominators.scorable }} объектов
               </span>
             </span>
-            <span class="w-24 shrink-0 text-right">
+            <!-- На телефоне номер и колонка оценки были твёрдыми, и на название
+                 района оставалось около 88 px. Оба сжаты, промежутки уменьшены. -->
+            <span class="w-16 shrink-0 text-right sm:w-24">
               <span class="font-mono text-body font-semibold" :style="{ color: scale.deficiency(r.composite) }">
                 {{ r.composite != null ? r.composite.toFixed(3) : '-' }}
               </span>

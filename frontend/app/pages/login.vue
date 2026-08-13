@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center px-4 py-10 sm:px-6">
+  <div class="mx-auto flex min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] max-w-md items-center px-4 py-10 sm:px-6">
     <div class="w-full">
       <div class="flex items-center gap-3">
         <BrandMark :size="40" />

@@ -124,7 +124,7 @@ const objectSchema = new mongoose.Schema({
         index: true
     },
     // Reference to the District document. Optional: it stays null until
-    // import-geodata.js has populated districts, and is filled by a later import run.
+    // import-geodata-osm.js has populated districts, and is filled by a later import run.
     districtId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'District',

@@ -21,13 +21,20 @@
         <HeroMap :shift-x="0.1" :shift-y="0.15" />
       </div>
 
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-prussian-800 via-prussian-800/75 to-transparent" />
+      <!-- Затемнение под текстом. На широком экране оно идёт слева направо:
+           текст занимает левую половину, плита видна справа. На телефоне текст
+           занимает всю ширину, и горизонтальное затемнение оставляло правый край
+           строк лежать прямо на светлых точках. До sm затемнение идёт сверху
+           вниз и накрывает весь текстовый блок. -->
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-prussian-800/95 via-prussian-800/80 to-prussian-800/40 sm:bg-gradient-to-r sm:from-prussian-800 sm:via-prussian-800/75 sm:to-transparent" />
 
-      <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32">
+      <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-32">
         <div class="max-w-2xl">
           <p class="eyebrow text-prussian-200">Независимая обсерватория данных</p>
-          <h1 class="mt-4 font-display text-[2.5rem] font-semibold leading-[1.05] tracking-tight sm:text-[3.5rem]">
-            Государство публикует состояние реестра. Мы храним историю.
+          <!-- 2,5 rem на 360 px даёт около 13 знаков в строке: заголовок вставал
+               в семь строк и выдавливал кнопки за первый экран. -->
+          <h1 class="mt-4 font-display text-[2rem] font-semibold leading-[1.08] tracking-tight xs:text-[2.5rem] sm:text-[3.5rem]">
+            Государство публикует состояние реестра. Историю не хранит никто.
           </h1>
           <p class="mt-6 max-w-xl text-lead text-prussian-100/75">
             Y.Map ведёт архив состояний государственных реестров социальной инфраструктуры Узбекистана
@@ -35,12 +42,15 @@
             свой срок, и какая цифра выдерживает решение, а какая нет.
           </p>
 
-          <div class="mt-9 flex flex-wrap items-center gap-3">
-            <NuxtLink to="/map" class="inline-flex items-center gap-2 rounded-control bg-prussian-50 px-5 py-3 text-body font-semibold text-prussian-800 transition-colors hover:bg-white">
+          <!-- Кнопки во всю ширину до xs: «Отчёт о качестве данных» на 360 px не
+               помещался в строку рядом с первой и переносился, оставляя рваный
+               край. -->
+          <div class="mt-9 flex flex-col items-stretch gap-3 xs:flex-row xs:flex-wrap xs:items-center">
+            <NuxtLink to="/map" class="inline-flex items-center justify-center gap-2 rounded-control bg-prussian-50 px-5 py-3 text-body font-semibold text-prussian-800 transition-colors hover:bg-white">
               <MapPin :size="16" />
               Открыть карту
             </NuxtLink>
-            <NuxtLink to="/analytics/data-quality" class="inline-flex items-center gap-2 rounded-control border border-prussian-200/30 px-5 py-3 text-body font-medium text-prussian-50 transition-colors hover:bg-prussian-200/10">
+            <NuxtLink to="/analytics/data-quality" class="inline-flex items-center justify-center gap-2 rounded-control border border-prussian-200/30 px-5 py-3 text-body font-medium text-prussian-50 transition-colors hover:bg-prussian-200/10">
               Отчёт о качестве данных
             </NuxtLink>
           </div>
@@ -52,7 +62,7 @@
            on first sight, and land exactly on the published figure. -->
       <div class="relative border-t border-prussian-200/15">
         <dl class="mx-auto grid max-w-7xl grid-cols-2 gap-px px-4 sm:px-6 lg:grid-cols-4">
-          <div v-for="s in heroStats" :key="s.label" class="py-5 pr-6">
+          <div v-for="s in heroStats" :key="s.label" class="py-5 pr-4 sm:pr-6">
             <dd class="font-display text-h2 font-semibold text-prussian-50">
               <CountUp
                 :value="s.value"
@@ -67,8 +77,8 @@
     </section>
 
     <!-- ── What the archive is ───────────────────────────────────────────── -->
-    <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-      <div class="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,20rem)_1fr]">
+    <section class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
         <div>
           <p class="eyebrow">Актив</p>
           <h2 class="mt-3 font-display text-h1 font-semibold tracking-tight text-ink dark:text-paper">
@@ -98,7 +108,7 @@
 
     <!-- ── The interactive argument ──────────────────────────────────────── -->
     <section class="bg-prussian-800 text-prussian-50">
-      <div class="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2">
+      <div class="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-12">
         <div>
           <p class="eyebrow text-prussian-200">Одно поле, два прочтения</p>
           <h2 class="mt-3 font-display text-h1 font-semibold tracking-tight">
@@ -126,7 +136,7 @@
          rule as everywhere else: the composite never appears without the
          dimensions it was assembled from. -->
     <section class="border-b border-prussian-200/15 bg-prussian-900 text-prussian-50">
-      <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+      <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
         <div class="max-w-2xl">
           <p class="eyebrow text-prussian-200">Слой, а не картинка</p>
           <h2 class="mt-3 font-display text-h1 font-semibold tracking-tight">
@@ -145,9 +155,9 @@
     </section>
 
     <!-- ── What is computed ──────────────────────────────────────────────── -->
-    <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+    <section class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
       <p class="eyebrow">Что считается сегодня</p>
-      <h2 class="mt-3 max-w-2xl font-display text-h1 font-semibold tracking-tight text-ink dark:text-paper">
+      <h2 class="mt-3 max-w-2xl text-balance font-display text-h1 font-semibold tracking-tight text-ink dark:text-paper">
         Четыре измерения на данных, которые уже загружены
       </h2>
 
@@ -160,8 +170,8 @@
 
     <!-- ── The rule ──────────────────────────────────────────────────────── -->
     <section class="border-y border-rule bg-paper-sunk dark:border-night-rule dark:bg-night-sunk">
-      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <div class="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,20rem)_1fr]">
+      <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
           <div>
             <p class="eyebrow">Правило</p>
             <h2 class="mt-3 font-display text-h1 font-semibold tracking-tight text-ink dark:text-paper">
@@ -179,8 +189,8 @@
     </section>
 
     <!-- ── Close ─────────────────────────────────────────────────────────── -->
-    <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-      <div class="panel flex flex-wrap items-center justify-between gap-6 p-8">
+    <section class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+      <div class="panel flex flex-wrap items-center justify-between gap-6 p-6 sm:p-8">
         <div class="max-w-xl">
           <h2 class="font-display text-h2 font-semibold tracking-tight text-ink dark:text-paper">
             Знаете объект вживую? Уточните запись
@@ -190,7 +200,7 @@
             Часть заданий выдаётся жребием, и это видно в интерфейсе.
           </p>
         </div>
-        <NuxtLink to="/analytics/verification" class="inline-flex items-center gap-2 rounded-control bg-prussian-600 px-5 py-3 text-body font-semibold text-paper transition-colors hover:bg-prussian-700">
+        <NuxtLink to="/analytics/verification" class="inline-flex w-full items-center justify-center gap-2 rounded-control bg-prussian-600 px-5 py-3 text-body font-semibold text-paper transition-colors hover:bg-prussian-700 xs:w-auto">
           Открыть очередь
           <ArrowUpRight :size="16" />
         </NuxtLink>

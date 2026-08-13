@@ -6,10 +6,15 @@
     @click="$emit('update:mobileOpen', false)"
   />
 
+  <!-- h-dvh, а не h-screen: на телефоне 100vh - это высота при развёрнутой
+       адресной строке, и нижний блок шторки с выходом уезжал под край экрана.
+       Ширина на узком экране считается от самого экрана: 16 rem от 360 px
+       оставляли 104 px подложки, по которой шторку закрывают нажатием - слишком
+       узкая полоса, чтобы в неё попасть. -->
   <aside
     :class="[
-      'fixed left-0 top-0 z-[1300] flex h-screen flex-col border-r border-rule bg-paper-raised transition-[width,transform] duration-200 dark:border-night-rule dark:bg-night-raised',
-      collapsed ? 'w-20' : 'w-64',
+      'fixed left-0 top-0 z-[1300] flex h-screen h-dvh flex-col border-r border-rule bg-paper-raised transition-[width,transform] duration-200 dark:border-night-rule dark:bg-night-raised',
+      collapsed ? 'w-20' : 'w-[min(16rem,80vw)] lg:w-64',
       mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
     ]"
   >
@@ -70,8 +75,9 @@
       </div>
     </nav>
 
-    <!-- Bottom -->
-    <div class="space-y-1 border-t border-rule p-3 dark:border-night-rule">
+    <!-- Bottom. pb с запасом под системную полосу жестов: на телефоне без него
+         кнопка выхода стоит вплотную к нижнему краю. -->
+    <div class="space-y-1 border-t border-rule p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-night-rule">
       <NuxtLink
         to="/about"
         class="sidebar-item"
@@ -197,8 +203,10 @@ const onLogout = () => {
 </script>
 
 <style scoped>
+/* py-2.5 на телефоне: пункт в 34 px по высоте меньше цели касания, по которой
+   попадают пальцем без промаха. На указателе высота прежняя. */
 .sidebar-item {
-  @apply flex items-center gap-3 rounded-control px-3 py-2 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk;
+  @apply flex items-center gap-3 rounded-control px-3 py-2.5 text-body font-medium text-ink-muted transition-colors hover:bg-paper-sunk dark:text-ink-faint dark:hover:bg-night-sunk lg:py-2;
 }
 .sidebar-item-active {
   @apply bg-prussian-50 font-semibold text-prussian-600 dark:bg-prussian-900/40 dark:text-prussian-200;

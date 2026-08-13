@@ -28,7 +28,7 @@
       <span v-if="isMe" class="text-label text-prussian-600 dark:text-prussian-200">(вы)</span>
     </p>
 
-    <div class="mt-1 flex items-center justify-center gap-3 font-mono text-label text-ink-faint">
+    <div class="mt-1 flex flex-wrap items-center justify-center gap-x-3 font-mono text-label text-ink-faint">
       <span class="flex items-center gap-1"><FileText :size="11" />{{ entry.issueCount }}</span>
       <span class="flex items-center gap-1"><CheckCircle2 :size="11" />{{ entry.verificationCount }}</span>
     </div>

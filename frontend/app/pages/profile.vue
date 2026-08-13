@@ -14,7 +14,7 @@
            игровая шкала спорит с консультативным тоном остальной платформы.
            Файл composables/useGamification.ts не удалён - он остаётся для
            рейтинга, который живёт своей страницей. -->
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
             <p class="eyebrow">Аккаунт</p>
@@ -46,7 +46,7 @@
         />
       </div>
 
-      <section v-if="d.activity.recentIssues.length" class="panel mt-4 p-6">
+      <section v-if="d.activity.recentIssues.length" class="panel mt-4 p-5 sm:p-6">
         <SectionHead title="Последние обращения" eyebrow="История" />
         <div class="mt-4 divide-y divide-rule dark:divide-night-rule">
           <div

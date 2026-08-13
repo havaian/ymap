@@ -3,12 +3,12 @@
     <AnalyticsTabs />
 
     <div class="flex flex-wrap items-center gap-2">
-      <select v-model="objectType" class="control" @change="load">
+      <select v-model="objectType" class="control flex-1 xs:flex-none" @change="load">
         <option value="school">Школы</option>
         <option value="kindergarten">Детские сады</option>
         <option value="health_post">ФАП и СВП</option>
       </select>
-      <button type="button" class="control" :disabled="loading" @click="load">Обновить очередь</button>
+      <button type="button" class="control flex-1 xs:flex-none" :disabled="loading" @click="load">Обновить очередь</button>
     </div>
 
     <p class="mt-3 text-body text-ink-muted dark:text-ink-faint">
@@ -25,7 +25,7 @@
 
     <template v-else>
       <div class="mt-5 space-y-3">
-        <article v-for="(it, i) in items" :key="`${it.objectId}-${it.field}`" class="panel p-5">
+        <article v-for="(it, i) in items" :key="`${it.objectId}-${it.field}`" class="panel p-4 sm:p-5">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="font-medium leading-tight text-ink dark:text-paper">{{ it.name }}</p>
@@ -60,20 +60,28 @@
           </button>
 
           <div v-if="expanded[i]" class="mt-3 space-y-1.5">
-            <div v-for="(v, k) in it.components" :key="k" class="flex items-center gap-3">
-              <span class="w-40 shrink-0 text-label text-ink-muted dark:text-ink-faint">{{ componentLabel(String(k)) }}</span>
-              <span class="span-track h-1.5 flex-1">
-                <span class="span-lower bg-prussian-400" :style="{ width: `${(v ?? 0) * 100}%` }" />
-              </span>
-              <span class="w-12 shrink-0 text-right text-label tabular text-ink-muted dark:text-ink-faint">{{ v }}</span>
-              <span class="w-10 shrink-0 text-right text-label tabular text-ink-faint">×{{ meta.weights?.[k] ?? '-' }}</span>
+            <!-- Подпись, полоса, значение и вес: четыре колонки твёрдой ширины
+                 не помещались в 360 px и уезжали за край панели. До md подпись
+                 занимает свою строку, полоса с числами - следующую. -->
+            <div v-for="(v, k) in it.components" :key="k" class="flex flex-col gap-1 md:flex-row md:items-center md:gap-3">
+              <span class="text-label text-ink-muted dark:text-ink-faint md:w-40 md:shrink-0">{{ componentLabel(String(k)) }}</span>
+              <div class="flex flex-1 items-center gap-3">
+                <span class="span-track h-1.5 flex-1">
+                  <span class="span-lower bg-prussian-400" :style="{ width: `${(v ?? 0) * 100}%` }" />
+                </span>
+                <span class="w-12 shrink-0 text-right text-label tabular text-ink-muted dark:text-ink-faint">{{ v }}</span>
+                <span class="w-10 shrink-0 text-right text-label tabular text-ink-faint">×{{ meta.weights?.[k] ?? '-' }}</span>
+              </div>
             </div>
           </div>
 
+          <!-- Две кнопки ответа делят строку поровну на телефоне: «Не
+               соответствует» шире «Соответствует», и при переносе по содержимому
+               вторая уходила на свою строку, а первая оставалась половинной. -->
           <div class="mt-4 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              class="rounded-control border px-3 py-2 text-body font-medium transition-colors"
+              class="flex-1 rounded-control border px-3 py-2 text-body font-medium transition-colors xs:flex-none"
               :class="answers[key(it)] === 'confirmed'
                 ? 'border-scale-ok bg-scale-ok text-paper'
                 : 'border-rule text-ink-muted hover:bg-paper-sunk dark:border-night-rule dark:text-ink-faint dark:hover:bg-night-sunk'"
@@ -84,7 +92,7 @@
             </button>
             <button
               type="button"
-              class="rounded-control border px-3 py-2 text-body font-medium transition-colors"
+              class="flex-1 rounded-control border px-3 py-2 text-body font-medium transition-colors xs:flex-none"
               :class="answers[key(it)] === 'disputed'
                 ? 'border-scale-bad bg-scale-bad text-paper'
                 : 'border-rule text-ink-muted hover:bg-paper-sunk dark:border-night-rule dark:text-ink-faint dark:hover:bg-night-sunk'"
@@ -93,7 +101,7 @@
             >
               Не соответствует
             </button>
-            <span v-if="errors[key(it)]" class="text-label text-scale-bad">{{ errors[key(it)] }}</span>
+            <span v-if="errors[key(it)]" class="w-full text-label text-scale-bad xs:w-auto">{{ errors[key(it)] }}</span>
           </div>
         </article>
       </div>

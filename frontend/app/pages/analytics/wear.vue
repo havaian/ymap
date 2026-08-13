@@ -2,8 +2,10 @@
   <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
     <AnalyticsTabs />
 
-    <div class="flex flex-wrap items-center gap-3">
-      <select v-model="objectType" class="control" @change="load">
+    <!-- Тип объекта и цикл: до xs каждый контрол занимает свою строку целиком,
+         иначе подпись «нормативный цикл, лет» с полем переносится посередине. -->
+    <div class="flex flex-col gap-3 xs:flex-row xs:flex-wrap xs:items-center">
+      <select v-model="objectType" class="control w-full xs:w-auto" @change="load">
         <option value="school">Школы</option>
         <option value="kindergarten">Детские сады</option>
       </select>
@@ -25,7 +27,7 @@
       <!-- Two readings of one field, side by side and the same size. Showing either
            one alone would hide the only thing this page has to say. -->
       <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div v-for="h in hypotheses" :key="h.key" class="panel p-6">
+        <div v-for="h in hypotheses" :key="h.key" class="panel p-5 sm:p-6">
           <p class="eyebrow">{{ h.eyebrow }}</p>
           <p class="mt-1 text-body text-ink-muted dark:text-ink-faint">{{ h.title }}</p>
           <div class="mt-4">
@@ -47,7 +49,7 @@
         </p>
       </NoteBlock>
 
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead eyebrow="География" title="Районы" :note="`Показано ${ranked.length} из ${districts.length}. Обе гипотезы в одной строке: расхождение между ними и есть то, что планировщику нужно увидеть до решения о деньгах.`">
           <template #actions>
             <select v-model="ordering" class="control-sm">
@@ -73,7 +75,7 @@
         </div>
       </section>
 
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="Объекты"
           title="Приоритет"

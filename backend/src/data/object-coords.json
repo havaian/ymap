@@ -1,0 +1,2755 @@
+{
+  "egovFiles": [
+    "egov-6107f0572a2e256d868e8766.json",
+    "egov-6107f0922a2e256d868e8768.json"
+  ],
+  "inputs": {
+    "ssv.json": 400,
+    "bogcha.json": 400,
+    "maktab44.json": 1411
+  },
+  "ambiguityRadiusM": 500,
+  "stats": {
+    "matched": 340,
+    "shared": 5,
+    "ambiguous": 2,
+    "unmatched": 1856,
+    "noInn": 13
+  },
+  "coords": [
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 35,
+      "lat": 40.76902389526367,
+      "lng": 72.37621307373047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 57,
+      "lat": 40.74830627441406,
+      "lng": 72.3570327758789,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 94,
+      "lat": 40.81794738769531,
+      "lng": 72.3041000366211,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 96,
+      "lat": 40.873165130615234,
+      "lng": 72.40487670898438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 98,
+      "lat": 40.82687759399414,
+      "lng": 72.39497375488281,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 100,
+      "lat": 40.829769134521484,
+      "lng": 72.32986450195312,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 101,
+      "lat": 40.84380340576172,
+      "lng": 72.3198013305664,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 109,
+      "lat": 40.857627868652344,
+      "lng": 72.3587417602539,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 119,
+      "lat": 40.741355895996094,
+      "lng": 72.40555572509766,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 155,
+      "lat": 40.90324401855469,
+      "lng": 71.8265151977539,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 189,
+      "lat": 40.62944030761719,
+      "lng": 72.52123260498047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 209,
+      "lat": 40.59385299682617,
+      "lng": 72.54159545898438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 218,
+      "lat": 40.702728271484375,
+      "lng": 72.56470489501953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 243,
+      "lat": 40.71617126464844,
+      "lng": 72.644775390625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 247,
+      "lat": 40.88792419433594,
+      "lng": 72.2530517578125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 255,
+      "lat": 40.90647506713867,
+      "lng": 72.26780700683594,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 262,
+      "lat": 40.886497497558594,
+      "lng": 72.24640655517578,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 267,
+      "lat": 40.88618850708008,
+      "lng": 72.249267578125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 279,
+      "lat": 40.883201599121094,
+      "lng": 72.3215560913086,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 288,
+      "lat": 40.898536682128906,
+      "lng": 72.25289916992188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 328,
+      "lat": 40.74359130859375,
+      "lng": 72.75524139404297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 346,
+      "lat": 40.751953125,
+      "lng": 72.80121612548828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 413,
+      "lat": 40.563690185546875,
+      "lng": 72.35733795166016,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 448,
+      "lat": 40.773616790771484,
+      "lng": 71.96843719482422,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 488,
+      "lat": 40.75584030151367,
+      "lng": 72.07176208496094,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 507,
+      "lat": 41.003719329833984,
+      "lng": 72.43838500976562,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 564,
+      "lat": 39.78268051147461,
+      "lng": 64.40373229980469,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 585,
+      "lat": 39.73843002319336,
+      "lng": 64.43701171875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 633,
+      "lat": 39.73127746582031,
+      "lng": 64.52942657470703,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 732,
+      "lat": 40.02632141113281,
+      "lng": 64.5490493774414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 743,
+      "lat": 40.02445983886719,
+      "lng": 64.51119995117188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 747,
+      "lat": 40.01597213745117,
+      "lng": 64.6246337890625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 775,
+      "lat": 40.152957916259766,
+      "lng": 64.78919982910156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 778,
+      "lat": 40.16276550292969,
+      "lng": 64.73987579345703,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 790,
+      "lat": 40.16252899169922,
+      "lng": 64.71061706542969,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 807,
+      "lat": 40.14327621459961,
+      "lng": 64.81830596923828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 826,
+      "lat": 39.74455642700195,
+      "lng": 64.18159484863281,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 857,
+      "lat": 39.76475143432617,
+      "lng": 64.56913757324219,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 929,
+      "lat": 40.04075241088867,
+      "lng": 64.387939453125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1015,
+      "lat": 40.073543548583984,
+      "lng": 64.43487548828125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1035,
+      "lat": 40.157657623291016,
+      "lng": 64.6252212524414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1068,
+      "lat": 39.69105911254883,
+      "lng": 67.91724395751953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1083,
+      "lat": 39.73686599731445,
+      "lng": 67.64686584472656,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1093,
+      "lat": 40.149234771728516,
+      "lng": 67.07935333251953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1120,
+      "lat": 40.25279235839844,
+      "lng": 67.72572326660156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1160,
+      "lat": 39.97071838378906,
+      "lng": 68.12657165527344,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1174,
+      "lat": 39.96367263793945,
+      "lng": 68.36825561523438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1185,
+      "lat": 40.32415771484375,
+      "lng": 67.87479400634766,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1194,
+      "lat": 40.32734680175781,
+      "lng": 67.87728118896484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1205,
+      "lat": 40.76299285888672,
+      "lng": 68.022216796875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1211,
+      "lat": 40.70512008666992,
+      "lng": 67.937255859375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1221,
+      "lat": 40.30255126953125,
+      "lng": 67.9560317993164,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1236,
+      "lat": 40.3301887512207,
+      "lng": 67.49542999267578,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1247,
+      "lat": 40.414459228515625,
+      "lng": 67.17837524414062,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1259,
+      "lat": 40.11172866821289,
+      "lng": 67.83821868896484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1292,
+      "lat": 41.31482696533203,
+      "lng": 69.27275848388672,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1298,
+      "lat": 38.9298095703125,
+      "lng": 65.7423324584961,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1307,
+      "lat": 41.31044387817383,
+      "lng": 69.27963256835938,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1308,
+      "lat": 38.835609436035156,
+      "lng": 65.78539276123047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1309,
+      "lat": 38.83439636230469,
+      "lng": 65.78668975830078,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1314,
+      "lat": 38.848995208740234,
+      "lng": 65.79460144042969,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1336,
+      "lat": 39.04249572753906,
+      "lng": 66.86190795898438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1345,
+      "lat": 39.09251022338867,
+      "lng": 66.8399658203125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1346,
+      "lat": 39.03647994995117,
+      "lng": 66.81108093261719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1348,
+      "lat": 39.07868576049805,
+      "lng": 66.84072875976562,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1354,
+      "lat": 39.044715881347656,
+      "lng": 66.82307434082031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1382,
+      "lat": 38.78873062133789,
+      "lng": 66.17440032958984,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1385,
+      "lat": 38.67420959472656,
+      "lng": 66.04642486572266,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1390,
+      "lat": 38.66608810424805,
+      "lng": 66.29810333251953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1393,
+      "lat": 38.628055572509766,
+      "lng": 66.28372955322266,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1399,
+      "lat": 38.6358528137207,
+      "lng": 66.21221923828125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1430,
+      "lat": 38.84885025024414,
+      "lng": 66.12579345703125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1476,
+      "lat": 39.03741455078125,
+      "lng": 65.74951934814453,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1498,
+      "lat": 39.039283752441406,
+      "lng": 65.5855712890625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1520,
+      "lat": 39.11570358276367,
+      "lng": 66.86986541748047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1521,
+      "lat": 39.11910629272461,
+      "lng": 66.85694885253906,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1553,
+      "lat": 39.2530517578125,
+      "lng": 65.16412353515625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1588,
+      "lat": 38.64376449584961,
+      "lng": 65.69830322265625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1620,
+      "lat": 38.980712890625,
+      "lng": 65.53990173339844,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1626,
+      "lat": 38.875484466552734,
+      "lng": 65.53923034667969,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1628,
+      "lat": 38.91325378417969,
+      "lng": 65.4049301147461,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1629,
+      "lat": 38.84526824951172,
+      "lng": 65.46549224853516,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1664,
+      "lat": 39.03765869140625,
+      "lng": 67.01414489746094,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1665,
+      "lat": 39.042545318603516,
+      "lng": 66.99737548828125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1683,
+      "lat": 39.05702209472656,
+      "lng": 66.94953918457031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1696,
+      "lat": 38.926998138427734,
+      "lng": 66.78116607666016,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1705,
+      "lat": 38.97330856323242,
+      "lng": 66.67254638671875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1706,
+      "lat": 38.92278289794922,
+      "lng": 66.83783721923828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1708,
+      "lat": 38.97330093383789,
+      "lng": 66.73749542236328,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1723,
+      "lat": 38.98243713378906,
+      "lng": 66.67330169677734,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1724,
+      "lat": 38.99006271362305,
+      "lng": 66.61605072021484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1729,
+      "lat": 38.9291877746582,
+      "lng": 66.99000549316406,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1747,
+      "lat": 39.02851486206055,
+      "lng": 65.09796142578125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1752,
+      "lat": 39.14892578125,
+      "lng": 66.3895492553711,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1773,
+      "lat": 40.113895416259766,
+      "lng": 65.36984252929688,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1775,
+      "lat": 40.1035041809082,
+      "lng": 65.37743377685547,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1815,
+      "lat": 41.560203552246094,
+      "lng": 64.17489624023438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1821,
+      "lat": 41.565364837646484,
+      "lng": 64.20481872558594,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1847,
+      "lat": 40.28398895263672,
+      "lng": 65.03033447265625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1915,
+      "lat": 40.18666458129883,
+      "lng": 65.35295867919922,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1919,
+      "lat": 40.18767547607422,
+      "lng": 65.24688720703125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1926,
+      "lat": 40.11513137817383,
+      "lng": 65.66393280029297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 1936,
+      "lat": 40.03396224975586,
+      "lng": 65.9646987915039,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2010,
+      "lat": 40.82182312011719,
+      "lng": 71.38167572021484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2078,
+      "lat": 41.13127517700195,
+      "lng": 71.4951171875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2201,
+      "lat": 40.742530822753906,
+      "lng": 70.84477233886719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2208,
+      "lat": 40.78784942626953,
+      "lng": 71.06991577148438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2228,
+      "lat": 40.8409423828125,
+      "lng": 71.02913665771484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2237,
+      "lat": 40.82623291015625,
+      "lng": 71.14439392089844,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2242,
+      "lat": 41.03109359741211,
+      "lng": 70.88121795654297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2253,
+      "lat": 40.95473861694336,
+      "lng": 71.44219207763672,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2255,
+      "lat": 41.006813049316406,
+      "lng": 71.51122283935547,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2263,
+      "lat": 40.937442779541016,
+      "lng": 71.42171478271484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2271,
+      "lat": 40.942474365234375,
+      "lng": 71.44664764404297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2280,
+      "lat": 41.00006103515625,
+      "lng": 71.49352264404297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2283,
+      "lat": 40.89670944213867,
+      "lng": 71.38561248779297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2343,
+      "lat": 41.10970687866211,
+      "lng": 72.08053588867188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2358,
+      "lat": 41.021121978759766,
+      "lng": 72.10697937011719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2360,
+      "lat": 41.09220886230469,
+      "lng": 72.10185241699219,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2363,
+      "lat": 41.059974670410156,
+      "lng": 72.12480163574219,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2377,
+      "lat": 41.00693130493164,
+      "lng": 72.068359375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2402,
+      "lat": 41.08126449584961,
+      "lng": 71.829345703125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2425,
+      "lat": 41.09744644165039,
+      "lng": 71.79505920410156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2428,
+      "lat": 41.16661071777344,
+      "lng": 71.81166076660156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2444,
+      "lat": 40.9936408996582,
+      "lng": 71.23428344726562,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2468,
+      "lat": 41.04129409790039,
+      "lng": 71.19237518310547,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2480,
+      "lat": 40.99631118774414,
+      "lng": 71.25814056396484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2497,
+      "lat": 41.19376754760742,
+      "lng": 71.72572326660156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2523,
+      "lat": 41.34367370605469,
+      "lng": 71.6684799194336,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2535,
+      "lat": 41.52147674560547,
+      "lng": 71.6977310180664,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2536,
+      "lat": 41.198429107666016,
+      "lng": 71.7219467163086,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2548,
+      "lat": 41.01565170288086,
+      "lng": 71.69671630859375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2549,
+      "lat": 41.00606918334961,
+      "lng": 71.58960723876953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2550,
+      "lat": 41.05870819091797,
+      "lng": 71.62471771240234,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2564,
+      "lat": 41.0057258605957,
+      "lng": 71.63689422607422,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2568,
+      "lat": 41.02449417114258,
+      "lng": 71.63763427734375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2577,
+      "lat": 40.99897384643555,
+      "lng": 71.68917846679688,
+      "precision": "approximate",
+      "shared": true
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2587,
+      "lat": 40.98008346557617,
+      "lng": 71.59416961669922,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2590,
+      "lat": 41.020301818847656,
+      "lng": 71.65522003173828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2607,
+      "lat": 40.996826171875,
+      "lng": 71.59944915771484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2608,
+      "lat": 40.99979019165039,
+      "lng": 71.659423828125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2617,
+      "lat": 39.63831329345703,
+      "lng": 66.9171371459961,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2621,
+      "lat": 39.680973052978516,
+      "lng": 66.99676513671875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2641,
+      "lat": 39.58048629760742,
+      "lng": 66.97142791748047,
+      "precision": "approximate",
+      "shared": true
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2680,
+      "lat": 39.65000915527344,
+      "lng": 66.97301483154297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2688,
+      "lat": 39.64413070678711,
+      "lng": 66.93754577636719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2718,
+      "lat": 39.550601959228516,
+      "lng": 67.2394790649414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2755,
+      "lat": 39.915645599365234,
+      "lng": 66.19965362548828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2775,
+      "lat": 39.90774917602539,
+      "lng": 66.62876892089844,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2778,
+      "lat": 39.84296798706055,
+      "lng": 66.82088470458984,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2790,
+      "lat": 39.914817810058594,
+      "lng": 66.606689453125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2797,
+      "lat": 39.876251220703125,
+      "lng": 66.78730010986328,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2806,
+      "lat": 39.63885498046875,
+      "lng": 67.25865936279297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2818,
+      "lat": 39.76491165161133,
+      "lng": 67.26604461669922,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2866,
+      "lat": 39.967960357666016,
+      "lng": 66.49640655517578,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2908,
+      "lat": 39.9715576171875,
+      "lng": 66.3567886352539,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2923,
+      "lat": 40.01035690307617,
+      "lng": 66.30400848388672,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2950,
+      "lat": 40.011085510253906,
+      "lng": 66.19259643554688,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2951,
+      "lat": 39.96504211425781,
+      "lng": 66.11039733886719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 2971,
+      "lat": 40.410118103027344,
+      "lng": 66.3464584350586,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3072,
+      "lat": 39.9087028503418,
+      "lng": 66.89544677734375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3084,
+      "lat": 39.95200729370117,
+      "lng": 66.92169952392578,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3102,
+      "lat": 39.764339447021484,
+      "lng": 66.60240173339844,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3126,
+      "lat": 39.786808013916016,
+      "lng": 66.53382873535156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3204,
+      "lat": 39.99338912963867,
+      "lng": 65.78564453125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3228,
+      "lat": 39.61941146850586,
+      "lng": 66.95735931396484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3235,
+      "lat": 39.593074798583984,
+      "lng": 67.01950073242188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3241,
+      "lat": 39.61692810058594,
+      "lng": 66.9600601196289,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3409,
+      "lat": 38.164634704589844,
+      "lng": 67.67459106445312,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3423,
+      "lat": 38.29450607299805,
+      "lng": 67.6086654663086,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3462,
+      "lat": 37.46335983276367,
+      "lng": 66.91777038574219,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3490,
+      "lat": 38.35649871826172,
+      "lng": 67.82714080810547,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3494,
+      "lat": 38.370445251464844,
+      "lng": 67.95175170898438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3498,
+      "lat": 38.41429138183594,
+      "lng": 67.87371826171875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3500,
+      "lat": 38.33625411987305,
+      "lng": 67.89492797851562,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3508,
+      "lat": 38.31960678100586,
+      "lng": 67.94137573242188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3559,
+      "lat": 37.5513916015625,
+      "lng": 67.50496673583984,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3572,
+      "lat": 37.5036506652832,
+      "lng": 67.41961669921875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3595,
+      "lat": 37.903934478759766,
+      "lng": 67.66234588623047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3619,
+      "lat": 37.7294921875,
+      "lng": 67.32605743408203,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3626,
+      "lat": 37.68290328979492,
+      "lng": 67.3033218383789,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3666,
+      "lat": 37.2755241394043,
+      "lng": 67.462646484375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3671,
+      "lat": 37.348243713378906,
+      "lng": 67.18244934082031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3708,
+      "lat": 37.5571403503418,
+      "lng": 66.87129974365234,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3714,
+      "lat": 37.64390563964844,
+      "lng": 67.13912963867188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3796,
+      "lat": 37.99374008178711,
+      "lng": 67.49411010742188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3883,
+      "lat": 40.49416732788086,
+      "lng": 68.70380401611328,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3887,
+      "lat": 40.532066345214844,
+      "lng": 68.72958374023438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3901,
+      "lat": 40.7119026184082,
+      "lng": 68.73115539550781,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 3962,
+      "lat": 40.33719253540039,
+      "lng": 68.17586517333984,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4012,
+      "lat": 41.27632522583008,
+      "lng": 69.29434967041016,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4015,
+      "lat": 41.244808197021484,
+      "lng": 69.32300567626953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4029,
+      "lat": 41.24734878540039,
+      "lng": 69.3040542602539,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4044,
+      "lat": 41.345706939697266,
+      "lng": 69.33702850341797,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4050,
+      "lat": 41.317100524902344,
+      "lng": 69.28839111328125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4060,
+      "lat": 41.31249237060547,
+      "lng": 69.29066467285156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4091,
+      "lat": 41.31981658935547,
+      "lng": 69.35740661621094,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4107,
+      "lat": 41.31945037841797,
+      "lng": 69.27946472167969,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4122,
+      "lat": 41.36088562011719,
+      "lng": 69.28721618652344,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4144,
+      "lat": 41.37071228027344,
+      "lng": 69.29702758789062,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4153,
+      "lat": 41.35326385498047,
+      "lng": 69.33373260498047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4177,
+      "lat": 41.30630111694336,
+      "lng": 69.26007080078125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4180,
+      "lat": 41.303489685058594,
+      "lng": 69.26280212402344,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4181,
+      "lat": 41.26992416381836,
+      "lng": 69.25346374511719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4201,
+      "lat": 41.317256927490234,
+      "lng": 69.21491241455078,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4232,
+      "lat": 41.29096984863281,
+      "lng": 69.2163314819336,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4236,
+      "lat": 41.29743194580078,
+      "lng": 69.22789764404297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4255,
+      "lat": 41.27352523803711,
+      "lng": 69.2004623413086,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4276,
+      "lat": 41.26191711425781,
+      "lng": 69.18928527832031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4277,
+      "lat": 40.50297546386719,
+      "lng": 68.77764892578125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4324,
+      "lat": 41.29652786254883,
+      "lng": 69.3468017578125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4330,
+      "lat": 41.29893112182617,
+      "lng": 69.34541320800781,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4369,
+      "lat": 41.352596282958984,
+      "lng": 69.25230407714844,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4370,
+      "lat": 41.36663818359375,
+      "lng": 69.2019271850586,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4371,
+      "lat": 41.36259841918945,
+      "lng": 69.18162536621094,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4461,
+      "lat": 41.28008270263672,
+      "lng": 69.17411804199219,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4535,
+      "lat": 40.80563735961914,
+      "lng": 69.24952697753906,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4538,
+      "lat": 40.778629302978516,
+      "lng": 69.1012191772461,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4542,
+      "lat": 40.813011169433594,
+      "lng": 69.20360565185547,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4605,
+      "lat": 41.23686981201172,
+      "lng": 69.23155975341797,
+      "precision": "approximate",
+      "shared": true
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4638,
+      "lat": 41.417823791503906,
+      "lng": 69.50338745117188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4646,
+      "lat": 41.349971771240234,
+      "lng": 69.43342590332031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4653,
+      "lat": 41.40951156616211,
+      "lng": 69.48636627197266,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4672,
+      "lat": 40.98176956176758,
+      "lng": 69.2097396850586,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4691,
+      "lat": 41.065452575683594,
+      "lng": 69.44198608398438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4720,
+      "lat": 40.91111373901367,
+      "lng": 69.94483184814453,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4803,
+      "lat": 41.12439727783203,
+      "lng": 69.4288330078125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4805,
+      "lat": 41.10786056518555,
+      "lng": 69.30307006835938,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4810,
+      "lat": 41.08452224731445,
+      "lng": 69.32502746582031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4817,
+      "lat": 40.963924407958984,
+      "lng": 68.85363006591797,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4819,
+      "lat": 40.941524505615234,
+      "lng": 68.7684555053711,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4832,
+      "lat": 41.01565170288086,
+      "lng": 68.83855438232422,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4840,
+      "lat": 40.96950149536133,
+      "lng": 68.88961029052734,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4883,
+      "lat": 41.08572006225586,
+      "lng": 68.88823699951172,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4898,
+      "lat": 41.0040397644043,
+      "lng": 70.0592269897461,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4907,
+      "lat": 41.01909637451172,
+      "lng": 70.08019256591797,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4908,
+      "lat": 41.118141174316406,
+      "lng": 69.09281158447266,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4917,
+      "lat": 41.01240158081055,
+      "lng": 70.08747100830078,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4930,
+      "lat": 40.215660095214844,
+      "lng": 69.26742553710938,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4938,
+      "lat": 40.227012634277344,
+      "lng": 69.2795181274414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5043,
+      "lat": 41.37822341918945,
+      "lng": 69.13236236572266,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5059,
+      "lat": 41.43708038330078,
+      "lng": 69.33341217041016,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5071,
+      "lat": 41.35568618774414,
+      "lng": 69.14319610595703,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5087,
+      "lat": 40.30659866333008,
+      "lng": 71.91035461425781,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5112,
+      "lat": 40.541748046875,
+      "lng": 70.96882629394531,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5119,
+      "lat": 40.5405387878418,
+      "lng": 70.968994140625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5121,
+      "lat": 40.522422790527344,
+      "lng": 70.9427719116211,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5129,
+      "lat": 40.549072265625,
+      "lng": 70.92965698242188,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5140,
+      "lat": 40.52127456665039,
+      "lng": 70.96134948730469,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5147,
+      "lat": 40.527137756347656,
+      "lng": 70.95503997802734,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5169,
+      "lat": 40.44979476928711,
+      "lng": 71.7210922241211,
+      "precision": "approximate",
+      "shared": true
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5176,
+      "lat": 40.463523864746094,
+      "lng": 71.74855041503906,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5186,
+      "lat": 40.44979476928711,
+      "lng": 71.7210922241211,
+      "precision": "approximate",
+      "shared": true
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5208,
+      "lat": 40.37324523925781,
+      "lng": 71.78258514404297,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5211,
+      "lat": 40.37866973876953,
+      "lng": 71.83757019042969,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5215,
+      "lat": 40.437015533447266,
+      "lng": 71.75520324707031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5224,
+      "lat": 40.44239807128906,
+      "lng": 71.76435089111328,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5239,
+      "lat": 40.38324737548828,
+      "lng": 71.80532836914062,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5255,
+      "lat": 40.37760543823242,
+      "lng": 71.80414581298828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5258,
+      "lat": 40.377445220947266,
+      "lng": 71.78515625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5260,
+      "lat": 40.356590270996094,
+      "lng": 71.85076141357422,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5277,
+      "lat": 40.45203399658203,
+      "lng": 70.66927337646484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5290,
+      "lat": 40.433780670166016,
+      "lng": 70.61019897460938,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5316,
+      "lat": 40.462890625,
+      "lng": 70.54850769042969,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5331,
+      "lat": 40.42131423950195,
+      "lng": 70.55718231201172,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5341,
+      "lat": 40.52204895019531,
+      "lng": 71.12158203125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5397,
+      "lat": 40.63914489746094,
+      "lng": 71.08417510986328,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5414,
+      "lat": 40.620609283447266,
+      "lng": 71.13076782226562,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5432,
+      "lat": 40.58735656738281,
+      "lng": 71.07365417480469,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5443,
+      "lat": 40.66835021972656,
+      "lng": 70.95442962646484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5494,
+      "lat": 40.63106918334961,
+      "lng": 71.77774047851562,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5533,
+      "lat": 40.504730224609375,
+      "lng": 72.10212707519531,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5537,
+      "lat": 40.51935577392578,
+      "lng": 72.04252624511719,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5567,
+      "lat": 40.53099822998047,
+      "lng": 71.99679565429688,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5573,
+      "lat": 40.59212875366211,
+      "lng": 72.07546997070312,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5578,
+      "lat": 40.544498443603516,
+      "lng": 72.04119873046875,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5589,
+      "lat": 40.39325714111328,
+      "lng": 71.50374603271484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5653,
+      "lat": 40.42140579223633,
+      "lng": 71.66818237304688,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5684,
+      "lat": 40.3564338684082,
+      "lng": 71.32613372802734,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5690,
+      "lat": 40.41070556640625,
+      "lng": 71.28988647460938,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5709,
+      "lat": 40.3995475769043,
+      "lng": 71.2141342163086,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5727,
+      "lat": 40.347896575927734,
+      "lng": 71.21509552001953,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5740,
+      "lat": 39.97602081298828,
+      "lng": 71.13442993164062,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5814,
+      "lat": 40.38454055786133,
+      "lng": 70.0992660522461,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5828,
+      "lat": 40.34724044799805,
+      "lng": 70.73788452148438,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5845,
+      "lat": 40.588836669921875,
+      "lng": 71.05632781982422,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5850,
+      "lat": 40.54880905151367,
+      "lng": 71.0857925415039,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5934,
+      "lat": 40.29556655883789,
+      "lng": 71.52657318115234,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6008,
+      "lat": 41.56072235107422,
+      "lng": 60.65028381347656,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6011,
+      "lat": 41.571044921875,
+      "lng": 60.60751724243164,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6012,
+      "lat": 41.56858444213867,
+      "lng": 60.608062744140625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6019,
+      "lat": 41.556785583496094,
+      "lng": 60.623592376708984,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6064,
+      "lat": 41.57449722290039,
+      "lng": 60.45267868041992,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6081,
+      "lat": 41.34436798095703,
+      "lng": 60.38156509399414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6082,
+      "lat": 41.46428680419922,
+      "lng": 60.475746154785156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6089,
+      "lat": 41.35886001586914,
+      "lng": 60.4045295715332,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6111,
+      "lat": 41.33652877807617,
+      "lng": 61.094337463378906,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6113,
+      "lat": 41.916568756103516,
+      "lng": 60.328163146972656,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6115,
+      "lat": 41.87444305419922,
+      "lng": 60.24094009399414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6120,
+      "lat": 41.843082427978516,
+      "lng": 60.39932632446289,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6123,
+      "lat": 41.8363151550293,
+      "lng": 60.23616027832031,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6128,
+      "lat": 41.848777770996094,
+      "lng": 60.29496383666992,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6200,
+      "lat": 41.32868576049805,
+      "lng": 60.559932708740234,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6205,
+      "lat": 41.340667724609375,
+      "lng": 60.634151458740234,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6218,
+      "lat": 41.55342483520508,
+      "lng": 60.269954681396484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6250,
+      "lat": 41.32556915283203,
+      "lng": 60.978675842285156,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6261,
+      "lat": 41.353145599365234,
+      "lng": 60.78730010986328,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6276,
+      "lat": 41.4091911315918,
+      "lng": 60.81798553466797,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6277,
+      "lat": 41.497535705566406,
+      "lng": 60.727901458740234,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6317,
+      "lat": 41.78817367553711,
+      "lng": 60.43423843383789,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6353,
+      "lat": 41.22377014160156,
+      "lng": 61.32308578491211,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6360,
+      "lat": 41.198692321777344,
+      "lng": 61.312828063964844,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6386,
+      "lat": 42.44514083862305,
+      "lng": 59.64453125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6419,
+      "lat": 42.441776275634766,
+      "lng": 59.62717056274414,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6426,
+      "lat": 42.44033432006836,
+      "lng": 59.63520050048828,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6434,
+      "lat": 42.34354019165039,
+      "lng": 59.60410690307617,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6467,
+      "lat": 42.159149169921875,
+      "lng": 60.075687408447266,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6487,
+      "lat": 42.01711654663086,
+      "lng": 60.13042068481445,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6502,
+      "lat": 41.81673049926758,
+      "lng": 60.57329177856445,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6505,
+      "lat": 41.76925277709961,
+      "lng": 60.694480895996094,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6512,
+      "lat": 41.77198028564453,
+      "lng": 60.70907211303711,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6525,
+      "lat": 41.69043731689453,
+      "lng": 60.74814224243164,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6526,
+      "lat": 41.911598205566406,
+      "lng": 60.769195556640625,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6541,
+      "lat": 41.644691467285156,
+      "lng": 60.77942657470703,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6557,
+      "lat": 42.99995803833008,
+      "lng": 59.3548583984375,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6567,
+      "lat": 42.69999694824219,
+      "lng": 59.73070526123047,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6590,
+      "lat": 43.05109786987305,
+      "lng": 58.82141876220703,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6657,
+      "lat": 42.575111389160156,
+      "lng": 59.74737548828125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6662,
+      "lat": 42.591209411621094,
+      "lng": 59.59601974487305,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6668,
+      "lat": 42.5503044128418,
+      "lng": 59.5705451965332,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6701,
+      "lat": 41.5108757019043,
+      "lng": 61.03059768676758,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6724,
+      "lat": 42.55997085571289,
+      "lng": 59.233821868896484,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6758,
+      "lat": 42.957889556884766,
+      "lng": 59.86532974243164,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6762,
+      "lat": 42.92605972290039,
+      "lng": 59.774932861328125,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6763,
+      "lat": 42.91160583496094,
+      "lng": 59.78185272216797,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6764,
+      "lat": 41.29283905029297,
+      "lng": 69.27204132080078,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6766,
+      "lat": 43.04933547973633,
+      "lng": 59.599876403808594,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6774,
+      "lat": 42.93474578857422,
+      "lng": 59.778751373291016,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6785,
+      "lat": 42.63609313964844,
+      "lng": 58.93745422363281,
+      "precision": "exact",
+      "shared": false
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 6804,
+      "lat": 41.80588150024414,
+      "lng": 61.06320571899414,
+      "precision": "exact",
+      "shared": false
+    }
+  ],
+  "ambiguous": [
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 4726,
+      "candidates": 2,
+      "spreadM": 5887
+    },
+    {
+      "sourceApi": "bogcha",
+      "sourceId": 5242,
+      "candidates": 2,
+      "spreadM": 602385
+    }
+  ]
+}

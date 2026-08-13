@@ -139,7 +139,8 @@ function main() {
     }
 
     const out = {
-        generatedAt: new Date().toISOString().slice(0, 10),
+        // Метки времени нет намеренно: она меняла бы файл при каждом прогоне на
+        // неизменных данных и давала шум в diff. Дату сборки хранит git.
         source: 'data.egov.uz, реестры дошкольных организаций (государственные и негосударственные)',
         licence: 'Открытые данные data.egov.uz',
         totalWithCoords: all.length,

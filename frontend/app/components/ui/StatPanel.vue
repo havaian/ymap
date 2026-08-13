@@ -1,6 +1,8 @@
 <template>
-  <div class="panel p-5">
-    <p class="eyebrow">{{ label }}</p>
+  <div class="panel p-4 sm:p-5">
+    <!-- Подпись не обрезается: в сетке из двух карточек на телефоне «Сверх одной
+         смены» не помещается в строку, и перенос здесь честнее многоточия. -->
+    <p class="eyebrow break-words">{{ label }}</p>
     <div class="mt-3">
       <MeasuredValue
         :value="value"

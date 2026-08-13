@@ -3,7 +3,7 @@
     <AnalyticsTabs />
 
     <div class="flex flex-wrap items-center gap-2">
-      <select v-model="objectType" class="control" @change="load">
+      <select v-model="objectType" class="control w-full xs:w-auto" @change="load">
         <option value="school">Школы</option>
         <option value="kindergarten">Детские сады</option>
       </select>
@@ -25,7 +25,7 @@
       </div>
 
       <!-- Three numbers, three decisions. A single total would answer none of them. -->
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="Дефицит мест"
           title="Три числа на три решения"
@@ -46,7 +46,7 @@
         </div>
       </section>
 
-      <section v-if="classRows.length" class="panel mt-4 p-6">
+      <section v-if="classRows.length" class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="Нагрузка"
           title="Классы нагрузки"
@@ -72,7 +72,7 @@
         </ul>
       </NoteBlock>
 
-      <section class="panel mt-4 p-6">
+      <section class="panel mt-4 p-5 sm:p-6">
         <SectionHead
           eyebrow="География"
           title="Районы"

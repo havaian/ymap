@@ -1,7 +1,10 @@
 <template>
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_minmax(0,17rem)]">
     <div>
-      <div class="mb-3 flex flex-wrap items-center gap-2">
+      <!-- Подпись шкалы уходит на свою строку до sm: рядом с тремя кнопками она
+           не помещалась и переносилась вместе с ml-auto, прижимаясь к правому
+           краю пустой строки. -->
+      <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <button
           v-for="t in TYPES"
           :key="t.value"
@@ -14,12 +17,12 @@
         >
           {{ t.label }}
         </button>
-        <span class="ml-auto text-label text-prussian-200/50">M0, выше = хуже</span>
+        <span class="w-full text-label text-prussian-200/50 sm:ml-auto sm:w-auto">M0, выше = хуже</span>
       </div>
 
       <div
         ref="wrap"
-        class="relative aspect-[16/9] w-full overflow-hidden rounded-panel border border-prussian-200/20 bg-prussian-900/40"
+        class="relative aspect-[4/3] w-full overflow-hidden rounded-panel border border-prussian-200/20 bg-prussian-900/40 sm:aspect-[16/9]"
       >
         <!-- touch-action: pan-y - вертикальный скролл страницы над картой
              работает как обычно, горизонтальное перетаскивание двигает слой.
@@ -577,7 +580,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* 36 px на телефоне: 32 меньше цели касания, по которой промахиваются пальцем.
+   На указателе размер прежний. */
 .zoom-btn {
-  @apply inline-flex h-8 w-8 items-center justify-center rounded-control border border-prussian-200/25 bg-prussian-900/70 text-prussian-100 transition-colors hover:bg-prussian-800 disabled:cursor-not-allowed disabled:opacity-40;
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-control border border-prussian-200/25 bg-prussian-900/70 text-prussian-100 transition-colors hover:bg-prussian-800 disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8;
 }
 </style>

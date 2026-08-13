@@ -15,7 +15,10 @@
       </button>
     </div>
 
-    <p class="mt-3 min-h-[2.6rem] text-body text-prussian-100/70">{{ current.reading }}</p>
+    <!-- Твёрдая минимальная высота держит место под самую длинную из двух
+         формулировок, чтобы полоса под ней не прыгала при переключении. На
+         телефоне строка переносится чаще, поэтому запас там больше. -->
+    <p class="mt-3 min-h-[5.2rem] text-body text-prussian-100/70 xs:min-h-[3.9rem] sm:min-h-[2.6rem]">{{ current.reading }}</p>
 
     <!-- One field, two readings, and the bar moves when the reading changes. The
          gap is the point: it does not close with more data or a better model, only
@@ -34,8 +37,10 @@
         />
       </div>
 
-      <div class="mt-3 flex items-baseline gap-2">
-        <span class="font-display text-figure font-semibold tabular text-prussian-50">{{ current.pct }}</span>
+      <!-- Цифра и подпись переносятся на телефоне: 2,5 rem плюс строка в 1 rem
+           не помещались в 328 px и рвали подпись посреди слова. -->
+      <div class="mt-3 flex flex-wrap items-baseline gap-x-2">
+        <span class="font-display text-h1 font-semibold tabular text-prussian-50 xs:text-figure">{{ current.pct }}</span>
         <span class="text-lead text-prussian-100/60">% зданий за пределом нормативного цикла</span>
       </div>
       <p class="mt-1 text-note text-prussian-100/50">

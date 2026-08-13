@@ -2,8 +2,11 @@
  * UZ → EN / RU translation map for Uzbekistan regions and districts.
  * 
  * Keys are normalized UZ names (lowercase, suffix stripped).
- * Used by import-geodata.js to populate multilingual names from the
- * crop.agro.uz API which only returns UZ names.
+ * Used by import-objects.js and uz-name-match.js to fill multilingual names.
+ *
+ * Историческая заметка: карта писалась под import-geodata.js, забиравший границы
+ * из crop.agro.uz. Тот путь заменён на OSM, скрипт удалён, карта осталась - имена
+ * районов от смены источника границ не изменились.
  * 
  * To add/fix a translation, just add an entry to the appropriate map.
  * The import script falls back to UZ name if no translation is found.

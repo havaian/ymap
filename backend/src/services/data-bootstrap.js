@@ -60,6 +60,11 @@ const BootstrapState = mongoose.models.BootstrapState
 const LOCK_KEY = '__lock__';
 const LEASE_MS = 15 * 60 * 1000;
 
+// Координата, выставленная человеком, автоматическим соединением не
+// перезаписывается никогда.
+const PROTECTED_COORD_SOURCES = ['field_verified', 'manual'];
+const COORD_BATCH = 500;
+
 /**
  * sha256 over the exact bytes of every input file, with its name, so a rename or
  * a reordering is a different fingerprint. Missing files are recorded as missing
@@ -149,8 +154,93 @@ const STAGES = [
             await simplifyAll();
             return { done: true };
         }
+    },
+    {
+        key: 'coords',
+        label: 'координаты объектов',
+        // Готовое соответствие, посчитанное локально скриптом
+        // build-egov-coords.js. Здесь оно только разливается: соединение по ИНН,
+        // правило неоднозначности и признак общей точки решены при сборке файла,
+        // и повторять это при каждом старте контейнера незачем.
+        files: ['object-coords.json'],
+        // Считаются документы, координата которых пришла именно отсюда. Объекты,
+        // размеченные вручную или в поле, в счёт не идут: иначе один выверенный
+        // объект выдавал бы этап за выполненный.
+        count: () => Object_.countDocuments({ coordSource: 'egov_inn' }),
+        run: async () => loadObjectCoords()
     }
 ];
+
+/**
+ * Разливает data/object-coords.json в коллекцию объектов.
+ *
+ * Единственное, что решается здесь, а не при сборке файла - защита координат,
+ * выставленных человеком. Их источник известен только базе, поэтому проверка
+ * выражена условием запроса, а не сравнением после чтения: документ с
+ * coordSource field_verified или manual просто не попадает под обновление, и
+ * между чтением и записью его состояние измениться не может.
+ *
+ * Отметка coord_ambiguous ставится и снимается через $addToSet и $pull, чтобы не
+ * читать текущий набор отметок ради одного значения.
+ */
+async function loadObjectCoords() {
+    const payload = JSON.parse(fs.readFileSync(resolveRead('object-coords.json'), 'utf-8'));
+    const coords = payload.coords ?? [];
+    const ambiguous = payload.ambiguous ?? [];
+
+    const ops = [];
+
+    for (const c of coords) {
+        ops.push({
+            updateOne: {
+                filter: {
+                    sourceApi: c.sourceApi,
+                    sourceId: c.sourceId,
+                    coordSource: { $nin: PROTECTED_COORD_SOURCES }
+                },
+                update: {
+                    $set: {
+                        lat: c.lat,
+                        lng: c.lng,
+                        location: { type: 'Point', coordinates: [c.lng, c.lat] },
+                        coordSource: 'egov_inn',
+                        coordPrecision: c.precision,
+                        coordShared: c.shared
+                    },
+                    $pull: { qualityFlags: 'coord_ambiguous' }
+                }
+            }
+        });
+    }
+
+    for (const a of ambiguous) {
+        ops.push({
+            updateOne: {
+                filter: {
+                    sourceApi: a.sourceApi,
+                    sourceId: a.sourceId,
+                    coordSource: { $nin: PROTECTED_COORD_SOURCES }
+                },
+                update: { $addToSet: { qualityFlags: 'coord_ambiguous' } }
+            }
+        });
+    }
+
+    let modified = 0;
+    for (let i = 0; i < ops.length; i += COORD_BATCH) {
+        const res = await Object_.bulkWrite(ops.slice(i, i + COORD_BATCH), { ordered: false });
+        modified += res.modifiedCount;
+    }
+
+    return {
+        coords: coords.length,
+        ambiguous: ambiguous.length,
+        modified,
+        // Из чего собран файл, а не когда: метки времени в нём нет, иначе он
+        // менялся бы при каждом прогоне сборщика и этап переигрывался бы впустую.
+        egovFiles: (payload.egovFiles ?? []).length
+    };
+}
 
 // ── Runner ────────────────────────────────────────────────────────────────────
 

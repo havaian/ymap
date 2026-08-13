@@ -1,5 +1,5 @@
 <template>
-  <div class="panel p-6">
+  <div class="panel p-5 sm:p-6">
     <div class="flex items-start justify-between gap-4">
       <div>
         <p class="eyebrow">{{ eyebrow }}</p>

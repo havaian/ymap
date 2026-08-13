@@ -8,7 +8,7 @@
 
     <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <!-- By regions (real - /regions/summary) -->
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <SectionHead
           title="Доля закрытых обращений"
           eyebrow="По регионам"
@@ -40,7 +40,7 @@
       </section>
 
       <!-- By organs (blocked - Agency Dashboard) -->
-      <section class="panel p-6">
+      <section class="panel p-5 sm:p-6">
         <SectionHead title="Разрез по органам" eyebrow="По ведомствам" />
         <NoteBlock class="mt-6" tone="caution" title="Источник не подключён">
           Разрез по органам появится после подключения Agency Dashboard. Пустой график

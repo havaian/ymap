@@ -31,7 +31,7 @@ export const getObjectMarkers = async (req, res) => {
     }
 
     // Payload cap. Today the collection holds 2198 objects and only a few hundred
-    // carry an exact coordinate, so nothing is cut. After import-egov-coords.js
+    // carry an exact coordinate, so nothing is cut. After the coords bootstrap stage
     // runs for real and the school registry lands, a country-wide viewport would
     // ask for tens of thousands of points in one response, and the browser spends
     // longer building markers than the request spends in flight. The cap is
